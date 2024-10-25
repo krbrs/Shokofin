@@ -277,9 +277,9 @@ public class SignalRConnectionManager
 
     private void OnInfoUpdated(IMetadataUpdatedEventArgs eventArgs)
     {
-        if (Plugin.Instance.Configuration.SignalR_EventSources.Contains(eventArgs.ProviderName)) {
+        if (!Plugin.Instance.Configuration.SignalR_EventSources.Contains(eventArgs.ProviderName)) {
             Logger.LogTrace(
-                "{ProviderName} {MetadataType} {ProviderId} ({ProviderParentId}) skipped event with {UpdateReason}; provider not is not enabled in the plugin settings. (Episode={EpisodeId},Series={SeriesId},Group={GroupId})",
+                "{ProviderName} {MetadataType} {ProviderId} ({ProviderParentId}) skipped event with {UpdateReason}; provider is not enabled in the plugin settings. (Episode={EpisodeId},Series={SeriesId},Group={GroupId})",
                 eventArgs.ProviderName,
                 eventArgs.Kind,
                 eventArgs.ProviderId,
