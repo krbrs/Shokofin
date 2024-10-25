@@ -131,7 +131,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
             if (parent.IsTopParent) {
                 var createMovies = collectionType is CollectionType.movies || (collectionType is null && Plugin.Instance.Configuration.SeparateMovies);
                 var pathsToRemoveBag = new ConcurrentBag<(string, bool)>();
-                var items = FileSystem.GetDirectories(vfsPath)
+                var items = (FileSystem.DirectoryExists(vfsPath) ? FileSystem.GetDirectories(vfsPath) : [])
                     .AsParallel()
                     .SelectMany(dirInfo => {
                         if (!dirInfo.Name.TryGetAttributeValue(ShokoSeriesId.Name, out var seriesId) || !int.TryParse(seriesId, out _))
