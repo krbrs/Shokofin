@@ -45,7 +45,7 @@ compatible with what.
 ### Official Repository
 
 1. **Access Plugin Repositories:**
-   - Go to `Dashboard` -> `Plugins` -> `Repositories`.
+   - Go to `Dashboard` -> `Plugins` -> `Catalog` -> `⚙ Gear icon`.
 
 2. **Add New Repository:**
    - Add a new repository with the following details:
@@ -53,7 +53,7 @@ compatible with what.
      * **Repository URL:** `https://raw.githubusercontent.com/ShokoAnime/Shokofin/metadata/stable/manifest.json`
 
 3. **Install Shokofin:**
-   - Go to the catalog in the plugins page.
+   - Go to the catalog in the plugins section of the dashboard.
    - Find and install `Shoko` from the `Metadata` section.
 
 4. **Restart Jellyfin:**
