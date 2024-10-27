@@ -394,9 +394,10 @@ public class MediaFolderConfigurationService
             mediaFolderConfig.ImportFolderRelativePath = string.Empty;
         }
         else {
+            var foundLocations = new List<(int, string)>();
             var samplePaths = FileSystem.GetFilePaths(mediaFolder.Path, true)
                 .Where(path => NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(path)))
-                .Take(100)
+                .Take(101) // 101 as a tie breaker
                 .ToList();
 
             Logger.LogDebug("Asking remote server if it knows any of the {Count} sampled files in {Path}. (Library={LibraryId})", samplePaths.Count > 100 ? 100 : samplePaths.Count, mediaFolder.Path, libraryId);
@@ -416,9 +417,19 @@ public class MediaFolderConfigurationService
                     continue;
 
                 var fileLocation = fileLocations[0];
-                mediaFolderConfig.ImportFolderId = fileLocation.ImportFolderId;
-                mediaFolderConfig.ImportFolderRelativePath = fileLocation.RelativePath[..^partialPath.Length];
-                break;
+                foundLocations.Add((fileLocation.ImportFolderId, fileLocation.RelativePath[..^partialPath.Length]));
+            }
+
+            if (foundLocations.Count > 0) {
+                var groupedLocations = foundLocations
+                    .GroupBy(x => x)
+                    .ToDictionary(x => x.Key, x => x.Count());
+                foreach (var ((importFolderId, relativePath), count) in groupedLocations) {
+                    Logger.LogDebug("Found {Count} hits for import folder {Id} at relative path {RelativePath}. (Library={LibraryId})", count, importFolderId, relativePath, libraryId);
+                }
+                (mediaFolderConfig.ImportFolderId, mediaFolderConfig.ImportFolderRelativePath) = groupedLocations
+                    .MaxBy(x => x.Value)!
+                    .Key;
             }
 
             try {
