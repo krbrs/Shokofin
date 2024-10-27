@@ -301,7 +301,8 @@ public class MediaFolderConfigurationService
     private async Task GenerateAllConfigurations(List<VirtualFolderInfo> allVirtualFolders)
     {
         var filteredVirtualFolders = allVirtualFolders
-            .Where(virtualFolder => 
+            .Where(virtualFolder =>
+                virtualFolder is { ItemId: not null, LibraryOptions: { } } &&
                 virtualFolder.CollectionType.ConvertToCollectionType() is null or CollectionType.movies or CollectionType.tvshows &&
                 Lookup.IsEnabledForLibraryOptions(virtualFolder.LibraryOptions, out _)
             )
