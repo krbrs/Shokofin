@@ -602,7 +602,7 @@ public class PluginConfiguration : BasePluginConfiguration
         VFS_Threads = 4;
         VFS_AddReleaseGroup = false;
         VFS_AddResolution = false;
-        VFS_AttachRoot = false;
+        VFS_AttachRoot = true;
         VFS_Location = VirtualRootLocation.Default;
         VFS_CustomLocation = null;
         VFS_ResolveLinks = false;
