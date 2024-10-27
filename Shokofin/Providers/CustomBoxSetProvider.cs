@@ -121,7 +121,7 @@ public class CustomBoxSetProvider : ICustomMetadataProvider<BoxSet>
     private bool EnsureNoTmdbIdIsSet(BoxSet collection)
     {
         var willRemove = collection.HasProviderId(MetadataProvider.TmdbCollection);
-        collection.SetProviderId(MetadataProvider.TmdbCollection.ToString(), null);
+        collection.ProviderIds.Remove(MetadataProvider.TmdbCollection.ToString());
         return willRemove;
     }
 
