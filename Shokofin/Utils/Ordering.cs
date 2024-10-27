@@ -105,7 +105,7 @@ public class Ordering
         InBetweenSeasonByAirDate = 4,
 
         /// <summary>
-        /// Place the specials in-between normal episodes based upon the data from TvDB or TMDB.
+        /// Place the specials in-between normal episodes based upon the data from TMDB.
         /// </summary>
         InBetweenSeasonByOtherData = 5,
     }
@@ -162,11 +162,10 @@ public class Ordering
             return (null, null, null, showInfo.IsSpecial(episodeInfo));
         }
 
-        // Abort if episode is not a TvDB special or AniDB special
+        // Abort if episode is not a TMDB special or AniDB special
         if (!showInfo.IsSpecial(episodeInfo))
             return (null, null, null, false);
 
-        int? episodeNumber = null;
         int seasonNumber = GetSeasonNumber(showInfo, seasonInfo, episodeInfo);
         int? airsBeforeEpisodeNumber = null;
         int? airsBeforeSeasonNumber = null;
@@ -175,10 +174,10 @@ public class Ordering
             default:
                 airsAfterSeasonNumber = seasonNumber;
                 break;
+            case SpecialOrderType.InBetweenSeasonMixed:
             case SpecialOrderType.InBetweenSeasonByAirDate:
-                byAirDate:
                 // Reset the order if we come from `SpecialOrderType.InBetweenSeasonMixed`.
-                episodeNumber = null;
+                int? episodeNumber = null;
                 if (seasonInfo.SpecialsBeforeEpisodes.Contains(episodeInfo.Id)) {
                     airsBeforeSeasonNumber = seasonNumber;
                     break;
@@ -195,34 +194,7 @@ public class Ordering
                     airsAfterSeasonNumber = seasonNumber;
                 }
                 break;
-            case SpecialOrderType.InBetweenSeasonMixed:
             case SpecialOrderType.InBetweenSeasonByOtherData:
-                // We need to have TvDB/TMDB data in the first place to do this method.
-                if (episodeInfo.TvDB == null) {
-                    if (order == SpecialOrderType.InBetweenSeasonMixed) goto byAirDate;
-                    break;
-                }
-
-                episodeNumber = episodeInfo.TvDB.AirsBeforeEpisode;
-                if (!episodeNumber.HasValue) {
-                    if (episodeInfo.TvDB.AirsBeforeSeason.HasValue) {
-                        airsBeforeSeasonNumber = seasonNumber;
-                        break;
-                    }
-
-                    if (order == SpecialOrderType.InBetweenSeasonMixed) goto byAirDate;
-                    airsAfterSeasonNumber = seasonNumber;
-                    break;
-                }
-
-                var nextEpisode = seasonInfo.EpisodeList.FirstOrDefault(e => e.TvDB != null && e.TvDB.SeasonNumber == seasonNumber && e.TvDB.EpisodeNumber == episodeNumber);
-                if (nextEpisode != null) {
-                    airsBeforeEpisodeNumber = GetEpisodeNumber(showInfo, seasonInfo, nextEpisode);
-                    airsBeforeSeasonNumber = seasonNumber;
-                    break;
-                }
-
-                if (order == SpecialOrderType.InBetweenSeasonMixed) goto byAirDate;
                 break;
         }
 

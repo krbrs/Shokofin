@@ -86,7 +86,8 @@ public static class Text
         AniDB = 2,
 
         /// <summary>
-        /// Provide the description from TvDB.
+        /// Deprecated, but kept until the next major release for backwards compatibility.
+        /// TODO: REMOVE THIS IN 6.0
         /// </summary>
         TvDB = 3,
 
@@ -157,21 +158,18 @@ public static class Text
         => GetDescriptionByDict(new() {
             {DescriptionProvider.Shoko, show.Shoko?.Description ?? show.DefaultSeason.Shoko.Description},
             {DescriptionProvider.AniDB, metadataLanguage is "en" ? show.DefaultSeason.AniDB.Description : null},
-            {DescriptionProvider.TvDB, show.DefaultSeason.TvDB?.Description},
         });
 
     public static string GetDescription(SeasonInfo season, string? metadataLanguage)
         => GetDescriptionByDict(new() {
             {DescriptionProvider.Shoko, season.Shoko.Description},
             {DescriptionProvider.AniDB, metadataLanguage is "en" ? season.AniDB.Description : null},
-            {DescriptionProvider.TvDB, season.TvDB?.Description},
         });
 
     public static string GetDescription(EpisodeInfo episode, string? metadataLanguage)
         => GetDescriptionByDict(new() {
             {DescriptionProvider.Shoko, episode.Shoko.Description},
             {DescriptionProvider.AniDB, metadataLanguage is "en" ? episode.AniDB.Description : null},
-            {DescriptionProvider.TvDB, episode.TvDB?.Description},
         });
 
     public static string GetDescription(IEnumerable<EpisodeInfo> episodeList, string? metadataLanguage)
@@ -201,8 +199,6 @@ public static class Text
                     descriptions.TryGetValue(DescriptionProvider.Shoko, out var desc) ? SanitizeAnidbDescription(desc ?? string.Empty) : null,
                 DescriptionProvider.AniDB =>
                     descriptions.TryGetValue(DescriptionProvider.AniDB, out var desc) ? SanitizeAnidbDescription(desc ?? string.Empty) : null,
-                DescriptionProvider.TvDB =>
-                    descriptions.TryGetValue(DescriptionProvider.TvDB, out var desc) ? desc : null,
                 _ => null
             };
             if (!string.IsNullOrEmpty(overview))

@@ -8,7 +8,7 @@ public class Episode
 {
     /// <summary>
     /// All identifiers related to the episode entry, e.g. the Shoko, AniDB,
-    /// TvDB, etc.
+    /// TMDB, etc.
     /// </summary>
     public EpisodeIDs IDs { get; set; } = new();
 
@@ -48,13 +48,6 @@ public class Episode
     public AniDB AniDBEntity { get; set; } = new();
 
     /// <summary>
-    /// The <see cref="Episode.TvDB"/> entries, if <see cref="DataSource.TvDB"/>
-    /// is included in the data to add.
-    /// </summary>
-    [JsonPropertyName("TvDB")]
-    public List<TvDB> TvDBEntityList { get; set; } = [];
-
-    /// <summary>
     /// File cross-references for the episode.
     /// </summary>
     public List<CrossReference.EpisodeCrossReferenceIDs> CrossReferences { get; set; } = [];
@@ -83,32 +76,11 @@ public class Episode
         public Rating Rating { get; set; } = new();
     }
 
-    public class TvDB
-    {
-        [JsonPropertyName("Season")]
-        public int SeasonNumber { get; set; }
-
-        [JsonPropertyName("Number")]
-        public int EpisodeNumber { get; set; }
-
-        public string Description { get; set; } = string.Empty;
-
-        public int? AirsAfterSeason { get; set; }
-
-        public int? AirsBeforeSeason { get; set; }
-
-        public int? AirsBeforeEpisode { get; set; }
-
-        public Image Thumbnail { get; set; } = new();
-    }
-
     public class EpisodeIDs : IDs
     {
         public int ParentSeries { get; set; }
 
         public int AniDB { get; set; }
-
-        public List<int> TvDB { get; set; } = [];
     }
 }
 

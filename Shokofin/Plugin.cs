@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
+using Jellyfin.Extensions;
 using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Plugins;
@@ -211,6 +212,19 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         // Disable VFS if we can't create symbolic links on Windows and no configuration exists.
         if (!configExists && !CanCreateSymbolicLinks) {
             Configuration.VFS_Enabled = false;
+            // Remove TvDB from the list of description providers.
+            var index = Configuration.DescriptionSourceList.IndexOf(Text.DescriptionProvider.TvDB);
+            if (index != -1) {
+                var list = Configuration.DescriptionSourceList.ToList();
+                list.RemoveAt(index);
+                Configuration.DescriptionSourceList = [.. list];
+            }
+            index = Configuration.DescriptionSourceOrder.IndexOf(Text.DescriptionProvider.TvDB);
+            if (index != -1) {
+                var list = Configuration.DescriptionSourceOrder.ToList();
+                list.RemoveAt(index);
+                Configuration.DescriptionSourceOrder = [.. list];
+            }
             SaveConfiguration();
         }
     }

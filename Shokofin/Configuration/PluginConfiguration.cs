@@ -569,7 +569,6 @@ public class PluginConfiguration : BasePluginConfiguration
             DescriptionProvider.Shoko,
             DescriptionProvider.AniDB,
             DescriptionProvider.TMDB,
-            DescriptionProvider.TvDB,
         ];
         HideUnverifiedTags = true;
         TagSources = TagSource.ContentIndicators | TagSource.Dynamic | TagSource.DynamicCast | TagSource.DynamicEnding | TagSource.Elements |

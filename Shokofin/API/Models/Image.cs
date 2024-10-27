@@ -6,7 +6,7 @@ namespace Shokofin.API.Models;
 public class Image
 {
     /// <summary>
-    /// AniDB, TvDB, TMDB, etc.
+    /// AniDB, TMDB, etc.
     /// </summary>
     public ImageSource Source { get; set; } = ImageSource.AniDB;
 
@@ -90,7 +90,8 @@ public enum ImageSource
     AniDB = 1,
 
     /// <summary>
-    ///
+    /// Deprecated, but kept until the next major release for backwards compatibility.
+    /// TODO: REMOVE THIS IN 6.0
     /// </summary>
     TvDB = 2,
 

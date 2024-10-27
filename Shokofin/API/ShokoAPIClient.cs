@@ -347,7 +347,7 @@ public class ShokoAPIClient : IDisposable
 
     public Task<Episode> GetEpisode(string id)
     {
-        return Get<Episode>($"/api/v3/Episode/{id}?includeDataFrom=AniDB,TvDB&includeXRefs=true");
+        return Get<Episode>($"/api/v3/Episode/{id}?includeDataFrom=AniDB,TMDB&includeXRefs=true");
     }
 
     public async Task<EpisodeImages?> GetEpisodeImages(string id)
@@ -391,22 +391,22 @@ public class ShokoAPIClient : IDisposable
 
     public Task<ListResult<Episode>> GetEpisodesFromSeries(string seriesId)
     {
-        return Get<ListResult<Episode>>($"/api/v3/Series/{seriesId}/Episode?pageSize=0&includeHidden=true&includeMissing=true&includeDataFrom=AniDB,TvDB&includeXRefs=true");
+        return Get<ListResult<Episode>>($"/api/v3/Series/{seriesId}/Episode?pageSize=0&includeHidden=true&includeMissing=true&includeDataFrom=AniDB,TMDB&includeXRefs=true");
     }
 
     public Task<Series> GetSeries(string id)
     {
-        return Get<Series>($"/api/v3/Series/{id}?includeDataFrom=AniDB,TvDB");
+        return Get<Series>($"/api/v3/Series/{id}?includeDataFrom=AniDB,TMDB");
     }
 
     public Task<Series> GetSeriesFromEpisode(string id)
     {
-        return Get<Series>($"/api/v3/Episode/{id}/Series?includeDataFrom=AniDB,TvDB");
+        return Get<Series>($"/api/v3/Episode/{id}/Series?includeDataFrom=AniDB,TMDB");
     }
 
     public Task<List<Series>> GetSeriesInGroup(string groupID, int filterID = 0, bool recursive = false)
     {
-        return Get<List<Series>>($"/api/v3/Filter/{filterID}/Group/{groupID}/Series?recursive={recursive}&includeMissing=true&includeIgnored=false&includeDataFrom=AniDB,TvDB");
+        return Get<List<Series>>($"/api/v3/Filter/{filterID}/Group/{groupID}/Series?recursive={recursive}&includeMissing=true&includeIgnored=false&includeDataFrom=AniDB,TMDB");
     }
 
     public Task<List<Role>> GetSeriesCast(string id)

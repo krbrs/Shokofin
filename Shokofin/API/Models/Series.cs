@@ -22,7 +22,7 @@ public class Series
 
     /// <summary>
     /// All identifiers related to the series entry, e.g. the Shoko, AniDB,
-    /// TvDB, etc.
+    /// TMDB, etc.
     /// </summary>
     public SeriesIDs IDs { get; set; } = new();
 
@@ -44,12 +44,6 @@ public class Series
     /// </summary>
     [JsonPropertyName("AniDB")]
     public AniDBWithDate AniDBEntity { get; set; } = new();
-
-    /// <summary>
-    /// The TvDB entries, if any.
-    /// </summary>
-    [JsonPropertyName("TvDB")]
-    public List<TvDB> TvDBEntityList { get; set; }= [];
 
     public SeriesSizes Sizes { get; set; } = new();
 
@@ -189,11 +183,6 @@ public class Series
                 InternalEndDate = value.HasValue && (value.Value == DateTime.UnixEpoch || value.Value == DateTime.MinValue || value.Value == DateTime.MaxValue) ? null : value;
             }
         }
-    }
-
-    public class TvDB
-    {
-        public string Description { get; set; } = string.Empty;
     }
 
     public class SeriesIDs : IDs

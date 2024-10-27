@@ -14,14 +14,11 @@ public class EpisodeInfo
 
     public Episode.AniDB AniDB;
 
-    public Episode.TvDB? TvDB;
-
     public EpisodeInfo(Episode episode)
     {
         Id = episode.IDs.Shoko.ToString();
         ExtraType = Ordering.GetExtraType(episode.AniDBEntity);
         Shoko = episode;
         AniDB = episode.AniDBEntity;
-        TvDB = episode.TvDBEntityList?.FirstOrDefault();
     }
 }

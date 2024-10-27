@@ -18,8 +18,6 @@ public class SeasonInfo
 
     public readonly Series.AniDBWithDate AniDB;
 
-    public readonly Series.TvDB? TvDB;
-
     public readonly SeriesType Type;
 
     /// <summary>
@@ -254,7 +252,6 @@ public class SeasonInfo
         ExtraIds = extraIds.ToArray();
         Shoko = series;
         AniDB = series.AniDBEntity;
-        TvDB = series.TvDBEntityList.FirstOrDefault();
         Type = type;
         EarliestImportedAt = earliestImportedAt;
         LastImportedAt = lastImportedAt;

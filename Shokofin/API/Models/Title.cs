@@ -28,7 +28,7 @@ public class Title
     public bool IsDefault { get; set; }
 
     /// <summary>
-    /// AniDB, TvDB, AniList, etc.
+    /// AniDB, TMDB, AniList, etc.
     /// </summary>
     public string Source { get; set; } = "Unknown";
 }

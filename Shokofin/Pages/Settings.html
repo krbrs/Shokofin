@@ -320,18 +320,6 @@ form:not(.expert-mode) .expert-only {
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
                                     </button>
                                 </div>
-                                <div class="listItem sortableOption" data-option="TvDB">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="TvDB">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TvDB | Follow metadata language in library</h3>
-                                    </div>
-                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
-                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
-                                    </button>
-                                </div>
                             </div>
                             <div class="fieldDescription">The metadata providers to use as the source of descriptions for entities, in priority order.</div>
                         </div>
@@ -1168,8 +1156,8 @@ form:not(.expert-mode) .expert-only {
                             <select is="emby-select" id="SpecialsPlacement" name="SpecialsPlacement" class="emby-select-withcolor emby-select">
                                 <option value="AfterSeason">Always place specials after the normal episodes (Default)</option>
                                 <option value="InBetweenSeasonByAirDate">Use release dates to place specials</option>
-                                <option value="InBetweenSeasonByOtherData">Loosely use the TvDB/TMDB data available in Shoko to place specials</option>
-                                <option value="InBetweenSeasonMixed">Either loosely use the TvDB/TMDB data available in Shoko or fallback to using release dates to place specials</option>
+                                <option value="InBetweenSeasonByOtherData">Loosely use the TMDB data available in Shoko to place specials</option>
+                                <option value="InBetweenSeasonMixed">Either loosely use the TMDB data available in Shoko or fallback to using release dates to place specials</option>
                                 <option value="Excluded">Exclude specials from the seasons</option>
                             </select>
                             <div class="fieldDescription selectFieldDescription">Determines how specials are placed within seasons. <strong>Warning:</strong> Modifying this setting requires a recreation (read as; delete existing then create a new) of any libraries using this plugin — otherwise you <strong>will</strong> have mixed metadata.</div>
