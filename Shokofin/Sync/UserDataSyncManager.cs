@@ -467,11 +467,14 @@ public class UserDataSyncManager
 
     private Task SyncSeries(Series series, UserConfiguration userConfig, UserItemData? userData, SyncDirection direction, string seriesId)
     {
+        var user = UserManager.GetUserById(userConfig.UserId);
+        if (user == null) {
+            return Task.CompletedTask;
+        }
         // Try to load the user-data if it was not provided
-        userData ??= UserDataManager.GetUserData(userConfig.UserId, series);
+        userData ??= UserDataManager.GetUserData(user, series);
         // Create some new user-data if none exists.
         userData ??= new UserItemData {
-                UserId = userConfig.UserId,
                 Key = series.GetUserDataKeys()[0],
             };
 
@@ -482,11 +485,14 @@ public class UserDataSyncManager
 
     private Task SyncSeason(Season season, UserConfiguration userConfig, UserItemData? userData, SyncDirection direction, string seriesId)
     {
+        var user = UserManager.GetUserById(userConfig.UserId);
+        if (user == null) {
+            return Task.CompletedTask;
+        }
         // Try to load the user-data if it was not provided
-        userData ??= UserDataManager.GetUserData(userConfig.UserId, season);
+        userData ??= UserDataManager.GetUserData(user, season);
         // Create some new user-data if none exists.
         userData ??= new UserItemData {
-                UserId = userConfig.UserId,
                 Key = season.GetUserDataKeys()[0],
             };
 
@@ -497,15 +503,18 @@ public class UserDataSyncManager
 
     private Task SyncVideo(Video video, UserConfiguration userConfig, UserItemData? userData, SyncDirection direction, string episodeId)
     {
+        var user = UserManager.GetUserById(userConfig.UserId);
+        if (user == null) {
+            return Task.CompletedTask;
+        }
         if (!userConfig.SyncRestrictedVideos && video.CustomRating == "XXX") {
             Logger.LogTrace("Skipped {SyncDirection} user data for video {VideoName}. (Episode={EpisodeId})", direction.ToString(), video.Name, episodeId);
             return Task.CompletedTask;
         }
         // Try to load the user-data if it was not provided
-        userData ??= UserDataManager.GetUserData(userConfig.UserId, video);
+        userData ??= UserDataManager.GetUserData(user, video);
         // Create some new user-data if none exists.
         userData ??= new UserItemData {
-                UserId = userConfig.UserId,
                 Key = video.GetUserDataKeys()[0],
                 LastPlayedDate = null,
             };
@@ -522,11 +531,15 @@ public class UserDataSyncManager
     private async Task SyncVideo(Video video, UserConfiguration userConfig, SyncDirection direction, string fileId, string episodeId)
     {
         try {
+            var user = UserManager.GetUserById(userConfig.UserId);
+            if (user == null) {
+                return;
+            }
             if (!userConfig.SyncRestrictedVideos && video.CustomRating == "XXX") {
                 Logger.LogTrace("Skipped {SyncDirection} user data for video {VideoName}. (File={FileId},Episode={EpisodeId})", direction.ToString(), video.Name, fileId, episodeId);
                 return;
             }
-            var localUserStats = UserDataManager.GetUserData(userConfig.UserId, video);
+            var localUserStats = UserDataManager.GetUserData(user, video);
             var remoteUserStats = await APIClient.GetFileUserStats(fileId, userConfig.Token);
             bool isInSync = UserDataEqualsFileUserStats(localUserStats, remoteUserStats);
             Logger.LogInformation("{SyncDirection} user data for video {VideoName}. (User={UserId},File={FileId},Episode={EpisodeId},Local={HaveLocal},Remote={HaveRemote},InSync={IsInSync})", direction.ToString(), video.Name, userConfig.UserId, fileId, episodeId, localUserStats != null, remoteUserStats != null, isInSync);
@@ -560,12 +573,12 @@ public class UserDataSyncManager
                         break;
                     // Create a new local stats entry if there is no local entry.
                     if (localUserStats == null) {
-                        UserDataManager.SaveUserData(userConfig.UserId, video, localUserStats = remoteUserStats.ToUserData(video, userConfig.UserId), UserDataSaveReason.Import, CancellationToken.None);
+                        UserDataManager.SaveUserData(user, video, localUserStats = remoteUserStats.ToUserData(video), UserDataSaveReason.Import, CancellationToken.None);
                         Logger.LogDebug("{SyncDirection} user data for video {VideoName} successful. (User={UserId},File={FileId},Episode={EpisodeId})", SyncDirection.Import.ToString(), video.Name, userConfig.UserId, fileId, episodeId);
                     }
                     // Else merge the remote stats into the local stats entry.
                     else if (!localUserStats.LastPlayedDate.HasValue || remoteUserStats.LastUpdatedAt > localUserStats.LastPlayedDate.Value) {
-                        UserDataManager.SaveUserData(userConfig.UserId, video, localUserStats.MergeWithFileUserStats(remoteUserStats), UserDataSaveReason.Import, CancellationToken.None);
+                        UserDataManager.SaveUserData(user, video, localUserStats.MergeWithFileUserStats(remoteUserStats), UserDataSaveReason.Import, CancellationToken.None);
                         Logger.LogDebug("{SyncDirection} user data for video {VideoName} successful. (User={UserId},File={FileId},Episode={EpisodeId})", SyncDirection.Import.ToString(), video.Name, userConfig.UserId, fileId, episodeId);
                     }
                     break;
@@ -599,7 +612,7 @@ public class UserDataSyncManager
                     }
                     // Else import if the remote state is fresher then the local state.
                     else if (localUserStats.LastPlayedDate.Value < remoteUserStats.LastUpdatedAt) {
-                        UserDataManager.SaveUserData(userConfig.UserId, video, localUserStats.MergeWithFileUserStats(remoteUserStats), UserDataSaveReason.Import, CancellationToken.None);
+                        UserDataManager.SaveUserData(user, video, localUserStats.MergeWithFileUserStats(remoteUserStats), UserDataSaveReason.Import, CancellationToken.None);
                         Logger.LogDebug("{SyncDirection} user data for video {VideoName} successful. (User={UserId},File={FileId},Episode={EpisodeId})", SyncDirection.Import.ToString(), video.Name, userConfig.UserId, fileId, episodeId);
                     }
                     break;

@@ -93,11 +93,10 @@ public static class SyncExtensions
         return userData;
     }
 
-    public static UserItemData ToUserData(this File.UserStats userStats, Video video, Guid userId)
+    public static UserItemData ToUserData(this File.UserStats userStats, Video video)
     {
         return new UserItemData
         {
-            UserId = userId,
             Key = video.GetUserDataKeys()[0],
             LastPlayedDate = null,
         }.MergeWithFileUserStats(userStats);
