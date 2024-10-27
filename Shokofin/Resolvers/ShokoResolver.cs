@@ -223,16 +223,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
                     File.Delete(keepFile);
                 }
 
-                // TODO: uncomment the code snippet once we reach JF 10.10.
-                // return new() { Items = items, ExtraFiles = new() };
-
-                // TODO: Remove these two hacks once we have proper support for adding multiple series at once.
-                if (!items.Any(i => i is Movie) && items.Count > 0) {
-                    fileInfoList.Clear();
-                    fileInfoList.AddRange(items.OrderBy(s => int.Parse(s.Path.GetAttributeValue(ShokoSeriesId.Name)!)).Select(s => FileSystem.GetFileSystemInfo(s.Path)));
-                }
-
-                return new() { Items = items.Where(i => i is Movie).ToList(), ExtraFiles = items.OfType<TvSeries>().Select(s => FileSystem.GetFileSystemInfo(s.Path)).ToList() };
+                return new() { Items = items, ExtraFiles = [] };
             }
 
             return null;
