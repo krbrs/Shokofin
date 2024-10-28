@@ -280,8 +280,11 @@ public class MediaFolderConfigurationService
         await LockObj.WaitAsync();
         try {
             var allVirtualFolders = LibraryManager.GetVirtualFolders();
-            if (allVirtualFolders.FirstOrDefault(p => p.Locations.Contains(mediaFolder.Path) && (collectionType is CollectionType.unknown || p.CollectionType.ConvertToCollectionType() == collectionType)) is not { } library || !Guid.TryParse(library.ItemId, out var libraryId))
+            if (allVirtualFolders.FirstOrDefault(p => p.Locations.Contains(mediaFolder.Path) && (collectionType is CollectionType.unknown || p.CollectionType.ConvertToCollectionType() == collectionType)) is not { } library)
                 throw new Exception($"Unable to find any library to use for media folder \"{mediaFolder.Path}\"");
+
+            if (string.IsNullOrEmpty(library.ItemId) || !Guid.TryParse(library.ItemId, out var libraryId))
+                throw new Exception($"Unable to parse library id for library \"{library.Name}\" to use for media folder \"{mediaFolder.Path}\". This is not a plugin bug, but the media folder is missing from the default view in Jellyfin.");
 
             if (ShouldGenerateAllConfigurations)
             {
@@ -302,10 +305,16 @@ public class MediaFolderConfigurationService
     {
         var filteredVirtualFolders = allVirtualFolders
             .Where(virtualFolder =>
-                virtualFolder is { ItemId: not null, LibraryOptions: { } } &&
-                virtualFolder.CollectionType.ConvertToCollectionType() is null or CollectionType.movies or CollectionType.tvshows &&
-                Lookup.IsEnabledForLibraryOptions(virtualFolder.LibraryOptions, out _)
-            )
+            {
+                if (virtualFolder is not { ItemId: not null, LibraryOptions: { } })
+                {
+                    Logger.LogWarning("Skipping virtual folder {Name} because it has no ItemId or LibraryOptions.", virtualFolder.Name);
+                    return false;
+                }
+
+                return virtualFolder.CollectionType.ConvertToCollectionType() is null or CollectionType.movies or CollectionType.tvshows &&
+                    Lookup.IsEnabledForLibraryOptions(virtualFolder.LibraryOptions, out _);
+            })
             .ToList();
         Logger.LogDebug("Found {Count} out of {TotalCount} libraries to check media folder configurations for.", filteredVirtualFolders.Count, allVirtualFolders.Count);
         var config = Plugin.Instance.Configuration;
