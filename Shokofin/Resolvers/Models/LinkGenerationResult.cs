@@ -14,19 +14,19 @@ public class LinkGenerationResult
     public ConcurrentBag<string> RemovedPaths { get; init; } = [];
 
     public int Total =>
-        TotalVideos + TotalSubtitles;
+        TotalVideos + TotalSubtitles + TotalTrickplayDirectories;
 
     public int Created =>
-        CreatedVideos + CreatedSubtitles;
+        CreatedVideos + CreatedSubtitles + CreatedTrickplayDirectories;
 
     public int Fixed =>
-        FixedVideos + FixedSubtitles;
+        FixedVideos + FixedSubtitles + FixedTrickplayDirectories;
 
     public int Skipped =>
-        SkippedVideos + SkippedSubtitles;
+        SkippedVideos + SkippedSubtitles + SkippedTrickplayDirectories;
 
     public int Removed =>
-        RemovedVideos + RemovedSubtitles + RemovedNfos;
+        RemovedVideos + RemovedSubtitles + RemovedNfos + RemovedTrickplayDirectories;
 
     public int TotalVideos =>
         CreatedVideos + FixedVideos + SkippedVideos;
@@ -50,25 +50,40 @@ public class LinkGenerationResult
 
     public int RemovedSubtitles { get; set; }
 
+    public int TotalTrickplayDirectories =>
+        CreatedTrickplayDirectories + FixedTrickplayDirectories + SkippedTrickplayDirectories;
+
+    public int CreatedTrickplayDirectories { get; set; }
+
+    public int FixedTrickplayDirectories { get; set; }
+
+    public int SkippedTrickplayDirectories { get; set; }
+
+    public int RemovedTrickplayDirectories { get; set; }
+
     public int RemovedNfos { get; set; }
 
     public void Print(ILogger logger, string path)
     {
         var timeSpent = DateTime.Now - CreatedAt;
         logger.LogInformation(
-            "Created {CreatedTotal} ({CreatedMedia},{CreatedSubtitles}), fixed {FixedTotal} ({FixedMedia},{FixedSubtitles}), skipped {SkippedTotal} ({SkippedMedia},{SkippedSubtitles}), and removed {RemovedTotal} ({RemovedMedia},{RemovedSubtitles},{RemovedNFO}) entries in folder at {Path} in {TimeSpan} (Total={Total})",
+            "Created {CreatedTotal} ({CreatedMedia},{CreatedSubtitles},{CreatedTrickplay}), fixed {FixedTotal} ({FixedMedia},{FixedSubtitles},{FixedTrickplay}), skipped {SkippedTotal} ({SkippedMedia},{SkippedSubtitles},{SkippedTrickplay}), and removed {RemovedTotal} ({RemovedMedia},{RemovedSubtitles},{RemovedTrickplay},{RemovedNFO}) entries in folder at {Path} in {TimeSpan} (Total={Total})",
             Created,
             CreatedVideos,
             CreatedSubtitles,
+            CreatedTrickplayDirectories,
             Fixed,
             FixedVideos,
             FixedSubtitles,
+            FixedTrickplayDirectories,
             Skipped,
             SkippedVideos,
             SkippedSubtitles,
+            SkippedTrickplayDirectories,
             Removed,
             RemovedVideos,
             RemovedSubtitles,
+            RemovedTrickplayDirectories,
             RemovedNfos,
             path,
             timeSpent,
@@ -81,7 +96,7 @@ public class LinkGenerationResult
         // Re-use the same instance so the parallel execution will share the same bag.
         var paths = a.Paths;
         foreach (var path in b.Paths)
-            a.Paths.Add(path);
+            paths.Add(path);
 
         var removedPaths = a.RemovedPaths;
         foreach (var path in b.RemovedPaths)
@@ -100,6 +115,10 @@ public class LinkGenerationResult
             FixedSubtitles = a.FixedSubtitles + b.FixedSubtitles,
             SkippedSubtitles = a.SkippedSubtitles + b.SkippedSubtitles,
             RemovedSubtitles = a.RemovedSubtitles + b.RemovedSubtitles,
+            CreatedTrickplayDirectories = a.CreatedTrickplayDirectories + b.CreatedTrickplayDirectories,
+            FixedTrickplayDirectories = a.FixedTrickplayDirectories + b.FixedTrickplayDirectories,
+            SkippedTrickplayDirectories = a.SkippedTrickplayDirectories + b.SkippedTrickplayDirectories,
+            RemovedTrickplayDirectories = a.RemovedTrickplayDirectories + b.RemovedTrickplayDirectories,
             RemovedNfos = a.RemovedNfos + b.RemovedNfos,
         };
     }

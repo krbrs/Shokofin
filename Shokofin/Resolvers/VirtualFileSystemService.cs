@@ -926,6 +926,46 @@ public class VirtualFileSystemService
                     }
                 }
 
+                var trickplayLocation = Path.ChangeExtension(sourceLocation, ".trickplay");
+                if (File.Exists(trickplayLocation)) {
+                    var symbolicName = Path.GetFileNameWithoutExtension(symbolicLink);
+                    var symbolicTrickplay = Path.Join(symbolicDirectory, symbolicName + ".trickplay");
+                    result.Paths.Add(symbolicTrickplay);
+                    if (!File.Exists(symbolicTrickplay)) {
+                        result.CreatedTrickplayDirectories++;
+                        if (!preview) {
+                            Logger.LogDebug("Linking {Link} → {LinkTarget}", symbolicTrickplay, trickplayLocation);
+                            Directory.CreateSymbolicLink(symbolicTrickplay, trickplayLocation);
+                        }
+                    }
+                    else {
+                        var shouldFix = false;
+                        try {
+                            var nextTarget = Directory.ResolveLinkTarget(symbolicTrickplay, false);
+                            if (!string.Equals(trickplayLocation, nextTarget?.FullName)) {
+                                shouldFix = true;
+                                if (!preview)
+                                    Logger.LogWarning("Fixing broken symbolic link {Link} → {LinkTarget} (RealTarget={RealTarget})", symbolicTrickplay, trickplayLocation, nextTarget?.FullName);
+                            }
+                        }
+                        catch (Exception ex) {
+                            shouldFix = true;
+                            if (!preview)
+                                Logger.LogError(ex, "Encountered an error trying to resolve symbolic link {Link}", symbolicTrickplay);
+                        }
+                        if (shouldFix) {
+                            result.FixedTrickplayDirectories++;
+                            if (!preview) {
+                                Directory.Delete(symbolicTrickplay);
+                                Directory.CreateSymbolicLink(symbolicTrickplay, trickplayLocation);
+                            }
+                        }
+                        else {
+                            result.SkippedTrickplayDirectories++;
+                        }
+                    }
+                }
+
                 if (subtitleLinks.Count > 0) {
                     var symbolicName = Path.GetFileNameWithoutExtension(symbolicLink);
                     foreach (var subtitleSource in subtitleLinks) {
@@ -1019,7 +1059,7 @@ public class VirtualFileSystemService
         var previousStep = start;
         var result = new LinkGenerationResult();
         var searchFiles = NamingOptions.VideoFileExtensions.Concat(NamingOptions.SubtitleFileExtensions).Append(".nfo").ToHashSet();
-        var toBeRemoved = FileSystem.GetFilePaths(directoryToClean, true)
+        var filesToBeRemoved = FileSystem.GetFilePaths(directoryToClean, true)
             .Select(path => (path, extName: Path.GetExtension(path)))
             .Where(tuple => !string.IsNullOrEmpty(tuple.extName) && searchFiles.Contains(tuple.extName))
             .ExceptBy(allKnownPaths, tuple => tuple.path)
@@ -1027,10 +1067,10 @@ public class VirtualFileSystemService
 
         var nextStep = DateTime.Now;
         if (!preview)
-            Logger.LogDebug("Found {FileCount} files to remove in {DirectoryToClean} in {TimeSpent}", toBeRemoved.Count, directoryToClean, nextStep - previousStep);
+            Logger.LogDebug("Found {FileCount} files to remove in {DirectoryToClean} in {TimeSpent}", filesToBeRemoved.Count, directoryToClean, nextStep - previousStep);
         previousStep = nextStep;
 
-        foreach (var (location, extName) in toBeRemoved) {
+        foreach (var (location, extName) in filesToBeRemoved) {
             if (extName is ".nfo") {
                 if (!preview) {
                     try {
@@ -1046,9 +1086,9 @@ public class VirtualFileSystemService
                 result.RemovedNfos++;
             }
             else if (NamingOptions.SubtitleFileExtensions.Contains(extName)) {
-                if (TryMoveSubtitleFile(allKnownPaths, location, preview)) {
+                if (TryMoveSubtitleFile(allKnownPaths, location, preview, out var skip)) {
                     result.Paths.Add(location);
-                    if (preview) {
+                    if (skip) {
                         result.SkippedSubtitles++;
                     }
                     else {
@@ -1092,6 +1132,49 @@ public class VirtualFileSystemService
             }
         }
 
+        nextStep = DateTime.Now;
+        if (!preview) {
+            Logger.LogTrace("Removed {FileCount} files in {DirectoryToClean} in {TimeSpent} (Total={TotalSpent})", result.Removed, directoryToClean, nextStep - previousStep, nextStep - start);
+            Logger.LogDebug("Looking for directories to remove in folder at {Path}", directoryToClean);
+        }
+        previousStep = nextStep;
+
+        var searchDirectories = new HashSet<string>() { ".trickplay" };
+        var directoriesToBeRemoved = FileSystem.GetDirectoryPaths(directoryToClean, true)
+            .Select(path => (path, extName: Path.GetExtension(path)))
+            .Where(tuple => !string.IsNullOrEmpty(tuple.extName) && searchDirectories.Contains(tuple.extName))
+            .ExceptBy(allKnownPaths, tuple => tuple.path)
+            .ToList();
+
+        if (!preview)
+            Logger.LogDebug("Found {DirectoryCount} directories to remove in {DirectoryToClean} in {TimeSpent}", directoriesToBeRemoved.Count, directoryToClean, nextStep - previousStep);
+
+        foreach (var (location, extName) in directoriesToBeRemoved) {
+            if (TryMoveTrickplayDirectory(allKnownPaths, location, preview, out var skip)) {
+                    result.Paths.Add(location);
+                    if (skip) {
+                        result.SkippedTrickplayDirectories++;
+                    }
+                    else {
+                        result.FixedTrickplayDirectories++;
+                    }
+                    continue;
+                }
+
+                if (!preview) {
+                    try {
+                        Logger.LogTrace("Removing trickplay directory at {Path}", location);
+                        Directory.Delete(location, recursive: true);
+                    }
+                    catch (Exception ex) {
+                        Logger.LogError(ex, "Encountered an error trying to remove {FilePath}", location);
+                        continue;
+                    }
+                }
+                result.RemovedPaths.Add(location);
+                result.RemovedTrickplayDirectories++;
+        }
+
         if (preview)
             return result;
 
@@ -1100,7 +1183,8 @@ public class VirtualFileSystemService
         previousStep = nextStep;
 
         var cleaned = 0;
-        var directoriesToClean = toBeRemoved
+        var directoriesToClean = filesToBeRemoved
+            .Concat(directoriesToBeRemoved)
             .SelectMany(tuple => {
                 var path = Path.GetDirectoryName(tuple.path);
                 var paths = new List<(string path, int level)>();
@@ -1120,7 +1204,7 @@ public class VirtualFileSystemService
             .ToList();
 
         nextStep = DateTime.Now;
-        Logger.LogDebug("Found {DirectoryCount} directories to potentially clean in {DirectoryToClean} in {TimeSpent} (Total={TotalSpent})", toBeRemoved.Count, directoryToClean, nextStep - previousStep, nextStep - start);
+        Logger.LogDebug("Found {DirectoryCount} directories to potentially clean in {DirectoryToClean} in {TimeSpent} (Total={TotalSpent})", directoriesToClean.Count, directoryToClean, nextStep - previousStep, nextStep - start);
         previousStep = nextStep;
 
         foreach (var directoryPath in directoriesToClean) {
@@ -1136,18 +1220,24 @@ public class VirtualFileSystemService
         return result;
     }
 
-    private bool TryMoveSubtitleFile(IReadOnlyList<string> allKnownPaths, string subtitlePath, bool preview)
+    private bool TryMoveSubtitleFile(IReadOnlyList<string> allKnownPaths, string subtitlePath, bool preview, out bool skip)
     {
-        if (!TryGetIdsForPath(subtitlePath, out var seriesId, out var fileId))
+        if (!TryGetIdsForPath(subtitlePath, out var seriesId, out var fileId)){
+            skip = false;
             return false;
+        }
 
-        var symbolicLink = allKnownPaths.FirstOrDefault(knownPath => TryGetIdsForPath(knownPath, out var knownSeriesId, out var knownFileId) && seriesId == knownSeriesId && fileId == knownFileId);
-        if (string.IsNullOrEmpty(symbolicLink))
+        var symbolicLink = allKnownPaths.FirstOrDefault(knownPath => NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(knownPath)) && TryGetIdsForPath(knownPath, out var knownSeriesId, out var knownFileId) && seriesId == knownSeriesId && fileId == knownFileId);
+        if (string.IsNullOrEmpty(symbolicLink)){
+            skip = false;
             return false;
+        }
 
         var sourcePathWithoutExt = symbolicLink[..^Path.GetExtension(symbolicLink).Length];
-        if (!subtitlePath.StartsWith(sourcePathWithoutExt))
+        if (!subtitlePath.StartsWith(sourcePathWithoutExt)){
+            skip = false;
             return false;
+        }
 
         var extName = subtitlePath[sourcePathWithoutExt.Length..];
         string? realTarget = null;
@@ -1155,19 +1245,25 @@ public class VirtualFileSystemService
             realTarget = File.ResolveLinkTarget(symbolicLink, false)?.FullName;
         }
         catch { }
-        if (string.IsNullOrEmpty(realTarget))
+        if (string.IsNullOrEmpty(realTarget)){
+            skip = false;
             return false;
+        }
 
-        if (preview)
+        if (preview){
+            skip = true;
             return true;
+        }
 
         try {
             var currentTarget = File.ResolveLinkTarget(subtitlePath, false)?.FullName;
             if (!string.IsNullOrEmpty(currentTarget))
             {
                 // Just remove the link if the target doesn't exist.
-                if (!File.Exists(currentTarget))
+                if (!File.Exists(currentTarget)){
+                    skip = false;
                     return false;
+                }
 
                 // // This statement will never be true. Because it would never had hit this path if it were true.
                 // if (currentTarget == realTarget)
@@ -1180,17 +1276,132 @@ public class VirtualFileSystemService
         }
         catch (Exception ex) {
             Logger.LogWarning(ex, "Unable to check if {Path} is a symbolic link", subtitlePath);
+            skip = false;
             return false;
         }
 
         var realSubtitlePath = realTarget[..^Path.GetExtension(realTarget).Length] + extName;
-        if (!File.Exists(realSubtitlePath))
-            File.Move(subtitlePath, realSubtitlePath);
-        else
-            File.Delete(subtitlePath);
+        {
+            if (!File.Exists(realSubtitlePath)) {
+                try {
+                    File.Move(subtitlePath, realSubtitlePath);
+                }
+                catch (Exception) {
+                    Logger.LogWarning("Skipped moving {Path} to {RealPath} because we don't have permissions.", subtitlePath, realSubtitlePath);
+                    skip = true;
+                    return true;
+                }
+            }
+            else {
+                File.Delete(subtitlePath);
+            }
+        }
         File.CreateSymbolicLink(subtitlePath, realSubtitlePath);
 
+        skip = false;
         return true;
+    }
+
+    private bool TryMoveTrickplayDirectory(IReadOnlyList<string> allKnownPaths, string trickplayDirectory, bool preview, out bool skip)
+    {
+        if (!TryGetIdsForPath(trickplayDirectory, out var seriesId, out var fileId)) {
+            skip = false;
+            return false;
+        }
+
+        var linkToMove = allKnownPaths.FirstOrDefault(knownPath => NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(knownPath)) && TryGetIdsForPath(knownPath, out var knownSeriesId, out var knownFileId) && seriesId == knownSeriesId && fileId == knownFileId);
+        if (string.IsNullOrEmpty(linkToMove)){
+            skip = false;
+            return false;
+        }
+
+        var sourcePathWithoutExt = linkToMove[..^Path.GetExtension(linkToMove).Length];
+        if (!trickplayDirectory.StartsWith(sourcePathWithoutExt)){
+            skip = false;
+            return false;
+        }
+
+        var extName = trickplayDirectory[sourcePathWithoutExt.Length..];
+        string? realTarget = null;
+        try {
+            realTarget = Directory.ResolveLinkTarget(linkToMove, false)?.FullName;
+        }
+        catch { }
+        if (string.IsNullOrEmpty(realTarget)){
+            skip = false;
+            return false;
+        }
+
+        if (preview){
+            skip = true;
+            return true;
+        }
+
+        try {
+            var currentTarget = Directory.ResolveLinkTarget(trickplayDirectory, false)?.FullName;
+            if (!string.IsNullOrEmpty(currentTarget))
+            {
+                // Just remove the link if the target doesn't exist.
+                if (!Directory.Exists(currentTarget)){
+                    skip = false;
+                    return false;
+                }
+
+                // // This statement will never be true. Because it would never had hit this path if it were true.
+                // if (currentTarget == realTarget)
+                //     return true;
+
+                // Copy the link so we can move it to where it should be.
+                Directory.Delete(trickplayDirectory, recursive: true);
+                CopyDirectory(currentTarget, trickplayDirectory);
+            }
+        }
+        catch (Exception ex) {
+            Logger.LogWarning(ex, "Unable to check if {Path} is a symbolic link", trickplayDirectory);
+            skip = false;
+            return false;
+        }
+
+        var realPath = realTarget[..^Path.GetExtension(realTarget).Length] + extName;
+        if (!FileSystem.DirectoryExists(realPath)) {
+            try {
+                Directory.Move(trickplayDirectory, realPath);
+            }
+            catch (Exception) {
+                try {
+                    Directory.CreateDirectory(realPath);
+                }
+                catch (Exception) {
+                    Logger.LogDebug("Skipped moving {Directory} to {RealPath} because we don't have permissions.", trickplayDirectory, realPath);
+                    skip = true;
+                    return true;
+                }
+                CopyDirectory(trickplayDirectory, realPath);
+                Directory.Delete(trickplayDirectory, recursive: true);
+            }
+        }
+        else {
+            Directory.Delete(trickplayDirectory, recursive: true);
+        }
+        Directory.CreateSymbolicLink(trickplayDirectory, realPath);
+
+        skip = false;
+        return true;
+    }
+
+    private void CopyDirectory(string source, string destination)
+    {
+        if (!Directory.Exists(destination))
+            Directory.CreateDirectory(destination);
+
+        foreach (var file in FileSystem.GetFilePaths(source, true))
+        {
+            var newFile = Path.Combine(destination, file[(source.Length + 1)..]);
+            var directoryOfFile = Path.GetDirectoryName(newFile)!;
+            if (!FileSystem.DirectoryExists(directoryOfFile))
+                Directory.CreateDirectory(directoryOfFile);
+            File.Copy(file, newFile, true);
+        }
     }
 
     private static bool ShouldIgnoreVideo(string vfsPath, string path)
