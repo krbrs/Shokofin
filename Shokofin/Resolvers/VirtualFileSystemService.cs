@@ -1136,7 +1136,7 @@ public class VirtualFileSystemService
         return result;
     }
 
-    private static bool TryMoveSubtitleFile(IReadOnlyList<string> allKnownPaths, string subtitlePath, bool preview)
+    private bool TryMoveSubtitleFile(IReadOnlyList<string> allKnownPaths, string subtitlePath, bool preview)
     {
         if (!TryGetIdsForPath(subtitlePath, out var seriesId, out var fileId))
             return false;
@@ -1160,6 +1160,28 @@ public class VirtualFileSystemService
 
         if (preview)
             return true;
+
+        try {
+            var currentTarget = File.ResolveLinkTarget(subtitlePath, false)?.FullName;
+            if (!string.IsNullOrEmpty(currentTarget))
+            {
+                // Just remove the link if the target doesn't exist.
+                if (!File.Exists(currentTarget))
+                    return false;
+
+                // // This statement will never be true. Because it would never had hit this path if it were true.
+                // if (currentTarget == realTarget)
+                //     return true;
+
+                // Copy the link so we can move it to where it should be.
+                File.Delete(subtitlePath);
+                File.Copy(currentTarget, subtitlePath);
+            }
+        }
+        catch (Exception ex) {
+            Logger.LogWarning(ex, "Unable to check if {Path} is a symbolic link", subtitlePath);
+            return false;
+        }
 
         var realSubtitlePath = realTarget[..^Path.GetExtension(realTarget).Length] + extName;
         if (!File.Exists(realSubtitlePath))
