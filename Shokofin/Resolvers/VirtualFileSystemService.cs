@@ -1297,6 +1297,7 @@ public class VirtualFileSystemService
             }
         }
         File.CreateSymbolicLink(subtitlePath, realSubtitlePath);
+        Logger.LogDebug("Moved {Path} to {RealPath}", subtitlePath, realSubtitlePath);
 
         skip = false;
         return true;
@@ -1384,6 +1385,7 @@ public class VirtualFileSystemService
             Directory.Delete(trickplayDirectory, recursive: true);
         }
         Directory.CreateSymbolicLink(trickplayDirectory, realPath);
+        Logger.LogDebug("Moved {Path} to {RealPath}", trickplayDirectory, realPath);
 
         skip = false;
         return true;
