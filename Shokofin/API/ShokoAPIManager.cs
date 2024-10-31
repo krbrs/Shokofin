@@ -35,8 +35,6 @@ public class ShokoAPIManager : IDisposable
 
     private readonly ConcurrentDictionary<string, string> PathToSeriesIdDictionary = new();
 
-    private readonly ConcurrentDictionary<string, string> NameToSeriesIdDictionary = new();
-
     private readonly ConcurrentDictionary<string, List<string>> PathToEpisodeIdsDictionary = new();
 
     private readonly ConcurrentDictionary<string, (string FileId, string SeriesId)> PathToFileIdAndSeriesIdDictionary = new();
@@ -135,7 +133,6 @@ public class ShokoAPIManager : IDisposable
         PathToEpisodeIdsDictionary.Clear();
         PathToFileIdAndSeriesIdDictionary.Clear();
         PathToSeriesIdDictionary.Clear();
-        NameToSeriesIdDictionary.Clear();
         SeriesIdToDefaultSeriesIdDictionary.Clear();
         SeriesIdToCollectionIdDictionary.Clear();
         DataCache.Clear();
