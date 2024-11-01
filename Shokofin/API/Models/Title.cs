@@ -15,6 +15,7 @@ public class Title
     /// </summary>
     [JsonPropertyName("Language")]
     public string LanguageCode { get; set; } = "unk";
+
     /// <summary>
     /// AniDB series type. Only available on series titles.
     /// </summary>

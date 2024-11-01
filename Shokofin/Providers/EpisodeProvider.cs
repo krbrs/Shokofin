@@ -120,8 +120,8 @@ public class EpisodeProvider: IRemoteMetadataProvider<Episode, EpisodeInfo>, IHa
                 if (
                     // Movies
                     (series.Type == SeriesType.Movie && (episodeInfo.AniDB.Type == EpisodeType.Normal || episodeInfo.AniDB.Type == EpisodeType.Special)) ||
-                    // OVAs
-                    (series.AniDB.Type == SeriesType.OVA && episodeInfo.AniDB.Type == EpisodeType.Normal && episodeInfo.AniDB.EpisodeNumber == 1 && episodeInfo.Shoko.Name == "OVA")
+                    // All other ignored types.
+                    (episodeInfo.AniDB.Type is EpisodeType.Normal && episodeInfo.AniDB.EpisodeNumber == 1 && episodeInfo.AniDB.Titles.FirstOrDefault(title => title.LanguageCode == "en")?.Value is { } mainTitle && Text.IgnoredSubTitles.Contains(mainTitle))
                 ) {
                     string defaultSeriesTitle = series.Shoko.Name;
                     var (dTitle, aTitle) = Text.GetMovieTitles(episodeInfo, series, metadataLanguage);
@@ -143,8 +143,8 @@ public class EpisodeProvider: IRemoteMetadataProvider<Episode, EpisodeInfo>, IHa
             if (
                 // Movies
                 (series.Type == SeriesType.Movie && (episode.AniDB.Type == EpisodeType.Normal || episode.AniDB.Type == EpisodeType.Special)) ||
-                // OVAs
-                (series.AniDB.Type == SeriesType.OVA && episode.AniDB.Type == EpisodeType.Normal && episode.AniDB.EpisodeNumber == 1 && episode.Shoko.Name == "OVA")
+                // All other ignored types.
+                (episode.AniDB.Type is EpisodeType.Normal && episode.AniDB.EpisodeNumber == 1 && episode.AniDB.Titles.FirstOrDefault(title => title.LanguageCode == "en")?.Value is { } mainTitle && Text.IgnoredSubTitles.Contains(mainTitle))
             ) {
                 string defaultSeriesTitle = series.Shoko.Name;
                 (displayTitle, alternateTitle) = Text.GetMovieTitles(episode, series, metadataLanguage);
@@ -193,8 +193,8 @@ public class EpisodeProvider: IRemoteMetadataProvider<Episode, EpisodeInfo>, IHa
         Episode result;
         if (season != null) {
             result = new Episode {
-                Name = displayTitle,
-                OriginalTitle = alternateTitle,
+                Name = displayTitle ?? $"Episode {episodeNumber}",
+                OriginalTitle = alternateTitle ?? "",
                 IndexNumber = episodeNumber,
                 ParentIndexNumber = isSpecial ? 0 : seasonNumber,
                 AirsAfterSeasonNumber = airsAfterSeasonNumber,

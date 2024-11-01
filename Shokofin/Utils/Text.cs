@@ -7,7 +7,7 @@ using System.Text.RegularExpressions;
 
 namespace Shokofin.Utils;
 
-public static class Text
+public static partial class Text
 {
     private static readonly HashSet<char> PunctuationMarks = [
         // Common punctuation marks
@@ -59,7 +59,7 @@ public static class Text
         '⦎',   // right angle bracket
     ];
 
-    private static readonly HashSet<string> IgnoredSubTitles = new(StringComparer.InvariantCultureIgnoreCase) {
+    internal static readonly HashSet<string> IgnoredSubTitles = new(StringComparer.InvariantCultureIgnoreCase) {
         "Complete Movie",
         "Music Video",
         "OAD",
@@ -382,6 +382,9 @@ public static class Text
         return null;
     }
 
+    [GeneratedRegex(@"^(?:Special|Episode)\s+\d+$|^Part \d+ of \d+$|^(?:OVA|OAD|Movie|Complete Movie|Short Movie|TV Special|Music Video|Web)$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+    private static partial Regex EpisodeNameRegex();
+
     /// <summary>
     /// Get the first title available for the language, optionally using types
     /// to filter the list in addition to the metadata languages provided.
@@ -400,18 +403,17 @@ public static class Text
             if (titleList.Count == 0)
                 continue;
 
+            string? title = null;
             if (usingTypes) {
-                var title = titleList.FirstOrDefault(t => t.Type == TitleType.Official)?.Value;
+                title = titleList.FirstOrDefault(t => t.Type == TitleType.Official)?.Value;
                 if (string.IsNullOrEmpty(title) && Plugin.Instance.Configuration.TitleAllowAny)
                     title = titleList.FirstOrDefault()?.Value;
-                if (title != null)
-                    return title;
             }
             else {
-                var title = titles.FirstOrDefault()?.Value;
-                if (title != null)
-                    return title;
+                title = titles.FirstOrDefault()?.Value;
             }
+            if (!string.IsNullOrWhiteSpace(title) && !EpisodeNameRegex().IsMatch(title))
+                return title;
         }
         return null;
     }
