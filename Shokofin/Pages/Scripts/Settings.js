@@ -426,6 +426,8 @@ function applyFormToConfig(form, config) {
                     c.LibraryFilteringMode = form.querySelector("#MediaFolderLibraryFilteringMode").value;
                 }
             }
+
+            config.EXPERIMENTAL_MergeSeasons = form.querySelector("#EXPERIMENTAL_MergeSeasons").checked;
             break;
         }
 
@@ -496,8 +498,6 @@ function applyFormToConfig(form, config) {
             config.Misc_ShowInMenu = form.querySelector("#Misc_ShowInMenu").checked;
             config.IgnoredFolders = ignoredFolders;
             form.querySelector("#IgnoredFolders").value = ignoredFolders.join(", ");
-
-            config.EXPERIMENTAL_MergeSeasons = form.querySelector("#EXPERIMENTAL_MergeSeasons").checked;
             break;
         }
     }
@@ -589,6 +589,8 @@ async function applyConfigToForm(form, config) {
             form.querySelector("#MediaFolderSelector").innerHTML = `<option value="">Click here to select a library</option>` + libraries
                 .map((library) => `<option value="${library.LibraryId}">${library.LibraryName}${config.ExpertMode ? ` (${library.LibraryId})` : ""}</option>`)
                 .join("");
+
+            form.querySelector("#EXPERIMENTAL_MergeSeasons").checked = config.EXPERIMENTAL_MergeSeasons || false;
             break;
         }
 
@@ -653,8 +655,6 @@ async function applyConfigToForm(form, config) {
         case "misc": {
             form.querySelector("#Misc_ShowInMenu").checked = config.Misc_ShowInMenu;
             form.querySelector("#IgnoredFolders").value = config.IgnoredFolders.join();
-
-            form.querySelector("#EXPERIMENTAL_MergeSeasons").checked = config.EXPERIMENTAL_MergeSeasons || false;
             break;
         }
     }
