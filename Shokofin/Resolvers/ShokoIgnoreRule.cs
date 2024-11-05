@@ -74,6 +74,12 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
             if (!Lookup.IsEnabledForItem(parent, out var isSoleProvider))
                 return false;
 
+            // Don't even bother continuing if the file system entry is matching one of the ignore patterns.
+            if (IgnorePatterns.ShouldIgnore(fileInfo.FullName)) {
+                Logger.LogTrace("Skipped ignored path {Path}", fileInfo.FullName);
+                return true;
+            }
+
             trackerId = Plugin.Instance.Tracker.Add($"Should ignore path \"{fileInfo.FullName}\".");
             if (fileInfo.IsDirectory && Plugin.Instance.IgnoredFolders.Contains(Path.GetFileName(fileInfo.FullName).ToLowerInvariant())) {
                 Logger.LogDebug("Skipped excluded folder at path {Path}", fileInfo.FullName);

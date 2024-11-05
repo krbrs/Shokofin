@@ -404,10 +404,7 @@ public class MediaFolderConfigurationService
         }
         else {
             var foundLocations = new List<(int, string)>();
-            var samplePaths = FileSystem.GetFilePaths(mediaFolder.Path, true)
-                .Where(path => NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(path)))
-                .Take(101) // 101 as a tie breaker
-                .ToList();
+            var samplePaths = GetSamplePaths(mediaFolder.Path).ToList();
 
             Logger.LogDebug("Asking remote server if it knows any of the {Count} sampled files in {Path}. (Library={LibraryId})", samplePaths.Count > 100 ? 100 : samplePaths.Count, mediaFolder.Path, libraryId);
             foreach (var path in samplePaths) {
@@ -478,6 +475,53 @@ public class MediaFolderConfigurationService
         ConfigurationAdded?.Invoke(null, new(mediaFolderConfig, mediaFolder));
 
         return mediaFolderConfig;
+    }
+
+    /// <summary>
+    /// Max number of sample paths to return. We use an odd number as a tie
+    /// breaker in case of multiple different matches.
+    /// </summary>
+    private const int MaxSamplePaths = 101;
+
+    /// <summary>
+    /// Gets the sample paths for the given media folder.
+    /// </summary>
+    /// <param name="mediaFolder">The media folder to get the sample paths
+    /// for.</param>
+    /// <returns>The sample paths for the given media folder.</returns> 
+    private IEnumerable<string> GetSamplePaths(string mediaFolder)
+    {
+        var count = 0;
+        var rootFiles = FileSystem.GetFilePaths(mediaFolder, false);
+        foreach (var filePath in rootFiles)
+        {
+            if (IgnorePatterns.ShouldIgnore(filePath))
+                continue;
+
+            yield return filePath;
+
+            if (++count == MaxSamplePaths)
+                yield break;
+        }
+
+        var rootFolders = FileSystem.GetDirectoryPaths(mediaFolder, false);
+        foreach (var directoryPath in rootFolders)
+        {
+            if (IgnorePatterns.ShouldIgnore(directoryPath))
+                continue;
+
+            var files = FileSystem.GetFilePaths(directoryPath, true);
+            foreach (var filePath in files)
+            {
+                if (IgnorePatterns.ShouldIgnore(filePath))
+                    continue;
+
+                yield return filePath;
+
+                if (++count == MaxSamplePaths)
+                    yield break;
+            }
+        }
     }
 
     #endregion
