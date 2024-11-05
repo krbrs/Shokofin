@@ -242,27 +242,27 @@ public class Ordering
                 if (string.IsNullOrEmpty(title))
                     return null;
                 // Interview
-                if (title.Contains("interview", System.StringComparison.OrdinalIgnoreCase))
+                if (title.Contains("interview", StringComparison.OrdinalIgnoreCase))
                     return ExtraType.Interview;
                 // Cinema/theatrical intro/outro
                 if (
-                    (title.StartsWith("cinema ", System.StringComparison.OrdinalIgnoreCase) || title.StartsWith("theatrical ", System.StringComparison.OrdinalIgnoreCase)) &&
-                    (title.Contains("intro", System.StringComparison.OrdinalIgnoreCase) || title.Contains("outro", System.StringComparison.OrdinalIgnoreCase)) ||
-                    title.Contains("manners movie", System.StringComparison.OrdinalIgnoreCase)
+                    (title.StartsWith("cinema ", StringComparison.OrdinalIgnoreCase) || title.StartsWith("theatrical ", StringComparison.OrdinalIgnoreCase)) &&
+                    (title.Contains("intro", StringComparison.OrdinalIgnoreCase) || title.Contains("outro", StringComparison.OrdinalIgnoreCase)) ||
+                    title.Contains("manners movie", StringComparison.OrdinalIgnoreCase)
                 )
                     return ExtraType.Clip;
                 // Behind the Scenes
-                if (title.Contains("behind the scenes", System.StringComparison.OrdinalIgnoreCase))
+                if (title.Contains("behind the scenes", StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("making of", System.StringComparison.OrdinalIgnoreCase))
+                if (title.Contains("making of", StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("music in", System.StringComparison.OrdinalIgnoreCase))
+                if (title.Contains("music in", StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("advance screening", System.StringComparison.OrdinalIgnoreCase))
+                if (title.Contains("advance screening", StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("premiere", System.StringComparison.OrdinalIgnoreCase))
+                if (title.Contains("premiere", StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("talk show", System.StringComparison.OrdinalIgnoreCase))
+                if (title.Contains("talk show", StringComparison.OrdinalIgnoreCase))
                     return ExtraType.Featurette;
                 return null;
             }
