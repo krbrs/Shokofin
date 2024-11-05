@@ -430,7 +430,7 @@ public class UserDataSyncManager
                 break;
             }
             case Season season: {
-                if (!Lookup.TryGetSeriesIdFor(season, out var seriesId))
+                if (!(Lookup.IsEnabledForItem(season) && Lookup.TryGetSeriesIdFor(season, out var seriesId)))
                     return;
 
                 foreach (var userConfig in Plugin.Instance.Configuration.UserList) {
@@ -445,7 +445,7 @@ public class UserDataSyncManager
                 break;
             }
             case Series series: {
-                if (!Lookup.TryGetSeriesIdFor(series, out var seriesId))
+                if (!(Lookup.IsEnabledForItem(series) && Lookup.TryGetSeriesIdFor(series, out var seriesId)))
                     return;
 
                 foreach (var userConfig in Plugin.Instance.Configuration.UserList) {
