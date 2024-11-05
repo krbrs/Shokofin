@@ -415,7 +415,7 @@ public class UserDataSyncManager
 
         switch (e.Item) {
             case Video video: {
-                if (!(Lookup.TryGetFileIdFor(video, out var fileId) && Lookup.TryGetEpisodeIdFor(video, out var episodeId)))
+                if (!(Lookup.IsEnabledForItem(video) && Lookup.TryGetFileIdFor(video, out var fileId) && Lookup.TryGetEpisodeIdFor(video, out var episodeId)))
                     return;
 
                 foreach (var userConfig in Plugin.Instance.Configuration.UserList) {
@@ -532,9 +532,9 @@ public class UserDataSyncManager
     {
         try {
             var user = UserManager.GetUserById(userConfig.UserId);
-            if (user == null) {
+            if (user == null)
                 return;
-            }
+
             if (!userConfig.SyncRestrictedVideos && video.CustomRating == "XXX") {
                 Logger.LogTrace("Skipped {SyncDirection} user data for video {VideoName}. (File={FileId},Episode={EpisodeId})", direction.ToString(), video.Name, fileId, episodeId);
                 return;
