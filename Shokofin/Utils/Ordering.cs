@@ -252,16 +252,18 @@ public class Ordering
                 )
                     return ExtraType.Clip;
                 // Behind the Scenes
-                if (title.Contains("behind the scenes", System.StringComparison.CurrentCultureIgnoreCase))
+                if (title.Contains("behind the scenes", System.StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("making of", System.StringComparison.CurrentCultureIgnoreCase))
+                if (title.Contains("making of", System.StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("music in", System.StringComparison.CurrentCultureIgnoreCase))
+                if (title.Contains("music in", System.StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("advance screening", System.StringComparison.CurrentCultureIgnoreCase))
+                if (title.Contains("advance screening", System.StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
-                if (title.Contains("premiere", System.StringComparison.CurrentCultureIgnoreCase))
+                if (title.Contains("premiere", System.StringComparison.OrdinalIgnoreCase))
                     return ExtraType.BehindTheScenes;
+                if (title.Contains("talk show", System.StringComparison.OrdinalIgnoreCase))
+                    return ExtraType.Featurette;
                 return null;
             }
             default:
