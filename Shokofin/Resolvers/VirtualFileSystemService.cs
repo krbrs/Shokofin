@@ -927,11 +927,11 @@ public class VirtualFileSystemService
                 }
 
                 var trickplayLocation = Path.ChangeExtension(sourceLocation, ".trickplay");
-                if (File.Exists(trickplayLocation)) {
+                if (Directory.Exists(trickplayLocation)) {
                     var symbolicName = Path.GetFileNameWithoutExtension(symbolicLink);
                     var symbolicTrickplay = Path.Join(symbolicDirectory, symbolicName + ".trickplay");
                     result.Paths.Add(symbolicTrickplay);
-                    if (!File.Exists(symbolicTrickplay)) {
+                    if (!Directory.Exists(symbolicTrickplay)) {
                         result.CreatedTrickplayDirectories++;
                         if (!preview) {
                             Logger.LogDebug("Linking {Link} → {LinkTarget}", symbolicTrickplay, trickplayLocation);
