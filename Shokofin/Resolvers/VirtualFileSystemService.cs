@@ -956,7 +956,12 @@ public class VirtualFileSystemService
                         if (shouldFix) {
                             result.FixedTrickplayDirectories++;
                             if (!preview) {
-                                Directory.Delete(symbolicTrickplay);
+                                if ((File.GetAttributes(symbolicTrickplay) & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint) {
+                                    File.Delete(symbolicTrickplay);
+                                }
+                                else {
+                                    Directory.Delete(symbolicTrickplay, recursive: true);
+                                }
                                 Directory.CreateSymbolicLink(symbolicTrickplay, trickplayLocation);
                             }
                         }
@@ -1054,23 +1059,23 @@ public class VirtualFileSystemService
         }
 
         if (!preview)
-            Logger.LogDebug("Looking for files to remove in folder at {Path}", directoryToClean);
+            Logger.LogDebug("Looking for file system entries to remove in folder: {Path}", directoryToClean);
         var start = DateTime.Now;
         var previousStep = start;
         var result = new LinkGenerationResult();
-        var searchFiles = NamingOptions.VideoFileExtensions.Concat(NamingOptions.SubtitleFileExtensions).Append(".nfo").ToHashSet();
-        var filesToBeRemoved = FileSystem.GetFilePaths(directoryToClean, true)
+        var searchExtensions = NamingOptions.VideoFileExtensions.Concat(NamingOptions.SubtitleFileExtensions).Concat([".nfo", ".trickplay"]).ToHashSet();
+        var entriesToBeRemoved = FileSystem.GetFileSystemEntryPaths(directoryToClean, true)
             .Select(path => (path, extName: Path.GetExtension(path)))
-            .Where(tuple => !string.IsNullOrEmpty(tuple.extName) && searchFiles.Contains(tuple.extName))
+            .Where(tuple => !string.IsNullOrEmpty(tuple.extName) && searchExtensions.Contains(tuple.extName))
             .ExceptBy(allKnownPaths, tuple => tuple.path)
             .ToList();
 
         var nextStep = DateTime.Now;
         if (!preview)
-            Logger.LogDebug("Found {FileCount} files to remove in {DirectoryToClean} in {TimeSpent}", filesToBeRemoved.Count, directoryToClean, nextStep - previousStep);
+            Logger.LogDebug("Found {FileCount} file system entries to potentially remove or fix in {TimeSpent} in folder: {DirectoryToClean}", entriesToBeRemoved.Count, nextStep - previousStep, directoryToClean);
         previousStep = nextStep;
 
-        foreach (var (location, extName) in filesToBeRemoved) {
+        foreach (var (location, extName) in entriesToBeRemoved) {
             if (extName is ".nfo") {
                 if (!preview) {
                     try {
@@ -1084,6 +1089,36 @@ public class VirtualFileSystemService
                 }
                 result.RemovedPaths.Add(location);
                 result.RemovedNfos++;
+            }
+            else if (extName is ".trickplay") {
+                if (TryMoveTrickplayDirectory(allKnownPaths, location, preview, out var skip)) {
+                    result.Paths.Add(location);
+                    if (skip) {
+                        result.SkippedTrickplayDirectories++;
+                    }
+                    else {
+                        result.FixedTrickplayDirectories++;
+                    }
+                    continue;
+                }
+
+                if (!preview) {
+                    try {
+                        Logger.LogTrace("Removing trickplay directory at {Path}", location);
+                        if ((File.GetAttributes(location) & FileAttributes.ReparsePoint) == FileAttributes.ReparsePoint) {
+                            File.Delete(location);
+                        }
+                        else {
+                            Directory.Delete(location, recursive: true);
+                        }
+                    }
+                    catch (Exception ex) {
+                        Logger.LogError(ex, "Encountered an error trying to remove {FilePath}", location);
+                        continue;
+                    }
+                }
+                result.RemovedPaths.Add(location);
+                result.RemovedTrickplayDirectories++;
             }
             else if (NamingOptions.SubtitleFileExtensions.Contains(extName)) {
                 if (TryMoveSubtitleFile(allKnownPaths, location, preview, out var skip)) {
@@ -1134,57 +1169,19 @@ public class VirtualFileSystemService
 
         nextStep = DateTime.Now;
         if (!preview) {
-            Logger.LogTrace("Removed {FileCount} files in {DirectoryToClean} in {TimeSpent} (Total={TotalSpent})", result.Removed, directoryToClean, nextStep - previousStep, nextStep - start);
-            Logger.LogDebug("Looking for directories to remove in folder at {Path}", directoryToClean);
+            Logger.LogTrace("Removed {FileCount} file system entries in {DirectoryToClean} in {TimeSpent} (Total={TotalSpent})", result.Removed, directoryToClean, nextStep - previousStep, nextStep - start);
         }
         previousStep = nextStep;
-
-        var searchDirectories = new HashSet<string>() { ".trickplay" };
-        var directoriesToBeRemoved = FileSystem.GetDirectoryPaths(directoryToClean, true)
-            .Select(path => (path, extName: Path.GetExtension(path)))
-            .Where(tuple => !string.IsNullOrEmpty(tuple.extName) && searchDirectories.Contains(tuple.extName))
-            .ExceptBy(allKnownPaths, tuple => tuple.path)
-            .ToList();
-
-        if (!preview)
-            Logger.LogDebug("Found {DirectoryCount} directories to remove in {DirectoryToClean} in {TimeSpent}", directoriesToBeRemoved.Count, directoryToClean, nextStep - previousStep);
-
-        foreach (var (location, extName) in directoriesToBeRemoved) {
-            if (TryMoveTrickplayDirectory(allKnownPaths, location, preview, out var skip)) {
-                    result.Paths.Add(location);
-                    if (skip) {
-                        result.SkippedTrickplayDirectories++;
-                    }
-                    else {
-                        result.FixedTrickplayDirectories++;
-                    }
-                    continue;
-                }
-
-                if (!preview) {
-                    try {
-                        Logger.LogTrace("Removing trickplay directory at {Path}", location);
-                        Directory.Delete(location, recursive: true);
-                    }
-                    catch (Exception ex) {
-                        Logger.LogError(ex, "Encountered an error trying to remove {FilePath}", location);
-                        continue;
-                    }
-                }
-                result.RemovedPaths.Add(location);
-                result.RemovedTrickplayDirectories++;
-        }
 
         if (preview)
             return result;
 
         nextStep = DateTime.Now;
-        Logger.LogTrace("Removed {FileCount} files in {DirectoryToClean} in {TimeSpent} (Total={TotalSpent})", result.Removed, directoryToClean, nextStep - previousStep, nextStep - start);
+        Logger.LogTrace("Removed {FileCount} file system entries in {DirectoryToClean} in {TimeSpent} (Total={TotalSpent})", result.Removed, directoryToClean, nextStep - previousStep, nextStep - start);
         previousStep = nextStep;
 
         var cleaned = 0;
-        var directoriesToClean = filesToBeRemoved
-            .Concat(directoriesToBeRemoved)
+        var directoriesToClean = entriesToBeRemoved
             .SelectMany(tuple => {
                 var path = Path.GetDirectoryName(tuple.path);
                 var paths = new List<(string path, int level)>();
