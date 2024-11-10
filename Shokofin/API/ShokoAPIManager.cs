@@ -756,6 +756,7 @@ public class ShokoAPIManager : IDisposable
                     var genresTasks = detailsIds.Select(id => GetGenresForSeries(id));
                     var tagsTasks = detailsIds.Select(id => GetTagsForSeries(id));
                     var productionLocationsTasks = detailsIds.Select(id => GetProductionLocations(id));
+                    var namespacedTagsTasks = detailsIds.Select(id => GetNamespacedTagsForSeries(id));
 
                     // Await the tasks in order.
                     var cast = (await Task.WhenAll(castTasks))
@@ -781,16 +782,22 @@ public class ShokoAPIManager : IDisposable
                         .OrderBy(g => g)
                         .Distinct()
                         .ToArray();
+                    var namespacedTags = (await Task.WhenAll(namespacedTagsTasks))
+                        .Select((t, i) => (t, i))
+                        .ToDictionary(t => detailsIds[t.i], (t) => t.t);
 
                     // Create the season info using the merged details.
-                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, contentRating);
+                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, namespacedTags, contentRating);
                 } else {
                     var cast = await APIClient.GetSeriesCast(seriesId).ConfigureAwait(false);
                     var relations = await APIClient.GetSeriesRelations(seriesId).ConfigureAwait(false);
                     var genres = await GetGenresForSeries(seriesId).ConfigureAwait(false);
                     var tags = await GetTagsForSeries(seriesId).ConfigureAwait(false);
                     var productionLocations = await GetProductionLocations(seriesId).ConfigureAwait(false);
-                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, contentRating);
+                    var namespacedTags = new Dictionary<string, IReadOnlyDictionary<string, ResolvedTag>>() {
+                        { seriesId, await GetNamespacedTagsForSeries(seriesId).ConfigureAwait(false) },
+                    };
+                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, namespacedTags, contentRating);
                 }
 
                 foreach (var episode in episodes)
