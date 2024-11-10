@@ -777,7 +777,7 @@ public class ShokoAPIManager : IDisposable
                         .OrderBy(t => t)
                         .Distinct()
                         .ToArray();
-                    var productionLocations = (await Task.WhenAll(genresTasks))
+                    var productionLocations = (await Task.WhenAll(productionLocationsTasks))
                         .SelectMany(g => g)
                         .OrderBy(g => g)
                         .Distinct()
