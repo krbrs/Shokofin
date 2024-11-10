@@ -21,7 +21,7 @@ namespace Shokofin.API;
 public class ShokoAPIManager : IDisposable
 {
     // Note: This regex will only get uglier with time.
-    private static readonly Regex YearRegex = new(@"\s+\((?<year>\d{4})(?:dai [2-9] bu)?\)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private static readonly Regex YearRegex = new(@"\s+\((?<year>\d{4})(?: dai [2-9] bu)?\)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
 
     private readonly ILogger<ShokoAPIManager> Logger;
 
@@ -860,11 +860,12 @@ public class ShokoAPIManager : IDisposable
                 var maxDaysThreshold = config.EXPERIMENTAL_MergeSeasonsMergeWindowInDays;
                 if (result.Success)
                 {
+                    Series? lastPrequelSeries = null;
                     var adjustedMainTitle = mainTitle[..^result.Length];
                     var currentDate = series.AniDBEntity.AirDate.Value;
                     var currentRelations = relations;
                     while (currentRelations.Count > 0) {
-                        foreach (var prequelRelation in currentRelations.Where(relation => relation.Type == RelationType.Prequel && relation.RelatedIDs.Shoko.HasValue)) {
+                        foreach (var prequelRelation in currentRelations.Where(relation => relation.Type is RelationType.Prequel && relation.RelatedIDs.Shoko.HasValue)) {
                             var prequelSeries = await APIClient.GetSeries(prequelRelation.RelatedIDs.Shoko!.Value.ToString());
                             if (prequelSeries.IDs.ParentGroup != series.IDs.ParentGroup)
                                 continue;
@@ -897,6 +898,7 @@ public class ShokoAPIManager : IDisposable
 
                             var adjustedPrequelMainTitle = prequelMainTitle[..^prequelResult.Length];
                             if (string.Equals(adjustedMainTitle, adjustedPrequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
+                                lastPrequelSeries = prequelSeries;
                                 currentDate = prequelDate;
                                 currentRelations = await APIClient.GetSeriesRelations(prequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
                                 goto continuePrequelWhileLoop;
@@ -905,8 +907,55 @@ public class ShokoAPIManager : IDisposable
                         breakPrequelWhileLoop: break;
                         continuePrequelWhileLoop: continue;
                     }
+                    // Although we didn't find a _pure_ "primary" season candidate, we found a series with a matching year regex pattern, so get the series ids for that.
+                    if (lastPrequelSeries is not null) {
+                        (primaryId, extraIds) = await GetSeriesIdsForSeason(lastPrequelSeries);
+                    }
+                    // We potentially have an _unpure_ "primary" season candidate, so look for any "follow-up" season candidates.
+                    else if (extraIds.Count is 0) {
+                        currentDate = series.AniDBEntity.AirDate.Value;
+                        currentRelations = relations;
+                        while (currentRelations.Count > 0) {
+                            foreach (var sequelRelation in currentRelations.Where(relation => relation.Type == RelationType.Sequel && relation.RelatedIDs.Shoko.HasValue)) {
+                                var sequelSeries = await APIClient.GetSeries(sequelRelation.RelatedIDs.Shoko!.Value.ToString());
+                                if (sequelSeries.IDs.ParentGroup != series.IDs.ParentGroup)
+                                    continue;
+
+                                if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(await GetCustomSeriesType(sequelSeries.IDs.Shoko.ToString()) ?? sequelSeries.AniDBEntity.Type))
+                                    continue;
+
+                                if (sequelSeries.AniDBEntity.AirDate is null)
+                                    continue;
+
+                                var sequelDate = sequelSeries.AniDBEntity.AirDate.Value;
+                                if (sequelDate < currentDate)
+                                    continue;
+
+                                if (maxDaysThreshold > 0) {
+                                    var deltaDays = (int)Math.Floor((sequelDate - currentDate).TotalDays);
+                                    if (deltaDays > maxDaysThreshold)
+                                        continue;
+                                }
+
+                                var sequelMainTitle = sequelSeries.AniDBEntity.Titles.First(title => title.Type == TitleType.Main).Value;
+                                var sequelResult = YearRegex.Match(sequelMainTitle);
+                                if (!sequelResult.Success)
+                                    continue;
+
+                                var adjustedSequelMainTitle = sequelMainTitle[..^sequelResult.Length];
+                                if (string.Equals(adjustedMainTitle, adjustedSequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
+                                    extraIds.Add(sequelSeries.IDs.Shoko.ToString());
+                                    currentDate = sequelDate;
+                                    currentRelations = await APIClient.GetSeriesRelations(sequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
+                                    goto continueSequelWhileLoop;
+                                }
+                            }
+                            break;
+                            continueSequelWhileLoop: continue;
+                        }
+                    }
                 }
-                // We potentially have a "primary" season candidate, so look for any "follow-up" season candidates.
+                // We potentially have a _pure_ "primary" season candidate, so look for any "follow-up" season candidates.
                 else {
                     var currentDate = series.AniDBEntity.AirDate.Value;
                     var adjustedMainTitle = mainTitle;
