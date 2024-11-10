@@ -1,6 +1,7 @@
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
@@ -12,6 +13,8 @@ using Shokofin.MergeVersions;
 using Info = Shokofin.API.Info;
 
 namespace Shokofin.Providers;
+#pragma warning disable IDE0059
+#pragma warning disable IDE0290
 
 /// <summary>
 /// The custom episode provider. Responsible for de-duplicating episodes, both
@@ -22,7 +25,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomEpisodeProvider : ICustomMetadataProvider<Episode>
+public class CustomEpisodeProvider : IHasItemChangeMonitor, ICustomMetadataProvider<Episode>
 {
     public string Name => Plugin.MetadataProviderName;
 
@@ -37,6 +40,19 @@ public class CustomEpisodeProvider : ICustomMetadataProvider<Episode>
         _logger = logger;
         _libraryManager = libraryManager;
         _mergeVersionsManager = mergeVersionsManager;
+    }
+
+    public bool HasChanged(BaseItem item, IDirectoryService directoryService)
+    {
+        // We're only interested in episodes.
+        if (item is not Episode episode)
+            return false;
+
+        // Abort if we're unable to get the shoko episode id.
+        if (!episode.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId))
+            return false;
+
+        return true;
     }
 
     public async Task<ItemUpdateType> FetchAsync(Episode episode, MetadataRefreshOptions options, CancellationToken cancellationToken)
@@ -125,3 +141,4 @@ public class CustomEpisodeProvider : ICustomMetadataProvider<Episode>
         return true;
     }
 }
+

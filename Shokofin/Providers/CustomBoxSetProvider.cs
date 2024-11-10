@@ -17,6 +17,8 @@ using Shokofin.ExternalIds;
 using Shokofin.Utils;
 
 namespace Shokofin.Providers;
+#pragma warning disable IDE0059
+#pragma warning disable IDE0290
 
 /// <summary>
 /// The custom episode provider. Responsible for de-duplicating episodes.
@@ -26,7 +28,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomBoxSetProvider : ICustomMetadataProvider<BoxSet>
+public class CustomBoxSetProvider : IHasItemChangeMonitor, ICustomMetadataProvider<BoxSet>
 {
     public string Name => Plugin.MetadataProviderName;
 
@@ -46,6 +48,23 @@ public class CustomBoxSetProvider : ICustomMetadataProvider<BoxSet>
         CollectionManager = collectionManager;
     }
 
+    public bool HasChanged(BaseItem item, IDirectoryService directoryService)
+    {
+        // We're only interested in box sets.
+        if (item is not BoxSet collection)
+            return false;
+
+        // Try to read the shoko group id.
+        if (collection.TryGetProviderId(ShokoCollectionGroupId.Name, out var collectionId) || collection.Path.TryGetAttributeValue(ShokoCollectionGroupId.Name, out collectionId))
+            return true;
+
+        // Try to read the shoko series id.
+        if (collection.TryGetProviderId(ShokoCollectionSeriesId.Name, out var seriesId) || collection.Path.TryGetAttributeValue(ShokoCollectionSeriesId.Name, out seriesId))
+            return true;
+
+        return false;
+    }
+
     public async Task<ItemUpdateType> FetchAsync(BoxSet collection, MetadataRefreshOptions options, CancellationToken cancellationToken)
     {
         // Abort if the collection root is not made yet (which should never happen).
@@ -53,13 +72,13 @@ public class CustomBoxSetProvider : ICustomMetadataProvider<BoxSet>
         if (collectionRoot is null)
             return ItemUpdateType.None;
 
-        // Try to read the shoko group id
+        // Try to read the shoko group id.
         if (collection.TryGetProviderId(ShokoCollectionGroupId.Name, out var collectionId) || collection.Path.TryGetAttributeValue(ShokoCollectionGroupId.Name, out collectionId))
             using (Plugin.Instance.Tracker.Enter($"Providing custom info for Collection \"{collection.Name}\". (Path=\"{collection.Path}\",Collection=\"{collectionId}\")"))
                 if (await EnsureGroupCollectionIsCorrect(collectionRoot, collection, collectionId, cancellationToken))
                     return ItemUpdateType.MetadataEdit;
 
-        // Try to read the shoko series id
+        // Try to read the shoko series id.
         if (collection.TryGetProviderId(ShokoCollectionSeriesId.Name, out var seriesId) || collection.Path.TryGetAttributeValue(ShokoCollectionSeriesId.Name, out seriesId))
             using (Plugin.Instance.Tracker.Enter($"Providing custom info for Collection \"{collection.Name}\". (Path=\"{collection.Path}\",Series=\"{seriesId}\")"))
                 if (await EnsureSeriesCollectionIsCorrect(collection, seriesId, cancellationToken))

@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
@@ -8,6 +9,8 @@ using Shokofin.ExternalIds;
 using Shokofin.MergeVersions;
 
 namespace Shokofin.Providers;
+#pragma warning disable IDE0059
+#pragma warning disable IDE0290
 
 /// <summary>
 /// The custom movie provider. Responsible for de-duplicating physical movies.
@@ -17,7 +20,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomMovieProvider : ICustomMetadataProvider<Movie>
+public class CustomMovieProvider : IHasItemChangeMonitor, ICustomMetadataProvider<Movie>
 {
     public string Name => Plugin.MetadataProviderName;
 
@@ -29,6 +32,19 @@ public class CustomMovieProvider : ICustomMetadataProvider<Movie>
     {
         _libraryManager = libraryManager;
         _mergeVersionsManager = mergeVersionsManager;
+    }
+
+    public bool HasChanged(BaseItem item, IDirectoryService directoryService)
+    {
+        // We're only interested in movies.
+        if (item is not Movie movie)
+            return false;
+
+        // Abort if we're unable to get the shoko episode id.
+        if (!movie.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId))
+            return false;
+
+        return true;
     }
 
     public async Task<ItemUpdateType> FetchAsync(Movie movie, MetadataRefreshOptions options, CancellationToken cancellationToken)

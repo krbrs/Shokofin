@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
@@ -16,6 +17,8 @@ using Shokofin.Utils;
 using Info = Shokofin.API.Info;
 
 namespace Shokofin.Providers;
+#pragma warning disable IDE0059
+#pragma warning disable IDE0290
 
 /// <summary>
 /// The custom series provider. Responsible for de-duplicating seasons,
@@ -26,7 +29,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomSeriesProvider : ICustomMetadataProvider<Series>
+public class CustomSeriesProvider : IHasItemChangeMonitor, ICustomMetadataProvider<Series>
 {
     public string Name => Plugin.MetadataProviderName;
 
@@ -51,9 +54,22 @@ public class CustomSeriesProvider : ICustomMetadataProvider<Series>
         MergeVersionsManager = mergeVersionsManager;
     }
 
+    public bool HasChanged(BaseItem item, IDirectoryService directoryService)
+    {
+        // We're only interested in series.
+        if (item is not Series series)
+            return false;
+
+        // Abort if we're unable to get the shoko series id.
+        if (!series.TryGetProviderId(ShokoSeriesId.Name, out var seriesId))
+            return false;
+
+        return true;
+    }
+
     public async Task<ItemUpdateType> FetchAsync(Series series, MetadataRefreshOptions options, CancellationToken cancellationToken)
     {
-        // Abort if we're unable to get the shoko series id
+        // Abort if we're unable to get the shoko series id.
         if (!series.TryGetProviderId(ShokoSeriesId.Name, out var seriesId))
             return ItemUpdateType.None;
 
