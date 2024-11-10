@@ -960,6 +960,18 @@ public class VirtualFileSystemService
                                     File.Delete(symbolicTrickplay);
                                 }
                                 else {
+                                    if (Directory.GetCreationTime(symbolicTrickplay) > Directory.GetCreationTime(trickplayLocation)) {
+                                        Logger.LogTrace("Replacing trickplay for target {Link} → {LinkTarget}", symbolicTrickplay, trickplayLocation);
+                                        try {
+                                            Directory.Delete(trickplayLocation, recursive: true);
+                                            Directory.CreateDirectory(trickplayLocation);
+                                            CopyDirectory(symbolicDirectory, trickplayLocation);
+                                        }
+                                        catch (Exception ex) {
+                                            if (!preview)
+                                                Logger.LogError(ex, "Failed to replace trickplay for target {Link} → {LinkTarget}", symbolicTrickplay, trickplayLocation);
+                                        }
+                                    }
                                     Directory.Delete(symbolicTrickplay, recursive: true);
                                 }
                                 Directory.CreateSymbolicLink(symbolicTrickplay, trickplayLocation);
