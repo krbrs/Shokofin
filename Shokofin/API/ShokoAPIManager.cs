@@ -851,6 +851,10 @@ public class ShokoAPIManager : IDisposable
                 if (series.AniDBEntity.AirDate is null)
                     return (primaryId, extraIds);
 
+                var customTags = await GetNamespacedTagsForSeries(primaryId).ConfigureAwait(false);
+                if (customTags.ContainsKey("/custom user tags/shokofin/no merge"))
+                    return (primaryId, extraIds);
+
                 Logger.LogTrace("Creating new series-to-season mapping for series. (Series={SeriesId})", primaryId);
 
                 // We potentially have a "follow-up" season candidate, so look for the "primary" season candidate, then jump into that.
@@ -885,6 +889,10 @@ public class ShokoAPIManager : IDisposable
                                 if (deltaDays > maxDaysThreshold)
                                     continue;
                             }
+
+                            var prequelCustomTags = await GetNamespacedTagsForSeries(prequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
+                            if (prequelCustomTags.ContainsKey("/custom user tags/shokofin/no merge"))
+                                continue;
 
                             var prequelMainTitle = prequelSeries.AniDBEntity.Titles.First(title => title.Type == TitleType.Main).Value;
                             var prequelResult = YearRegex.Match(prequelMainTitle);
@@ -936,6 +944,10 @@ public class ShokoAPIManager : IDisposable
                                     if (deltaDays > maxDaysThreshold)
                                         continue;
                                 }
+
+                                var sequelCustomTags = await GetNamespacedTagsForSeries(sequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
+                                if (sequelCustomTags.ContainsKey("/custom user tags/shokofin/no merge"))
+                                    continue;
 
                                 var sequelMainTitle = sequelSeries.AniDBEntity.Titles.First(title => title.Type == TitleType.Main).Value;
                                 var sequelResult = YearRegex.Match(sequelMainTitle);
