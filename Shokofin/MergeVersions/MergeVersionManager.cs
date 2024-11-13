@@ -223,6 +223,7 @@ public class MergeVersionsManager
         // Split up any existing merged videos.
         double currentCount = 0d;
         double totalCount = videos.Count;
+        var visitedVideos = new HashSet<Guid>();
         foreach (var video in videos) {
             // Handle cancellation and update progress.
             cancellationToken?.ThrowIfCancellationRequested();
@@ -230,7 +231,7 @@ public class MergeVersionsManager
             progress?.Report(percent);
 
             // Remove all alternate sources linked to the video.
-            await RemoveAlternateSources(video);
+            await RemoveAlternateSources(video, visitedVideos);
         }
 
         // This will likely tax the CPU a bit… maybe, but we need to make sure the videos we're about to merge are up to date.
@@ -276,6 +277,7 @@ public class MergeVersionsManager
         // Split up any existing merged videos.
         double currentCount = 0d;
         double totalMovies = videos.Count;
+        var visitedVideos = new HashSet<Guid>();
         foreach (var video in videos) {
             // Handle cancellation and update progress.
             cancellationToken?.ThrowIfCancellationRequested();
@@ -283,7 +285,7 @@ public class MergeVersionsManager
             progress?.Report(percent);
 
             // Remove all alternate sources linked to the video.
-            await RemoveAlternateSources(video);
+            await RemoveAlternateSources(video, visitedVideos);
         }
 
         progress?.Report(100);
@@ -356,17 +358,25 @@ public class MergeVersionsManager
     /// videos.
     /// </summary>
     /// <param name="baseItem">The primary video to clean up.</param>
-    private async Task RemoveAlternateSources<TVideo>(TVideo? video, int depth = 0) where TVideo : Video
+    private async Task RemoveAlternateSources<TVideo>(TVideo? video, HashSet<Guid> visited) where TVideo : Video
     {
         if (video is null)
             return;
 
+        var depth = visited.Count;
+        if (visited.Contains(video.Id)) {
+            _logger.LogTrace("Skipping already visited video. (Video={VideoId},Depth={Depth})", video.Id, depth);
+            return;
+        }
+
+        visited.Add(video.Id);
+
         // Remove all links for the primary video if this is not the primary video.
-        if (video.PrimaryVersionId is not null && depth is 0) {
+        if (video.PrimaryVersionId is not null) {
             var primaryVideo = _libraryManager.GetItemById(video.PrimaryVersionId) as TVideo;
-            if (primaryVideo is not null && primaryVideo.Id != video.Id) {
+            if (primaryVideo is not null) {
                 _logger.LogTrace("Found primary video to clean up first. (Video={VideoId},Depth={Depth})", primaryVideo.Id, depth);
-                await RemoveAlternateSources(primaryVideo, depth + 1);
+                await RemoveAlternateSources(primaryVideo, visited);
             }
         }
 
@@ -382,7 +392,7 @@ public class MergeVersionsManager
         var linkedAlternateVersions = video.GetLinkedAlternateVersions().ToList();
         _logger.LogTrace("Removing {Count} linked alternate sources for video. (Video={VideoId},Depth={Depth})", linkedAlternateVersions.Count, video.Id, depth);
         foreach (var linkedVideo in linkedAlternateVersions) {
-            await RemoveAlternateSources(linkedVideo, depth + 1);
+            await RemoveAlternateSources(linkedVideo, visited);
         }
 
         // Remove the link for every local linked video.
@@ -392,7 +402,7 @@ public class MergeVersionsManager
             .ToList();
         _logger.LogTrace("Removing {Count} local alternate sources for video. (Video={VideoId},Depth={Depth})", localAlternateVersions.Count, video.Id, depth);
         foreach (var linkedVideo in localAlternateVersions) {
-            await RemoveAlternateSources(linkedVideo, depth + 1);
+            await RemoveAlternateSources(linkedVideo, visited);
         }
 
         // Remove the link for the primary video.
