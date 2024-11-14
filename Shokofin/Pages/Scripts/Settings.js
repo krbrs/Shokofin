@@ -34,7 +34,7 @@ promise.then(({
 //#region Constants
 
 /**
- * @typedef {"Connection" | "Metadata_Title" | "Metadata_Description" | "Metadata_TagGenre" | "Metadata_Image" | "Metadata_Misc" | "Metadata_ThirdPartyIntegration" | "Library_Basic" | "Library_Collection" | "Library_New" | "Library_Existing" | "Library_Experimental" | "VFS_Basic" | "VFS_Location" | "User" | "SignalR_Connection" | "SignalR_Basic" | "SignalR_Library_New" | "SignalR_Library_Existing" | "Misc" | "Utilities"} SectionType
+ * @typedef {"Connection" | "Metadata_Title" | "Metadata_Description" | "Metadata_TagGenre" | "Metadata_Image" | "Metadata_Misc" | "Metadata_ThirdPartyIntegration" | "Library_Basic" | "Library_Collection" | "Library_MultipleVersions" | "Library_New" | "Library_Existing" | "Library_Experimental" | "VFS_Basic" | "VFS_Location" | "User" | "SignalR_Connection" | "SignalR_Basic" | "SignalR_Library_New" | "SignalR_Library_Existing" | "Misc" | "Utilities"} SectionType
  */
 
 const MaxDebugPresses = 7;
@@ -52,6 +52,7 @@ const Sections = [
     "Metadata_ThirdPartyIntegration",
     "Library_Basic",
     "Library_Collection",
+    "Library_MultipleVersions",
     "Library_New",
     "Library_Existing",
     "Library_Experimental",
@@ -295,7 +296,7 @@ async function updateView(view, form, config) {
             break;
 
         case "library":
-            activeSections.push("Library_Basic", "Library_Collection", "Library_New", "Library_Existing", "Library_Experimental");
+            activeSections.push("Library_Basic", "Library_Collection", "Library_MultipleVersions", "Library_New", "Library_Existing", "Library_Experimental");
 
             await applyLibraryConfigToForm(form, form.querySelector("#MediaFolderSelector").value, config);
             break;
@@ -406,7 +407,6 @@ function applyFormToConfig(form, config) {
             const libraryId = form.querySelector("#MediaFolderSelector").value.split(",");
             const mediaFolders = libraryId ? config.MediaFolders.filter((m) => m.LibraryId === libraryId) : undefined;
 
-            config.AutoMergeVersions = form.querySelector("#AutoMergeVersions").checked;
             config.UseGroupsForShows = form.querySelector("#UseGroupsForShows").checked;
             config.SeasonOrdering = form.querySelector("#SeasonOrdering").value;
             config.SeparateMovies = form.querySelector("#SeparateMovies").checked;
@@ -417,6 +417,9 @@ function applyFormToConfig(form, config) {
 
             config.CollectionGrouping = form.querySelector("#CollectionGrouping").value;
             config.CollectionMinSizeOfTwo = form.querySelector("#CollectionMinSizeOfTwo").checked;
+
+            config.AutoMergeVersions = form.querySelector("#AutoMergeVersions").checked;
+            ([config.MergeVersionSortSelectorList, config.MergeVersionSortSelectorOrder] = retrieveSortableCheckboxList(form, "MergeVersionSortSelectorList"));
 
             config.VFS_Enabled = form.querySelector("#VFS_Enabled").checked;
             config.LibraryFilteringMode = form.querySelector("#LibraryFilteringMode").value;
@@ -565,7 +568,6 @@ async function applyConfigToForm(form, config) {
                     return acc;
                 }, []);
 
-            form.querySelector("#AutoMergeVersions").checked = config.AutoMergeVersions || false;
             if (form.querySelector("#UseGroupsForShows").checked = config.UseGroupsForShows) {
                 form.querySelector("#SeasonOrderingContainer").removeAttribute("hidden");
                 form.querySelector("#SeasonOrdering").disabled = false;
@@ -583,6 +585,9 @@ async function applyConfigToForm(form, config) {
 
             form.querySelector("#CollectionGrouping").value = config.CollectionGrouping;
             form.querySelector("#CollectionMinSizeOfTwo").checked = config.CollectionMinSizeOfTwo;
+
+            form.querySelector("#AutoMergeVersions").checked = config.AutoMergeVersions || false;
+            renderSortableCheckboxList(form, "MergeVersionSortSelectorList", config.MergeVersionSortSelectorList, config.MergeVersionSortSelectorOrder);
 
             form.querySelector("#VFS_Enabled").checked = config.VFS_Enabled;
             form.querySelector("#LibraryFilteringMode").value = config.LibraryFilteringMode;

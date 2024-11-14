@@ -236,6 +236,10 @@ export const LibraryMenu = globalThis.LibraryMenu;
 */
 
 /**
+ * @typedef {"ImportedAt" | "CreatedAt" | "Resolution" | "ReleaseGroupName" | "FileSource" | "FileVersion" | "RelativeDepth" | "NoVariation"} MergeVersionSortSelector
+ */
+
+/**
 * @typedef {{
 *   UserId: string;
 *   EnableSynchronization: boolean;
@@ -322,6 +326,8 @@ export const LibraryMenu = globalThis.LibraryMenu;
 *   ProductionLocationOrder: GenericProvider[];
 *   UserList: UserConfig[];
 *   AutoMergeVersions: boolean;
+*   MergeVersionSortSelectorList: MergeVersionSortSelector[];
+*   MergeVersionSortSelectorOrder: MergeVersionSortSelector[];
 *   UseGroupsForShows: boolean;
 *   SeparateMovies: boolean;
 *   FilterMovieLibraries: boolean;

@@ -16,6 +16,7 @@ using TagIncludeFilter = Shokofin.Utils.TagFilter.TagIncludeFilter;
 using TagSource = Shokofin.Utils.TagFilter.TagSource;
 using TagWeight = Shokofin.Utils.TagFilter.TagWeight;
 using TitleProvider = Shokofin.Utils.Text.TitleProvider;
+using MergeVersionSortSelector = Shokofin.MergeVersions.MergeVersionSortSelector;
 
 namespace Shokofin.Configuration;
 
@@ -294,6 +295,16 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     [XmlElement("EXPERIMENTAL_AutoMergeVersions")]
     public bool AutoMergeVersions { get; set; }
+
+    /// <summary>
+    /// Enabled data selectors when merging versions.
+    /// </summary>
+    public MergeVersionSortSelector[] MergeVersionSortSelectorList { get; set; }
+
+    /// <summary>
+    /// The order to go through the selectors to produce the final sort string.
+    /// </summary>
+    public MergeVersionSortSelector[] MergeVersionSortSelectorOrder { get; set; }
 
     /// <summary>
     /// Use Shoko Groups to group Shoko Series together to create the show entries.
@@ -609,6 +620,19 @@ public class PluginConfiguration : BasePluginConfiguration
         VFS_MaxTotalExceptionsBeforeAbort = 10;
         VFS_MaxSeriesExceptionsBeforeAbort = 3;
         AutoMergeVersions = true;
+        MergeVersionSortSelectorList = [
+            MergeVersionSortSelector.ImportedAt,
+        ];
+        MergeVersionSortSelectorOrder = [
+            MergeVersionSortSelector.ImportedAt,
+            MergeVersionSortSelector.CreatedAt,
+            MergeVersionSortSelector.Resolution,
+            MergeVersionSortSelector.ReleaseGroupName,
+            MergeVersionSortSelector.FileSource,
+            MergeVersionSortSelector.FileVersion,
+            MergeVersionSortSelector.RelativeDepth,
+            MergeVersionSortSelector.NoVariation,
+        ];
         UseGroupsForShows = false;
         SeparateMovies = false;
         FilterMovieLibraries = true;

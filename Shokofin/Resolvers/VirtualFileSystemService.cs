@@ -836,12 +836,12 @@ public class VirtualFileSystemService
         var extraDetails = new List<string>();
         if (config.VFS_AddReleaseGroup)
             extraDetails.Add(
-                file.Shoko.AniDBData is not null
-                    ? !string.IsNullOrEmpty(file.Shoko.AniDBData.ReleaseGroup.ShortName)
-                        ? file.Shoko.AniDBData.ReleaseGroup.ShortName
-                        : !string.IsNullOrEmpty(file.Shoko.AniDBData.ReleaseGroup.Name)
-                            ? file.Shoko.AniDBData.ReleaseGroup.Name
-                            : $"Release group {file.Shoko.AniDBData.ReleaseGroup.Id}"
+                file.Shoko.AniDBData is { } anidbData
+                    ? !string.IsNullOrEmpty(anidbData.ReleaseGroup.ShortName)
+                        ? anidbData.ReleaseGroup.ShortName
+                        : !string.IsNullOrEmpty(anidbData.ReleaseGroup.Name)
+                            ? anidbData.ReleaseGroup.Name
+                            : $"Release group {anidbData.ReleaseGroup.Id}"
                 : "No Group"
             );
         if (config.VFS_AddResolution && !string.IsNullOrEmpty(file.Shoko.Resolution))

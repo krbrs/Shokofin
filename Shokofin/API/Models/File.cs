@@ -28,6 +28,11 @@ public class File
     public HashMap Hashes { get; set; } = new();
 
     /// <summary>
+    /// Indicates this file is marked as a variation in Shoko Server.
+    /// </summary>
+    public bool IsVariation { get; set; }
+
+    /// <summary>
     /// All the <see cref="Location"/>s this <see cref="File"/> is present at.
     /// </summary>
     public List<Location> Locations { get; set; } = [];

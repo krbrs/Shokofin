@@ -1115,13 +1115,6 @@ form:not(.expert-mode) .expert-only {
                         <legend>
                             <h3>Basic Settings</h3>
                         </legend>
-                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="AutoMergeVersions" />
-                                <span>Automatically Merge Multiple Versions</span>
-                            </label>
-                            <div class="fieldDescription checkboxFieldDescription">Enable to automatically merge multiple versions of the same media info a single displayed entry after a library scan or refresh. Only applies to videos with Shoko IDs set.</div>
-                        </div>
                         <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
                                 <input is="emby-checkbox" type="checkbox" id="UseGroupsForShows" />
@@ -1237,6 +1230,123 @@ form:not(.expert-mode) .expert-only {
                                 <span>Require Two Entries for a Collection</span>
                             </label>
                             <div class="fieldDescription checkboxFieldDescription">If collections are enabled, only create a collection when the collection will contain at least two items.</div>
+                        </div>
+                        <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </fieldset>
+                    <fieldset id="Library_MultipleVersions_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
+                        <legend>
+                            <h3>Multiple Versions Settings</h3>
+                        </legend>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="AutoMergeVersions" />
+                                <span>Automatically Merge Multiple Versions</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Enable to automatically merge multiple versions of the same media info a single displayed entry after a library scan or refresh. Only applies to videos with Shoko IDs set.</div>
+                        </div>
+                        <div id="MergeVersionSortSelectorList" is="sortable-checkbox-list" class="expert-only" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Multiple Versions Sort Selectors</h3>
+                            <div class="checkboxList paperList checkboxList-paperList">
+                                <div class="listItem sortableOption" data-option="ImportedAt">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="ImportedAt">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Imported At | Newly imported first</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Down" class="btnSortableMoveDown btnSortable">
+                                        <span class="material-icons keyboard_arrow_down" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption" data-option="CreatedAt">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="CreatedAt">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Created At | Newly created first</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption" data-option="Resolution">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Resolution">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Resolution | Highest resolution first</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption" data-option="ReleaseGroupName">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="ReleaseGroupName">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Release Group Name | Alphabetically sorted</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption" data-option="FileSource">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="FileSource">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">File Source | Better sources first</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption" data-option="FileVersion">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="FileVersion">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">File Version | Higher versions first</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption" data-option="RelativeDepth">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="RelativeDepth">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Relative Folder Depth | Shallower placed files first<h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption" data-option="NoVariation">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="NoVariation">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">File Variation | Non-variations first</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">The selectors to use to sort the multiple versions of the same video, in priority order.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>Save</span>

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -11,8 +12,12 @@ using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
+using Shokofin.API;
 using Shokofin.ExternalIds;
 using Shokofin.Utils;
+
+using FileInfo = Shokofin.API.Info.FileInfo;
+using FileSource = Shokofin.API.Models.FileSource;
 
 namespace Shokofin.MergeVersions;
 
@@ -42,6 +47,11 @@ public class MergeVersionsManager
     private readonly IIdLookup _lookup;
 
     /// <summary>
+    /// Used to lookup the file info for each video.
+    /// </summary>
+    private readonly ShokoAPIManager _apiManager;
+
+    /// <summary>
     /// Used to clear the <see cref="_runGuard"/> when the
     /// <see cref="UsageTracker.Stalled"/> event is ran.
     /// </summary>
@@ -58,11 +68,12 @@ public class MergeVersionsManager
     /// </summary>
     /// <param name="libraryManager">Library manager.</param>
     /// <param name="lookup">Shoko ID Lookup.</param>
-    public MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibraryManager libraryManager, IIdLookup lookup, UsageTracker usageTracker)
+    public MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibraryManager libraryManager, IIdLookup lookup, ShokoAPIManager apiManager, UsageTracker usageTracker)
     {
         _logger = logger;
         _libraryManager = libraryManager;
         _lookup = lookup;
+        _apiManager = apiManager;
         _usageTracker = usageTracker;
         _usageTracker.Stalled += OnUsageTrackerStalled;
         _runGuard = new(logger, new() { }, new() { });
@@ -304,22 +315,12 @@ public class MergeVersionsManager
         if (videos.Count < 2)
             return;
 
-        var primaryVersion = videos.FirstOrDefault(i => i.MediaSourceCount > 1 && string.IsNullOrEmpty(i.PrimaryVersionId)) ??
-            videos
-                .OrderBy(i =>
-                {
-                    if (i.Video3DFormat.HasValue || i.VideoType != VideoType.VideoFile)
-                        return 1;
-
-                    return 0;
-                })
-                .ThenByDescending(i => i.GetDefaultVideoStream()?.Width ?? 0)
-                .First();
+        var orderedVideos = await OrderVideos(videos);
+        var (primaryVersion, primarySortName) = orderedVideos.First();
 
         // Add any videos not already linked to the primary version to the list.
         var alternateVersionsOfPrimary = primaryVersion.LinkedAlternateVersions.ToList();
-        foreach (var video in videos.Where(v => !v.Id.Equals(primaryVersion.Id)))
-        {
+        foreach (var (video, sortName) in orderedVideos.Skip(1)) {
             video.SetPrimaryVersionId(primaryVersion.Id.ToString("N", CultureInfo.InvariantCulture));
             if (!alternateVersionsOfPrimary.Any(i => string.Equals(i.Path, video.Path, StringComparison.OrdinalIgnoreCase))) {
                 _logger.LogTrace("Adding linked alternate version. (PrimaryVideo={PrimaryVideoId},Video={VideoId})", primaryVersion.Id, video.Id);
@@ -329,25 +330,14 @@ public class MergeVersionsManager
                 });
             }
 
-            foreach (var linkedItem in video.LinkedAlternateVersions) {
-                if (!alternateVersionsOfPrimary.Any(i => string.Equals(i.Path, linkedItem.Path, StringComparison.OrdinalIgnoreCase))) {
-                    _logger.LogTrace("Adding linked alternate version. (PrimaryVideo={PrimaryVideoId},Video={VideoId},LinkedVideo={LinkedVideoId})", primaryVersion.Id, video.Id, linkedItem.ItemId);
-                    alternateVersionsOfPrimary.Add(linkedItem);
-                }
-            }
-
-            // Reset the linked alternate versions for the linked videos.
-            if (video.LinkedAlternateVersions.Length > 0) {
-                _logger.LogTrace("Resetting linked alternate versions for video. (Video={VideoId})", video.Id);
-                video.LinkedAlternateVersions = [];
-            }
-
             // Save the changes back to the repository.
+            video.ForcedSortName = sortName;
             await video.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None)
                 .ConfigureAwait(false);
         }
 
         _logger.LogTrace("Saving {Count} linked alternate versions. (PrimaryVideo={PrimaryVideoId})", alternateVersionsOfPrimary.Count, primaryVersion.Id);
+        primaryVersion.ForcedSortName = primarySortName;
         primaryVersion.LinkedAlternateVersions = [.. alternateVersionsOfPrimary.OrderBy(i => i.Path)];
         await primaryVersion.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None)
             .ConfigureAwait(false);
@@ -357,13 +347,17 @@ public class MergeVersionsManager
     /// Removes all alternate video sources from a video and all it's linked
     /// videos.
     /// </summary>
-    /// <param name="baseItem">The primary video to clean up.</param>
-    private async Task RemoveAlternateSources<TVideo>(TVideo? video, HashSet<Guid> visited) where TVideo : Video
+    /// <param name="video">The primary video to clean up.</param>
+    /// <param name="visited">A set of video IDs that have already been visited.</param>
+    /// <param name="depth">The current depth of recursion. Used for logging.</param>
+    /// <typeparam name="TVideo">The type of the video.</typeparam>
+    /// <returns>A task that completes when all alternate video sources have been
+    /// removed.</returns>
+    private async Task RemoveAlternateSources<TVideo>(TVideo? video, HashSet<Guid> visited, int depth = 0) where TVideo : Video
     {
         if (video is null)
             return;
 
-        var depth = visited.Count;
         if (visited.Contains(video.Id)) {
             _logger.LogTrace("Skipping already visited video. (Video={VideoId},Depth={Depth})", video.Id, depth);
             return;
@@ -376,7 +370,7 @@ public class MergeVersionsManager
             var primaryVideo = _libraryManager.GetItemById(video.PrimaryVersionId) as TVideo;
             if (primaryVideo is not null) {
                 _logger.LogTrace("Found primary video to clean up first. (Video={VideoId},Depth={Depth})", primaryVideo.Id, depth);
-                await RemoveAlternateSources(primaryVideo, visited);
+                await RemoveAlternateSources(primaryVideo, visited, depth);
             }
         }
 
@@ -392,7 +386,7 @@ public class MergeVersionsManager
         var linkedAlternateVersions = video.GetLinkedAlternateVersions().ToList();
         _logger.LogTrace("Removing {Count} linked alternate sources for video. (Video={VideoId},Depth={Depth})", linkedAlternateVersions.Count, video.Id, depth);
         foreach (var linkedVideo in linkedAlternateVersions) {
-            await RemoveAlternateSources(linkedVideo, visited);
+            await RemoveAlternateSources(linkedVideo, visited, depth);
         }
 
         // Remove the link for every local linked video.
@@ -402,7 +396,7 @@ public class MergeVersionsManager
             .ToList();
         _logger.LogTrace("Removing {Count} local alternate sources for video. (Video={VideoId},Depth={Depth})", localAlternateVersions.Count, video.Id, depth);
         foreach (var linkedVideo in localAlternateVersions) {
-            await RemoveAlternateSources(linkedVideo, visited);
+            await RemoveAlternateSources(linkedVideo, visited, depth);
         }
 
         // Remove the link for the primary video.
@@ -418,6 +412,71 @@ public class MergeVersionsManager
             _logger.LogTrace("Video is already clean. (PrimaryVideo={PrimaryVideoId},Video={VideoId},Depth={Depth})", video.PrimaryVersionId, video.Id, depth);
         }
     }
+
+    private static MergeVersionSortSelector[] GetOrderedSelectors()
+        => Plugin.Instance.Configuration.MergeVersionSortSelectorOrder.Where((t) => Plugin.Instance.Configuration.MergeVersionSortSelectorList.Contains(t)).ToArray();
+
+    private async Task<IList<(TVideo video, string? sortName)>> OrderVideos<TVideo>(IList<TVideo> list) where TVideo : Video
+    {
+        var selectors = GetOrderedSelectors();
+        return (await Task.WhenAll(list.Select(async video => (video, sortName: await GetSortName(video, selectors)))))
+            .OrderBy(tuple => tuple.sortName is null)
+            .ThenBy(tuple => tuple.sortName)
+            .ThenBy(tuple => tuple.video.Path)
+            .ToList();
+    }
+
+    private async Task<string?> GetSortName<TVideo>(TVideo video, IList<MergeVersionSortSelector> selectors) where TVideo : Video
+    {
+        if (selectors.Count is 0)
+            return null;
+
+        var (fileInfo, _, _) = await _apiManager.GetFileInfoByPath(video.Path);
+        if (fileInfo is null)
+            return null;
+
+        return selectors
+            .Select(selector => GetSelectedSortValue(video, fileInfo, selector))
+            .Join(".");
+    }
+
+    private string GetSelectedSortValue<TVideo>(TVideo video, FileInfo fileInfo, MergeVersionSortSelector selector) where TVideo : Video
+        => selector switch
+        {
+            MergeVersionSortSelector.ImportedAt => (fileInfo.Shoko.ImportedAt ?? fileInfo.Shoko.CreatedAt).ToUniversalTime().ToString("O"),
+            MergeVersionSortSelector.CreatedAt => fileInfo.Shoko.CreatedAt.ToString("O"),
+            MergeVersionSortSelector.Resolution => video.GetDefaultVideoStream() is { } videoStream
+                ? ((int)Math.Ceiling(((decimal)(videoStream.Width ?? 1) * (videoStream.Height ?? 1)) / 100)).ToString("00000000")
+                : "99999999",
+            MergeVersionSortSelector.ReleaseGroupName => fileInfo.Shoko.AniDBData is { } anidbData
+                ? (
+                    !string.IsNullOrEmpty(anidbData.ReleaseGroup.ShortName)
+                        ? anidbData.ReleaseGroup.ShortName
+                        : !string.IsNullOrEmpty(anidbData.ReleaseGroup.Name)
+                            ? anidbData.ReleaseGroup.Name
+                            : $"_____Release group {anidbData.ReleaseGroup.Id}"
+                ).ReplaceInvalidPathCharacters()
+                : "_____No Group",
+            MergeVersionSortSelector.FileSource => fileInfo.Shoko.AniDBData?.Source switch {
+                FileSource.BluRay => "01",
+                FileSource.Web => "02",
+                FileSource.DVD => "03",
+                FileSource.VCD => "04",
+                FileSource.LaserDisc => "05",
+                FileSource.TV => "06",
+                FileSource.VHS => "07",
+                FileSource.Camera => "08",
+                FileSource.Other => "09",
+                _ => "FF",
+            },
+            MergeVersionSortSelector.FileVersion => (10 - fileInfo.Shoko.AniDBData?.Version ?? 1).ToString("0"),
+            MergeVersionSortSelector.RelativeDepth => fileInfo.Shoko.Locations
+                .Select(i => i.RelativePath.Split(Path.DirectorySeparatorChar).Length)
+                .Max()
+                .ToString("00"),
+            MergeVersionSortSelector.NoVariation => fileInfo.Shoko.IsVariation ? "1" : "0",
+            _ => string.Empty,
+        };
 
     #endregion Shared Methods
 }
