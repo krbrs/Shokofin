@@ -56,7 +56,8 @@ public class ImageProvider : IRemoteImageProvider, IHasOrder
                         if (episodeImages is not null)
                             AddImagesForEpisode(ref list, episodeImages, metadataLanguage, sortPreferred);
                         Logger.LogInformation("Getting {Count} images for episode {EpisodeName} (Episode={EpisodeId},Language={MetadataLanguage})", list.Count, episode.Name, episodeId, metadataLanguage);
-                    }                    break;
+                    }
+                    break;
                 }
                 case Series series: {
                     if (Lookup.TryGetSeriesIdFor(series, out var seriesId)) {
@@ -153,8 +154,8 @@ public class ImageProvider : IRemoteImageProvider, IHasOrder
     public static void AddImagesForEpisode(ref List<RemoteImageInfo> list, API.Models.EpisodeImages images, string metadataLanguage, bool sortList)
     {
         IEnumerable<API.Models.Image> imagesList = sortList
-            ? images.Thumbnails.OrderByDescending(image => image.IsPreferred)
-            : images.Thumbnails;
+            ? images.Thumbnails.Concat(images.Backdrops).OrderByDescending(image => image.IsPreferred).ThenByDescending(image => image.Type is API.Models.ImageType.Thumbnail)
+            : images.Thumbnails.Concat(images.Backdrops).OrderByDescending(image => image.Type is API.Models.ImageType.Thumbnail);
         foreach (var image in imagesList)
             AddImage(ref list, ImageType.Primary, image, metadataLanguage);
     }
