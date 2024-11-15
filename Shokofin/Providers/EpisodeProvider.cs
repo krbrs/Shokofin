@@ -155,7 +155,11 @@ public class EpisodeProvider: IRemoteMetadataProvider<Episode, EpisodeInfo>, IHa
             description = Text.GetDescription(episode, metadataLanguage);
         }
 
-        if (config.MarkSpecialsWhenGrouped) switch (episode.Type) {
+        var episodeNumber = Ordering.GetEpisodeNumber(group, series, episode);
+        var seasonNumber = Ordering.GetSeasonNumber(group, series, episode);
+        var (airsBeforeEpisodeNumber, airsBeforeSeasonNumber, airsAfterSeasonNumber, isSpecial) = Ordering.GetSpecialPlacement(group, series, episode);
+
+        if (isSpecial && config.MarkSpecialsWhenGrouped) switch (episode.Type) {
             case EpisodeType.Other:
             case EpisodeType.Normal:
                 break;
@@ -185,10 +189,6 @@ public class EpisodeProvider: IRemoteMetadataProvider<Episode, EpisodeInfo>, IHa
                 alternateTitle = $"U{episode.EpisodeNumber} {alternateTitle}";
                 break;
         }
-
-        var episodeNumber = Ordering.GetEpisodeNumber(group, series, episode);
-        var seasonNumber = Ordering.GetSeasonNumber(group, series, episode);
-        var (airsBeforeEpisodeNumber, airsBeforeSeasonNumber, airsAfterSeasonNumber, isSpecial) = Ordering.GetSpecialPlacement(group, series, episode);
 
         Episode result;
         if (season != null) {
