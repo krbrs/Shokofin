@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using Shokofin.API.Models;
+using Shokofin.Configuration;
 
 using PersonInfo = MediaBrowser.Controller.Entities.PersonInfo;
 using PersonKind = Jellyfin.Data.Enums.PersonKind;
@@ -118,7 +119,7 @@ public class SeasonInfo
         string[] genres,
         string[] tags,
         string[] productionLocations,
-        IReadOnlyDictionary<string, IReadOnlyDictionary<string, ResolvedTag>> tagSeriesMap,
+        IReadOnlyDictionary<string, SeriesConfiguration> seriesConfigurationMap,
         string? contentRating)
     {
         var seriesId = series.IDs.Shoko.ToString();
@@ -151,18 +152,14 @@ public class SeasonInfo
             .ThenBy(episode => episode.AniDB.EpisodeNumber)
             .ToList();
 
-        // Take note of any episodes which should be mapped as specials.
-        var mappedAsSpecials = episodes
-            .Where(episode => episode.AniDB.Type is EpisodeType.Normal or EpisodeType.Other && tagSeriesMap[episode.Shoko.IDs.ParentSeries.ToString()].ContainsKey("/custom user tags/shokofin/map as specials"))
-            .ToHashSet();
-
         // Iterate over the episodes once and store some values for later use.
         int index = 0;
         int lastNormalEpisode = -1;
         foreach (var episode in episodes) {
             if (episode.Shoko.IsHidden)
                 continue;
-            var episodeType = mappedAsSpecials.Contains(episode) ? EpisodeType.Special : episode.AniDB.Type;
+            var seriesConfiguration = seriesConfigurationMap[episode.Shoko.IDs.ParentSeries.ToString()];
+            var episodeType = seriesConfiguration.EpisodesAsSpecials ? EpisodeType.Special : episode.AniDB.Type;
             switch (episodeType) {
                 case EpisodeType.Normal:
                     episodesList.Add(episode);
@@ -178,6 +175,10 @@ public class SeasonInfo
                     if (episode.ExtraType != null) {
                         extrasList.Add(episode);
                     }
+                    else if (episodeType is EpisodeType.Special && seriesConfiguration.SpecialsAsEpisodes) {
+                        episodesList.Add(episode);
+                        lastNormalEpisode = index;
+                    }
                     else if (episodeType is EpisodeType.Special) {
                         specialsList.Add(episode);
                         if (lastNormalEpisode == -1) {
@@ -186,7 +187,7 @@ public class SeasonInfo
                         else {
                             var previousEpisode = episodes
                                 .GetRange(lastNormalEpisode, index - lastNormalEpisode)
-                                .FirstOrDefault(e => e.AniDB.Type is EpisodeType.Normal && !mappedAsSpecials.Contains(e));
+                                .FirstOrDefault(e => e.AniDB.Type is EpisodeType.Normal && !seriesConfiguration.EpisodesAsSpecials);
                             if (previousEpisode != null)
                                 specialsAnchorDictionary[episode] = previousEpisode;
                         }
@@ -242,7 +243,7 @@ public class SeasonInfo
                     else {
                         var previousEpisode = episodes
                             .GetRange(lastNormalEpisode, index - lastNormalEpisode)
-                            .FirstOrDefault(e => specialsList.Contains(e));
+                            .FirstOrDefault(e => episodesList.Contains(e));
                         if (previousEpisode != null)
                             specialsAnchorDictionary[episode] = previousEpisode;
                     }

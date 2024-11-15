@@ -132,9 +132,9 @@ createControllerFactory({
                 }
             });
 
-            form.querySelector("#UseGroupsForShows").addEventListener("change", function () {
-                form.querySelector("#SeasonOrdering").disabled = !this.checked;
-                if (this.checked) {
+            form.querySelector("#DefaultLibraryStructure").addEventListener("change", function () {
+                form.querySelector("#SeasonOrdering").disabled = this.value === "Shoko_Groups";
+                if (this.value === "Shoko_Groups") {
                     form.querySelector("#SeasonOrderingContainer").removeAttribute("hidden");
                 }
                 else {
@@ -407,7 +407,7 @@ function applyFormToConfig(form, config) {
             const libraryId = form.querySelector("#MediaFolderSelector").value.split(",");
             const mediaFolders = libraryId ? config.MediaFolders.filter((m) => m.LibraryId === libraryId) : undefined;
 
-            config.UseGroupsForShows = form.querySelector("#UseGroupsForShows").checked;
+            config.DefaultLibraryStructure = form.querySelector("#DefaultLibraryStructure").value;
             config.SeasonOrdering = form.querySelector("#SeasonOrdering").value;
             config.SeparateMovies = form.querySelector("#SeparateMovies").checked;
             config.FilterMovieLibraries = !form.querySelector("#DisableFilterMovieLibraries").checked;
@@ -568,7 +568,7 @@ async function applyConfigToForm(form, config) {
                     return acc;
                 }, []);
 
-            if (form.querySelector("#UseGroupsForShows").checked = config.UseGroupsForShows) {
+            if ((form.querySelector("#DefaultLibraryStructure").value = config.DefaultLibraryStructure) === "Shoko_Groups") {
                 form.querySelector("#SeasonOrderingContainer").removeAttribute("hidden");
                 form.querySelector("#SeasonOrdering").disabled = false;
             }

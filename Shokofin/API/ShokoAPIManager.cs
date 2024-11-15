@@ -9,6 +9,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Shokofin.API.Info;
 using Shokofin.API.Models;
+using Shokofin.Configuration;
 using Shokofin.ExternalIds;
 using Shokofin.Utils;
 
@@ -138,6 +139,52 @@ public class ShokoAPIManager : IDisposable
         DataCache.Clear();
         Logger.LogDebug("Cleanup complete.");
     }
+
+    #endregion
+    #region Series Settings
+
+    public Task<SeriesConfiguration> GetSeriesConfiguration(string id)
+        => DataCache.GetOrCreateAsync($"series-settings:{id}", async () => {
+            var seriesSettings = new SeriesConfiguration()
+            {
+                StructureType = Plugin.Instance.Configuration.DefaultLibraryStructure,
+                MergeOverride = SeriesMergingOverride.None,
+                EpisodesAsSpecials = false,
+                SpecialsAsEpisodes = false,
+            };
+            var tags = await GetNamespacedTagsForSeries(id);
+            if (!tags.TryGetValue("/custom user tags/shokofin", out var customTags))
+                return seriesSettings;
+
+            tags = customTags.RecursiveNamespacedChildren;
+            if (tags.ContainsKey("/anidb structure"))  
+                seriesSettings.StructureType = SeriesStructureType.AniDB_Anime;
+            else if (tags.ContainsKey("/shoko structure"))
+                seriesSettings.StructureType = SeriesStructureType.Shoko_Groups;
+            else if (tags.ContainsKey("/tmdb structure"))
+                seriesSettings.StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
+
+            if (tags.ContainsKey("/no merge"))
+                seriesSettings.MergeOverride = SeriesMergingOverride.NoMerge;
+            else if (tags.ContainsKey("/merge forward"))
+                seriesSettings.MergeOverride = SeriesMergingOverride.MergeForward;
+            else if (tags.ContainsKey("/merge backward"))
+                seriesSettings.MergeOverride = SeriesMergingOverride.MergeBackward;
+
+            if (tags.ContainsKey("/episodes as specials")) {
+                seriesSettings.EpisodesAsSpecials = true;
+            }
+            else if (tags.ContainsKey("/no episodes as specials") || !seriesSettings.EpisodesAsSpecials) {
+                seriesSettings.EpisodesAsSpecials = false;
+
+                if (tags.ContainsKey("/specials as episodes"))
+                    seriesSettings.SpecialsAsEpisodes = true;
+                else if (tags.ContainsKey("/no specials as episodes"))
+                    seriesSettings.SpecialsAsEpisodes = false;
+            }
+
+            return seriesSettings;
+        });
 
     #endregion
     #region Tags, Genres, And Content Ratings
@@ -756,7 +803,7 @@ public class ShokoAPIManager : IDisposable
                     var genresTasks = detailsIds.Select(id => GetGenresForSeries(id));
                     var tagsTasks = detailsIds.Select(id => GetTagsForSeries(id));
                     var productionLocationsTasks = detailsIds.Select(id => GetProductionLocations(id));
-                    var namespacedTagsTasks = detailsIds.Select(id => GetNamespacedTagsForSeries(id));
+                    var seriesConfigurationsTasks = detailsIds.Select(id => GetSeriesConfiguration(id));
 
                     // Await the tasks in order.
                     var cast = (await Task.WhenAll(castTasks))
@@ -782,22 +829,22 @@ public class ShokoAPIManager : IDisposable
                         .OrderBy(g => g)
                         .Distinct()
                         .ToArray();
-                    var namespacedTags = (await Task.WhenAll(namespacedTagsTasks))
+                    var seriesConfigurations = (await Task.WhenAll(seriesConfigurationsTasks))
                         .Select((t, i) => (t, i))
                         .ToDictionary(t => detailsIds[t.i], (t) => t.t);
 
                     // Create the season info using the merged details.
-                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, namespacedTags, contentRating);
+                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, seriesConfigurations, contentRating);
                 } else {
                     var cast = await APIClient.GetSeriesCast(seriesId).ConfigureAwait(false);
                     var relations = await APIClient.GetSeriesRelations(seriesId).ConfigureAwait(false);
                     var genres = await GetGenresForSeries(seriesId).ConfigureAwait(false);
                     var tags = await GetTagsForSeries(seriesId).ConfigureAwait(false);
                     var productionLocations = await GetProductionLocations(seriesId).ConfigureAwait(false);
-                    var namespacedTags = new Dictionary<string, IReadOnlyDictionary<string, ResolvedTag>>() {
-                        { seriesId, await GetNamespacedTagsForSeries(seriesId).ConfigureAwait(false) },
+                    var seriesConfigurations = new Dictionary<string, SeriesConfiguration>() {
+                        { seriesId, await GetSeriesConfiguration(seriesId).ConfigureAwait(false) },
                     };
-                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, namespacedTags, contentRating);
+                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, seriesConfigurations, contentRating);
                 }
 
                 foreach (var episode in episodes)

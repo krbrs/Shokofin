@@ -306,10 +306,41 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public MergeVersionSortSelector[] MergeVersionSortSelectorOrder { get; set; }
 
+    public SeriesStructureType DefaultLibraryStructure
+    {
+        get {
+            if (UseGroupsForShows && !UseTmdbForShows)
+                return SeriesStructureType.Shoko_Groups;
+            if (UseTmdbForShows && !UseGroupsForShows)
+                return SeriesStructureType.TMDB_SeriesAndMovies;
+            return SeriesStructureType.AniDB_Anime;
+        }
+        set {
+            switch (value) {
+                case SeriesStructureType.Shoko_Groups:
+                    UseGroupsForShows = true;
+                    UseTmdbForShows = false;
+                    break;
+                case SeriesStructureType.TMDB_SeriesAndMovies:
+                    UseGroupsForShows = false;
+                    UseTmdbForShows = true;
+                    break;
+                default:
+                    UseGroupsForShows = false;
+                    UseTmdbForShows = false;
+                    break;
+            }
+        }
+    }
+
     /// <summary>
     /// Use Shoko Groups to group Shoko Series together to create the show entries.
     /// </summary>
+    [JsonIgnore]
     public bool UseGroupsForShows { get; set; }
+
+    [JsonIgnore]
+    public bool UseTmdbForShows { get; set; }
 
     /// <summary>
     /// Separate movies out of show type libraries.
@@ -634,6 +665,7 @@ public class PluginConfiguration : BasePluginConfiguration
             MergeVersionSortSelector.NoVariation,
         ];
         UseGroupsForShows = false;
+        UseTmdbForShows = false;
         SeparateMovies = false;
         FilterMovieLibraries = true;
         MovieSpecialsAsExtraFeaturettes = false;

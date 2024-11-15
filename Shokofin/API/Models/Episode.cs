@@ -90,7 +90,7 @@ public enum EpisodeType
     /// <summary>
     /// A catch-all type for future extensions when a provider can't use a current episode type, but knows what the future type should be.
     /// </summary>
-    Other = 1,
+    Other = 2,
 
     /// <summary>
     /// The episode type is unknown.
@@ -100,7 +100,7 @@ public enum EpisodeType
     /// <summary>
     /// A normal episode.
     /// </summary>
-    Normal = 2,
+    Normal = 1,
 
     /// <summary>
     /// A special episode.

@@ -1115,12 +1115,14 @@ form:not(.expert-mode) .expert-only {
                         <legend>
                             <h3>Basic Settings</h3>
                         </legend>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="UseGroupsForShows" />
-                                <span>Use Groups for Shows</span>
-                            </label>
-                            <div class="fieldDescription checkboxFieldDescription">
+                        <div class="selectContainer selectContainer-withDescription expert-only">
+                            <label class="selectLabel" for="DefaultLibraryStructure">Library Structure Mode</label>
+                            <select is="emby-select" id="DefaultLibraryStructure" name="DefaultLibraryStructure" class="emby-select-withcolor emby-select">
+                                <option value="AniDB_Anime" selected>AniDB Anime Structure (Default)</option>
+                                <option value="Shoko_Groups">Shoko Group Structure</option>
+                                <option value="TMDB_SeriesAndMovies">TMDB Shows &amp; Movies Structure</option>
+                            </select>
+                            <div class="fieldDescription">
                                 <div>
                                     This will use Shoko's group structure to construct the shows in the libraries instead of the flat AniDB-esque structure you would otherwise see.
                                 </div>
