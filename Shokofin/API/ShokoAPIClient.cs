@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text;
@@ -9,6 +8,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Shokofin.API.Models;
+using Shokofin.API.Models.TMDB;
 using Shokofin.Utils;
 
 namespace Shokofin.API;
@@ -316,7 +316,12 @@ public class ShokoAPIClient : IDisposable
 
     public Task<Episode> GetEpisode(string id)
     {
-        return Get<Episode>($"/api/v3/Episode/{id}?includeDataFrom=AniDB,TMDB&includeXRefs=true");
+        return Get<Episode>($"/api/v3/Episode/{id}?includeDataFrom=AniDB&includeXRefs=true");
+    }
+
+    public Task<TmdbEpisode> GetTmdbEpisode(string tmdbId)
+    {
+        return Get<TmdbEpisode>($"/api/v3/TMDB/Episode/${tmdbId}?include=Titles,Overviews,Images,Ordering,CrossReferences,Cast,Crew,FileCrossReferences");
     }
 
     public async Task<EpisodeImages?> GetEpisodeImages(string id)
@@ -342,7 +347,7 @@ public class ShokoAPIClient : IDisposable
 
     public Task<ListResult<Episode>> GetEpisodesFromSeries(string seriesId)
     {
-        return Get<ListResult<Episode>>($"/api/v3/Series/{seriesId}/Episode?pageSize=0&includeHidden=true&includeMissing=true&includeDataFrom=AniDB,TMDB&includeXRefs=true");
+        return Get<ListResult<Episode>>($"/api/v3/Series/{seriesId}/Episode?pageSize=0&includeHidden=true&includeMissing=true&includeDataFrom=AniDB&includeXRefs=true");
     }
 
     public Task<Series> GetSeries(string id)

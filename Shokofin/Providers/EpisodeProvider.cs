@@ -213,7 +213,7 @@ public class EpisodeProvider: IRemoteMetadataProvider<Episode, EpisodeInfo>, IHa
                 ProductionLocations = TagFilter.GetSeasonProductionLocations(series),
                 OfficialRating = ContentRating.GetSeasonContentRating(series, metadataCountryCode),
                 DateLastSaved = DateTime.UtcNow,
-                RunTimeTicks = episode.Runtime.Ticks,
+                RunTimeTicks = episode.Runtime?.Ticks,
             };
             result.PresentationUniqueKey = result.GetPresentationUniqueKey();
         }

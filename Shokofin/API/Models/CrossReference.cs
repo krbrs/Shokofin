@@ -33,6 +33,14 @@ public class CrossReference
         /// </summary>
         public int AniDB { get; set; }
 
+        /// <summary>
+        /// The Movie DataBase (TMDB) Cross-Reference IDs.
+        /// </summary>
+        public Episode.TmdbEpisodeIDs TMDB { get; set; } = new();
+
+        /// <summary>
+        /// The Release Group ID.
+        /// </summary>
         public int? ReleaseGroup { get; set; }
 
         /// <summary>

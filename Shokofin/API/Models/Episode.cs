@@ -4,8 +4,7 @@ using Shokofin.API.Models.AniDB;
 
 namespace Shokofin.API.Models;
 
-public class Episode
-{
+public class Episode {
     /// <summary>
     /// All identifiers related to the episode entry, e.g. the Shoko, AniDB,
     /// TMDB, etc.
@@ -51,68 +50,23 @@ public class Episode
     /// </summary>
     public List<CrossReference.EpisodeCrossReferenceIDs> CrossReferences { get; set; } = [];
 
-    public class EpisodeIDs : IDs
-    {
+    public class EpisodeIDs : IDs {
         public int ParentSeries { get; set; }
+
+        public int AniDB { get; set; }
+
+        public List<int> TvDB { get; set; } = [];
+
+        public List<string> IMDB { get; set; } = [];
+
+        public TmdbEpisodeIDs TMDB { get; init; } = new();
+    }
+
+    public class TmdbEpisodeIDs {
+        public List<int> Episode { get; init; } = [];
+
+        public List<int> Movie { get; init; } = [];
+
+        public List<int> Show { get; init; } = [];
     }
 }
-
-
-public enum EpisodeType
-{
-    /// <summary>
-    /// A catch-all type for future extensions when a provider can't use a current episode type, but knows what the future type should be.
-    /// </summary>
-    Other = 2,
-
-    /// <summary>
-    /// The episode type is unknown.
-    /// </summary>
-    Unknown = Other,
-
-    /// <summary>
-    /// A normal episode.
-    /// </summary>
-    Normal = 1,
-
-    /// <summary>
-    /// A special episode.
-    /// </summary>
-    Special = 3,
-
-    /// <summary>
-    /// A trailer.
-    /// </summary>
-    Trailer = 4,
-
-    /// <summary>
-    /// Either an opening-song, or an ending-song.
-    /// </summary>
-    ThemeSong = 5,
-
-    /// <summary>
-    /// Intro, and/or opening-song.
-    /// </summary>
-    OpeningSong = 6,
-
-    /// <summary>
-    /// Outro, end-roll, credits, and/or ending-song.
-    /// </summary>
-    EndingSong = 7,
-
-    /// <summary>
-    /// AniDB parody type. Where else would this be useful?
-    /// </summary>
-    Parody = 8,
-
-    /// <summary>
-    /// A interview tied to the series.
-    /// </summary>
-    Interview = 9,
-
-    /// <summary>
-    /// A DVD or BD extra, e.g. BD-menu or deleted scenes.
-    /// </summary>
-    Extra = 10,
-}
-

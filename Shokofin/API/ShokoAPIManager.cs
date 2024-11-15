@@ -635,16 +635,19 @@ public class ShokoAPIManager : IDisposable
             return episodeInfo;
 
         var episode = await APIClient.GetEpisode(episodeId).ConfigureAwait(false);
-        return CreateEpisodeInfo(episode, episodeId);
+        return await CreateEpisodeInfo(episode, episodeId);
     }
 
-    private EpisodeInfo CreateEpisodeInfo(Episode episode, string episodeId)
-        => DataCache.GetOrCreate(
+    private Task<EpisodeInfo> CreateEpisodeInfo(Episode episode, string episodeId)
+        => DataCache.GetOrCreateAsync(
             $"episode:{episodeId}",
-            () => {
+            async () => {
                 Logger.LogTrace("Creating info object for episode {EpisodeName}. (Episode={EpisodeId})", episode.Name, episodeId);
 
-                return new EpisodeInfo(episode);
+                var tmdbEpisodeTasks = episode.IDs.TMDB.Episode
+                    .Select(e => APIClient.GetTmdbEpisode(e.ToString()));
+                var tmdbEpisodes = await Task.WhenAll(tmdbEpisodeTasks);
+                return new EpisodeInfo(episode, tmdbEpisodes);
             }
         );
 
@@ -788,7 +791,10 @@ public class ShokoAPIManager : IDisposable
                 var (earliestImportedAt, lastImportedAt) = await GetEarliestImportedAtForSeries(seriesId).ConfigureAwait(false);
                 var episodes = (await Task.WhenAll(
                     extraIds.Prepend(seriesId)
-                        .Select(id => APIClient.GetEpisodesFromSeries(id).ContinueWith(task => task.Result.List.Select(e => CreateEpisodeInfo(e, e.IDs.Shoko.ToString()))))
+                        .Select(id => APIClient.GetEpisodesFromSeries(id)
+                            .ContinueWith(task => Task.WhenAll(task.Result.List.Select(e => CreateEpisodeInfo(e, e.IDs.Shoko.ToString()))))
+                            .Unwrap()
+                        )
                 ).ConfigureAwait(false))
                     .SelectMany(list => list)
                     .ToList();

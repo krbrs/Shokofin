@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Diagnostics.CodeAnalysis;
+using System.Globalization;
 using System.Linq;
 using Shokofin.API.Models;
-using Shokofin.API.Models.AniDB;
+using Shokofin.API.Models.TMDB;
 using Shokofin.Configuration;
 using Shokofin.Utils;
 
@@ -33,7 +33,7 @@ public class EpisodeInfo
 
     public MediaBrowser.Model.Entities.ExtraType? ExtraType;
 
-    public TimeSpan Runtime;
+    public TimeSpan? Runtime;
 
     public DateTime? AiredAt;
 
@@ -51,8 +51,13 @@ public class EpisodeInfo
 
     public List<CrossReference.EpisodeCrossReferenceIDs> CrossReferences;
 
-    public EpisodeInfo(Episode episode)
+    public EpisodeInfo(Episode episode, IReadOnlyList<TmdbEpisode> tmdbEpisodes)
     {
+        var tmdbEpisode = tmdbEpisodes
+            .OrderBy(e => e.ShowId)
+            .ThenBy(e => e.SeasonNumber)
+            .ThenBy(e => e.EpisodeNumber)
+            .FirstOrDefault();
         Id = episode.IDs.Shoko.ToString();
         SeriesId = episode.IDs.ParentSeries.ToString();
         AnidbId = episode.AniDB.Id.ToString();
@@ -65,7 +70,10 @@ public class EpisodeInfo
         Runtime = episode.AniDB.Duration;
         AiredAt = episode.AniDB.AirDate;
         DefaultTitle = episode.Name;
-        Titles = episode.AniDB.Titles;
+        Titles = [
+            ..episode.AniDB.Titles,
+            ..(tmdbEpisode is not null ? tmdbEpisode.Titles : []),
+        ];
         DefaultOverview = episode.Description;
         Overviews = [
             new TextOverview() {
@@ -75,9 +83,32 @@ public class EpisodeInfo
                 Source = "AniDB",
                 Value = episode.AniDB.Description,
             },
+            ..(tmdbEpisode is not null ? tmdbEpisode.Overviews : []),
         ];
         FileCount = episode.Size;
         OfficialRating = episode.AniDB.Rating;
         CrossReferences = episode.CrossReferences;
+    }
+
+    public EpisodeInfo(TmdbEpisode episode)
+    {
+        Id = episode.Id.ToString();
+        SeriesId = episode.ShowId.ToString();
+        TmdbId = episode.Id.ToString();
+        StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
+        Type = episode.SeasonNumber is 0 ? EpisodeType.Special : EpisodeType.Normal;
+        SeasonNumber = episode.SeasonNumber;
+        EpisodeNumber = episode.EpisodeNumber;
+        Runtime = episode.Runtime;
+        AiredAt = episode.AiredAt?.ToDateTime(TimeOnly.ParseExact("00:00:00.000000", "en-US", CultureInfo.InvariantCulture), DateTimeKind.Utc);
+        DefaultTitle = episode.Title;
+        Titles = episode.Titles;
+        DefaultOverview = episode.Overview;
+        Overviews = episode.Overviews;
+        FileCount = episode.FileCrossReferences.Sum(a => a.Episodes.Count);
+        OfficialRating = episode.UserRating;
+        CrossReferences = episode.FileCrossReferences
+            .SelectMany(a => a.Episodes)
+            .ToList();
     }
 }
