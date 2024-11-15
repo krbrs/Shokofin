@@ -2,12 +2,11 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models;
 
-public class Title
+public class TextOverview
 {
     /// <summary>
     /// The title.
     /// </summary>
-    [JsonPropertyName("Name")]
     public string Value { get; set; } = string.Empty;
 
     /// <summary>
@@ -15,12 +14,6 @@ public class Title
     /// </summary>
     [JsonPropertyName("Language")]
     public string LanguageCode { get; set; } = "unk";
-
-    /// <summary>
-    /// AniDB series type. Only available on series titles.
-    /// </summary>
-    [JsonConverter(typeof(JsonStringEnumConverter))]
-    public TitleType? Type { get; set; }
 
     /// <summary>
     /// True if this is the default title for the entry.
@@ -38,16 +31,4 @@ public class Title
     /// AniDB, TMDB, AniList, etc.
     /// </summary>
     public string Source { get; set; } = "Unknown";
-}
-
-[JsonConverter(typeof(JsonStringEnumConverter))]
-public enum TitleType
-{
-    None = 0,
-    Main = 1,
-    Official = 2,
-    Short = 3,
-    Synonym = 4,
-    TitleCard = 5,
-    KanjiReading = 6,
 }

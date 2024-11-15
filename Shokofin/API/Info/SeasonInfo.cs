@@ -145,21 +145,22 @@ public class SeasonInfo
 
         // Order the episodes by date.
         episodes = episodes
-            .OrderBy(episode => !episode.AniDB.AirDate.HasValue)
-            .ThenBy(episode => episode.AniDB.AirDate)
-            .ThenBy(e => seriesIdOrder.IndexOf(e.Shoko.IDs.ParentSeries.ToString()))
-            .ThenBy(episode => episode.AniDB.Type)
-            .ThenBy(episode => episode.AniDB.EpisodeNumber)
+            .OrderBy(episode => !episode.AiredAt.HasValue)
+            .ThenBy(episode => episode.AiredAt)
+            .ThenBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+            .ThenBy(episode => episode.Type)
+            .ThenBy(episode => episode.SeasonNumber)
+            .ThenBy(episode => episode.EpisodeNumber)
             .ToList();
 
         // Iterate over the episodes once and store some values for later use.
         int index = 0;
         int lastNormalEpisode = -1;
         foreach (var episode in episodes) {
-            if (episode.Shoko.IsHidden)
+            if (episode.IsHidden)
                 continue;
-            var seriesConfiguration = seriesConfigurationMap[episode.Shoko.IDs.ParentSeries.ToString()];
-            var episodeType = episode.AniDB.Type is EpisodeType.Normal && seriesConfiguration.EpisodesAsSpecials ? EpisodeType.Special : episode.AniDB.Type;
+            var seriesConfiguration = seriesConfigurationMap[episode.SeriesId];
+            var episodeType = episode.Type is EpisodeType.Normal && seriesConfiguration.EpisodesAsSpecials ? EpisodeType.Special : episode.Type;
             switch (episodeType) {
                 case EpisodeType.Normal:
                     episodesList.Add(episode);
@@ -187,7 +188,7 @@ public class SeasonInfo
                         else {
                             var previousEpisode = episodes
                                 .GetRange(lastNormalEpisode, index - lastNormalEpisode)
-                                .FirstOrDefault(e => e.AniDB.Type is EpisodeType.Normal && !seriesConfiguration.EpisodesAsSpecials);
+                                .FirstOrDefault(e => e.Type is EpisodeType.Normal && !seriesConfiguration.EpisodesAsSpecials);
                             if (previousEpisode != null)
                                 specialsAnchorDictionary[episode] = previousEpisode;
                         }
@@ -201,19 +202,22 @@ public class SeasonInfo
         // sort we're doing above have the episodes ordered by air date to get
         // the previous episode anchors right.
         episodesList = episodesList
-            .OrderBy(e => seriesIdOrder.IndexOf(e.Shoko.IDs.ParentSeries.ToString()))
-            .ThenBy(e => e.AniDB.Type)
-            .ThenBy(e => e.AniDB.EpisodeNumber)
+            .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+            .ThenBy(e => e.Type)
+            .ThenBy(e => e.SeasonNumber)
+            .ThenBy(e => e.EpisodeNumber)
             .ToList();
         specialsList = specialsList
-            .OrderBy(e => seriesIdOrder.IndexOf(e.Shoko.IDs.ParentSeries.ToString()))
-            .ThenBy(e => e.AniDB.Type)
-            .ThenBy(e => e.AniDB.EpisodeNumber)
+            .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+            .ThenBy(e => e.Type)
+            .ThenBy(e => e.SeasonNumber)
+            .ThenBy(e => e.EpisodeNumber)
             .ToList();
         altEpisodesList = altEpisodesList
-            .OrderBy(e => seriesIdOrder.IndexOf(e.Shoko.IDs.ParentSeries.ToString()))
-            .ThenBy(e => e.AniDB.Type)
-            .ThenBy(e => e.AniDB.EpisodeNumber)
+            .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+            .ThenBy(e => e.Type)
+            .ThenBy(e => e.SeasonNumber)
+            .ThenBy(e => e.EpisodeNumber)
             .ToList();
 
         // Replace the normal episodes if we've hidden all the normal episodes and we have at least one
@@ -252,7 +256,7 @@ public class SeasonInfo
             }
         }
         // Also switch the type from movie to web if we're hidden the main movies, but the parts are normal episodes.
-        else if (!customType.HasValue && type == SeriesType.Movie && episodes.Any(episodeInfo => episodeInfo.AniDB.Titles.Any(title => title.LanguageCode == "en" && string.Equals(title.Value, "Complete Movie", StringComparison.InvariantCultureIgnoreCase)) && episodeInfo.Shoko.IsHidden)) {
+        else if (!customType.HasValue && type == SeriesType.Movie && episodes.Any(episodeInfo => episodeInfo.Titles.Any(title => title.Source is "AniDB" && title.LanguageCode is "en" && title.Value is "Complete Movie") && episodeInfo.IsHidden)) {
             type = SeriesType.Web;
         }
 
@@ -299,11 +303,11 @@ public class SeasonInfo
     {
         // The extra "season" for this season info.
         if (offset == 1)
-            return EpisodeList.Count == 0 || !AlternateEpisodesList.Any(eI => eI.Shoko.Size > 0);
+            return EpisodeList.Count == 0 || !AlternateEpisodesList.Any(eI => eI.FileCount > 0);
 
         // The default "season" for this season info.
         var episodeList = EpisodeList.Count == 0 ? AlternateEpisodesList : EpisodeList;
-        if (!episodeList.Any(eI => eI.Shoko.Size > 0))
+        if (!episodeList.Any(eI => eI.FileCount > 0))
             return false;
 
         return true;

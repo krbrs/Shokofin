@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using Shokofin.API.Info;
 using Shokofin.API.Models;
+using Shokofin.API.Models.AniDB;
 
 using ExtraType = MediaBrowser.Model.Entities.ExtraType;
 
@@ -147,7 +148,7 @@ public class Ordering
 
         // If we still cannot find the episode for whatever reason, then bail. I don't fudging know why, but I know it's not the plugin's fault.
         if (index == -1)
-            throw new IndexOutOfRangeException($"Unable to find index to use for \"{episodeInfo.Shoko.Name}\". (Group=\"{showInfo.GroupId}\",Series=\"{seasonInfo.Id}\",ExtraSeries={(seasonInfo.ExtraIds.Count > 0 ? $"[\"{seasonInfo.ExtraIds.Join("\",\"")}\"]" : "[]")},Episode={episodeInfo.Id})");
+            throw new IndexOutOfRangeException($"Unable to find index to use for \"{episodeInfo.DefaultTitle}\". (Group=\"{showInfo.GroupId}\",Series=\"{seasonInfo.Id}\",ExtraSeries={(seasonInfo.ExtraIds.Count > 0 ? $"[\"{seasonInfo.ExtraIds.Join("\",\"")}\"]" : "[]")},Episode={episodeInfo.Id})");
 
         return index + 1;
     }
@@ -224,7 +225,7 @@ public class Ordering
     /// </summary>
     /// <param name="episode"></param>
     /// <returns></returns>
-    public static ExtraType? GetExtraType(Episode.AniDB episode)
+    public static ExtraType? GetExtraType(AnidbEpisode episode)
     {
         switch (episode.Type)
         {

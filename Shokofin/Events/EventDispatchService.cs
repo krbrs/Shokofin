@@ -676,7 +676,7 @@ public class EventDispatchService
                     )
                     .ToList();
                 foreach (var episode in episodes) {
-                    Logger.LogInformation("Refreshing episode {EpisodeName}. (Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", episode.Name, episode.Id, episodeInfo.Id, episodeInfo.Shoko.IDs.ParentSeries.ToString());
+                    Logger.LogInformation("Refreshing episode {EpisodeName}. (Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", episode.Name, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
                     await episode.RefreshMetadata(new(DirectoryService) {
                         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                         ImageRefreshMode = MetadataRefreshMode.FullRefresh,

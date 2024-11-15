@@ -570,7 +570,7 @@ public class ShokoAPIManager : IDisposable
                     var episodeId = episodeXRef.Shoko!.Value.ToString();
                     var episodeInfo = await GetEpisodeInfo(episodeId).ConfigureAwait(false) ??
                         throw new Exception($"Unable to find episode cross-reference for the specified series and episode for the file. (File={fileId},Episode={episodeId},Series={seriesId})");
-                    if (episodeInfo.Shoko.IsHidden) {
+                    if (episodeInfo.IsHidden) {
                         Logger.LogDebug("Skipped hidden episode linked to file. (File={FileId},Episode={EpisodeId},Series={SeriesId})", fileId, episodeId, seriesId);
                         continue;
                     }
@@ -579,13 +579,13 @@ public class ShokoAPIManager : IDisposable
 
                 // Group and order the episodes.
                 var groupedEpisodeLists = episodeList
-                    .GroupBy(tuple => (type: tuple.Episode.AniDB.Type, group: tuple.CrossReference.Percentage?.Group ?? 1))
+                    .GroupBy(tuple => (type: tuple.Episode.Type, group: tuple.CrossReference.Percentage?.Group ?? 1))
                     .OrderByDescending(a => Array.IndexOf(EpisodePickOrder, a.Key.type))
                     .ThenBy(a => a.Key.group)
-                    .Select(epList => epList.OrderBy(tuple => tuple.Episode.AniDB.EpisodeNumber).ToList())
+                    .Select(epList => epList.OrderBy(tuple => tuple.Episode.SeasonNumber).ThenBy(tuple => tuple.Episode.EpisodeNumber).ToList())
                     .ToList();
 
-                var fileInfo = new FileInfo(file, groupedEpisodeLists, seriesId);
+                var fileInfo = new FileInfo(file, seriesId, groupedEpisodeLists);
 
                 FileAndSeriesIdToEpisodeIdDictionary[$"{fileId}:{seriesId}"] = episodeList.Select(episode => episode.Id).ToList();
                 return fileInfo;

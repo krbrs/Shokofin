@@ -56,10 +56,10 @@ public class TrailerProvider: IRemoteMetadataProvider<Trailer, TrailerInfo>, IHa
             {
                 Name = displayTitle,
                 OriginalTitle = alternateTitle,
-                PremiereDate = episodeInfo.AniDB.AirDate,
-                ProductionYear = episodeInfo.AniDB.AirDate?.Year ?? seasonInfo.AniDB.AirDate?.Year,
+                PremiereDate = episodeInfo.AiredAt,
+                ProductionYear = episodeInfo.AiredAt?.Year ?? seasonInfo.AniDB.AirDate?.Year,
                 Overview = description,
-                CommunityRating = episodeInfo.AniDB.Rating.Value > 0 ? episodeInfo.AniDB.Rating.ToFloat(10) : 0,
+                CommunityRating = episodeInfo.OfficialRating.Value > 0 ? episodeInfo.OfficialRating.ToFloat(10) : 0,
             };
             Logger.LogInformation("Found trailer {EpisodeName} (File={FileId},Episode={EpisodeId},Series={SeriesId},Group={GroupId})", result.Item.Name, fileInfo.Id, episodeInfo.Id, seasonInfo.Id, showInfo?.GroupId);
 

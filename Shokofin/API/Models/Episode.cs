@@ -1,6 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Text.Json.Serialization;
+using Shokofin.API.Models.AniDB;
 
 namespace Shokofin.API.Models;
 
@@ -41,46 +41,19 @@ public class Episode
     public int Size { get; set; }
 
     /// <summary>
-    /// The <see cref="Episode.AniDB"/>, if <see cref="DataSource.AniDB"/> is
+    /// The <see cref="AnidbEpisode"/>, if <see cref="DataSource.AniDB"/> is
     /// included in the data to add.
     /// </summary>
-    [JsonPropertyName("AniDB")]
-    public AniDB AniDBEntity { get; set; } = new();
+    public AnidbEpisode AniDB { get; set; } = new();
 
     /// <summary>
     /// File cross-references for the episode.
     /// </summary>
     public List<CrossReference.EpisodeCrossReferenceIDs> CrossReferences { get; set; } = [];
 
-    public class AniDB
-    {
-        [JsonPropertyName("ID")]
-        public int Id { get; set; }
-
-        /// <summary>
-        /// The duration of the episode.
-        /// </summary>
-        public TimeSpan Duration { get; set; }
-
-        [JsonConverter(typeof(JsonStringEnumConverter))]
-        public EpisodeType Type { get; set; }
-
-        public int EpisodeNumber { get; set; }
-
-        public DateTime? AirDate { get; set; }
-
-        public List<Title> Titles { get; set; } = [];
-
-        public string Description { get; set; } = string.Empty;
-
-        public Rating Rating { get; set; } = new();
-    }
-
     public class EpisodeIDs : IDs
     {
         public int ParentSeries { get; set; }
-
-        public int AniDB { get; set; }
     }
 }
 

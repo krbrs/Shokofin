@@ -185,7 +185,7 @@ public class ShowInfo
         SeasonList = [seasonInfo];
         SeasonNumberBaseDictionary = seasonNumberBaseDictionary;
         SeasonOrderDictionary = seasonOrderDictionary;
-        SpecialsDict = seasonInfo.SpecialsList.ToDictionary(episodeInfo => episodeInfo.Id, episodeInfo => episodeInfo.Shoko.Size > 0);
+        SpecialsDict = seasonInfo.SpecialsList.ToDictionary(episodeInfo => episodeInfo.Id, episodeInfo => episodeInfo.FileCount > 0);
         DefaultSeason = seasonInfo;
         EpisodePadding = Math.Max(2, (new int[] { seasonInfo.EpisodeList.Count, seasonInfo.AlternateEpisodesList.Count, seasonInfo.SpecialsList.Count }).Max().ToString().Length);
     }
@@ -242,7 +242,7 @@ public class ShowInfo
             if (seasonInfo.AlternateEpisodesList.Count > 0)
                 seasonOrderDictionary.Add(seasonNumberOffset++, seasonInfo);
             foreach (var episodeInfo in seasonInfo.SpecialsList)
-                specialsSet.Add(episodeInfo.Id, episodeInfo.Shoko.Size > 0);
+                specialsSet.Add(episodeInfo.Id, episodeInfo.FileCount > 0);
         }
 
         Id = defaultSeason.Id;

@@ -762,7 +762,7 @@ public class VirtualFileSystemService
 
         var showName = show.DefaultSeason.AniDB.Title?.ReplaceInvalidPathCharacters() ?? $"Shoko Series {show.Id}";
         var episodeNumber = Ordering.GetEpisodeNumber(show, season, episode);
-        var episodeName = (episode.AniDB.Titles.FirstOrDefault(t => t.LanguageCode == "en")?.Value ?? $"Episode {episode.AniDB.Type} {episodeNumber}").ReplaceInvalidPathCharacters();
+        var episodeName = (episode.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.LanguageCode == "en")?.Value ?? $"{(episode.Type is EpisodeType.Normal ? "Episode " : $"{episode.Type} ")}{episodeNumber}").ReplaceInvalidPathCharacters();
 
         // For those **really** long names we have to cut if off at some point…
         if (showName.Length >= NameCutOff)
@@ -798,7 +798,7 @@ public class VirtualFileSystemService
         if (collectionType is CollectionType.movies || (collectionType is null && isMovieSeason)) {
             if (extrasFolders != null) {
                 foreach (var extrasFolder in extrasFolders)
-                    foreach (var episodeInfo in season.EpisodeList.Where(a => a.Shoko.Size > 0))
+                    foreach (var episodeInfo in season.EpisodeList.Where(a => a.FileCount > 0))
                         folders.Add(Path.Join(vfsPath, $"{showName} [{ShokoSeriesId.Name}={show.Id}] [{ShokoEpisodeId.Name}={episodeInfo.Id}]", extrasFolder));
             }
             else {
@@ -824,7 +824,7 @@ public class VirtualFileSystemService
                 folders.Add(Path.Join(vfsPath, showFolder, seasonFolder));
                 episodeName = $"{showName} S{(isSpecial ? 0 : seasonNumber).ToString().PadLeft(2, '0')}E{episodeNumber.ToString().PadLeft(show.EpisodePadding, '0')}";
                 if ((episodeXref.Percentage?.Group ?? 1) is not 1) {
-                    var list = episode.Shoko.CrossReferences.Where(xref => xref.ReleaseGroup == episodeXref.ReleaseGroup && xref.Percentage!.Group == episodeXref.Percentage!.Group).ToList();
+                    var list = episode.CrossReferences.Where(xref => xref.ReleaseGroup == episodeXref.ReleaseGroup && xref.Percentage!.Group == episodeXref.Percentage!.Group).ToList();
                     var files = await Task.WhenAll(list.Select(xref => ApiClient.GetFileByEd2kAndFileSize(xref.ED2K, xref.FileSize)));
                     var index = list.FindIndex(xref => xref.Percentage!.Start == episodeXref.Percentage!.Start && xref.Percentage!.End == episodeXref.Percentage!.End);
                     filePartSuffix = $".pt{index + 1}";

@@ -52,14 +52,14 @@ public class MovieProvider : IRemoteMetadataProvider<Movie, MovieInfo>, IHasOrde
             Logger.LogInformation("Found movie {EpisodeName} (File={FileId},Episode={EpisodeId},Series={SeriesId},ExtraSeries={ExtraIds})", displayTitle, file.Id, episode.Id, season.Id, season.ExtraIds);
 
             bool isMultiEntry = season.Shoko.Sizes.Total.Episodes > 1;
-            var rating = isMultiEntry ? episode.AniDB.Rating.ToFloat(10) : season.AniDB.Rating.ToFloat(10);
+            var rating = isMultiEntry ? episode.OfficialRating.ToFloat(10) : season.AniDB.Rating.ToFloat(10);
 
             result.Item = new Movie {
                 Name = displayTitle,
                 OriginalTitle = alternateTitle,
-                PremiereDate = episode.AniDB.AirDate,
+                PremiereDate = episode.AiredAt,
                 Overview = Text.GetMovieDescription(episode, season, info.MetadataLanguage),
-                ProductionYear = episode.AniDB.AirDate?.Year,
+                ProductionYear = episode.AiredAt?.Year,
                 Tags = season.Tags.ToArray(),
                 Genres = season.Genres.ToArray(),
                 Studios = season.Studios.ToArray(),

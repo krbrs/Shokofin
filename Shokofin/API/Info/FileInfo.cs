@@ -18,7 +18,7 @@ public class FileInfo
 
     public List<List<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)>> AlternateEpisodeLists;
 
-    public FileInfo(File file, List<List<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)>> groupedEpisodeLists, string seriesId)
+    public FileInfo(File file, string seriesId, List<List<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)>> groupedEpisodeLists)
     {
         var episodeList = groupedEpisodeLists.FirstOrDefault() ?? [];
         var alternateEpisodeLists = groupedEpisodeLists.Count > 1 ? groupedEpisodeLists.GetRange(1, groupedEpisodeLists.Count - 1) : [];
