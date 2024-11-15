@@ -159,7 +159,7 @@ public class SeasonInfo
             if (episode.Shoko.IsHidden)
                 continue;
             var seriesConfiguration = seriesConfigurationMap[episode.Shoko.IDs.ParentSeries.ToString()];
-            var episodeType = seriesConfiguration.EpisodesAsSpecials ? EpisodeType.Special : episode.AniDB.Type;
+            var episodeType = episode.AniDB.Type is EpisodeType.Normal && seriesConfiguration.EpisodesAsSpecials ? EpisodeType.Special : episode.AniDB.Type;
             switch (episodeType) {
                 case EpisodeType.Normal:
                     episodesList.Add(episode);
