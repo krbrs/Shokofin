@@ -4,6 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using MediaBrowser.Model.Tasks;
 using Shokofin.API;
+using Shokofin.Events;
 using Shokofin.Resolvers;
 
 namespace Shokofin.Tasks;
@@ -11,7 +12,7 @@ namespace Shokofin.Tasks;
 /// <summary>
 /// Forcefully clear the plugin cache. For debugging and troubleshooting. DO NOT RUN THIS TASK WHILE A LIBRARY SCAN IS RUNNING.
 /// </summary>
-public class ClearPluginCacheTask(ShokoAPIManager apiManager, ShokoAPIClient apiClient, VirtualFileSystemService vfsService) : IScheduledTask, IConfigurableScheduledTask
+public class ClearPluginCacheTask(ShokoAPIManager apiManager, ShokoAPIClient apiClient, VirtualFileSystemService vfsService, EventDispatchService eventDispatchService) : IScheduledTask, IConfigurableScheduledTask
 {
     /// <inheritdoc />
     public string Name => "Clear Plugin Cache";
@@ -40,6 +41,8 @@ public class ClearPluginCacheTask(ShokoAPIManager apiManager, ShokoAPIClient api
 
     private readonly VirtualFileSystemService _vfsService = vfsService;
 
+    private readonly EventDispatchService _eventDispatchService = eventDispatchService;
+
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         => [];
 
@@ -48,6 +51,7 @@ public class ClearPluginCacheTask(ShokoAPIManager apiManager, ShokoAPIClient api
         _apiClient.Clear();
         _apiManager.Clear();
         _vfsService.Clear();
+        _eventDispatchService.Clear();
         return Task.CompletedTask;
     }
 }

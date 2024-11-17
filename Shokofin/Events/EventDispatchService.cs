@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -25,7 +26,11 @@ using IDirectoryService = MediaBrowser.Controller.Providers.IDirectoryService;
 using ImageType = MediaBrowser.Model.Entities.ImageType;
 using LibraryOptions = MediaBrowser.Model.Configuration.LibraryOptions;
 using MetadataRefreshMode = MediaBrowser.Controller.Providers.MetadataRefreshMode;
+using Movie = MediaBrowser.Controller.Entities.Movies.Movie;
 using Timer = System.Timers.Timer;
+using TvEpisode = MediaBrowser.Controller.Entities.TV.Episode;
+using TvSeason = MediaBrowser.Controller.Entities.TV.Season;
+using TvSeries = MediaBrowser.Controller.Entities.TV.Series;
 
 namespace Shokofin.Events;
 
@@ -51,6 +56,8 @@ public class EventDispatchService
 
     private readonly ILogger<EventDispatchService> Logger;
 
+    private readonly UsageTracker UsageTracker;
+
     private int ChangesDetectionSubmitterCount = 0;
 
     private readonly Timer ChangesDetectionTimer;
@@ -64,6 +71,8 @@ public class EventDispatchService
     // It's so magical that it matches the magical value in the library monitor in JF core. 🪄
     private const int MagicalDelayValue = 45000;
 
+    private readonly ConcurrentDictionary<Guid, bool> RecentlyUpdatedEntitiesDict = new();
+
     private static readonly TimeSpan DetectChangesThreshold = TimeSpan.FromSeconds(5);
 
     public EventDispatchService(
@@ -76,7 +85,8 @@ public class EventDispatchService
         LibraryScanWatcher libraryScanWatcher,
         IFileSystem fileSystem,
         IDirectoryService directoryService,
-        ILogger<EventDispatchService> logger
+        ILogger<EventDispatchService> logger,
+        UsageTracker usageTracker
     )
     {
         ApiManager = apiManager;
@@ -89,15 +99,24 @@ public class EventDispatchService
         FileSystem = fileSystem;
         DirectoryService = directoryService;
         Logger = logger;
+        UsageTracker = usageTracker;
+        UsageTracker.Stalled += OnStalled;
         ChangesDetectionTimer = new() { AutoReset = true, Interval = TimeSpan.FromSeconds(4).TotalMilliseconds };
         ChangesDetectionTimer.Elapsed += OnIntervalElapsed;
     }
 
     ~EventDispatchService()
     {
-        
+        UsageTracker.Stalled -= OnStalled;
         ChangesDetectionTimer.Elapsed -= OnIntervalElapsed;
     }
+
+    private void OnStalled(object? sender, EventArgs eventArgs)
+    {
+        Clear();
+    }
+
+    public void Clear() => RecentlyUpdatedEntitiesDict.Clear();
 
     #region Event Detection
 
@@ -596,16 +615,25 @@ public class EventDispatchService
         var animeEvent = changes.Find(e => e.Kind is BaseItemKind.Series || e.Kind is BaseItemKind.Episode && e.Reason is UpdateReason.Removed);
         if (animeEvent is not null) {
             var shows = LibraryManager
-                .GetItemList(
-                    new() {
-                        IncludeItemTypes = [BaseItemKind.Series],
-                        HasAnyProviderId = new Dictionary<string, string> { { ShokoSeriesId.Name, showInfo.Id } },
-                        DtoOptions = new(true),
-                    },
-                    true
-                )
+                .GetItemList(new() {
+                    IncludeItemTypes = [BaseItemKind.Series],
+                    HasAnyProviderId = new Dictionary<string, string> { { ShokoSeriesId.Name, showInfo.Id } },
+                    DtoOptions = new(true),
+                })
+                .DistinctBy(s => s.Id)
+                .OfType<TvSeries>()
                 .ToList();
             foreach (var show in shows) {
+                if (RecentlyUpdatedEntitiesDict.ContainsKey(show.Id)) {
+                    Logger.LogTrace("Show {ShowName} is already being updated. (Check=1,Show={ShowId},Series={SeriesId})", show.Name, show.Id, showInfo.Id);
+                    continue;
+                }
+
+                if (!RecentlyUpdatedEntitiesDict.TryAdd(show.Id, true)) {
+                    Logger.LogTrace("Show {ShowName} is already being updated. (Check=2,Show={ShowId},Series={SeriesId})", show.Name, show.Id, showInfo.Id);
+                    continue;
+                }
+
                 Logger.LogInformation("Refreshing show {ShowName}. (Show={ShowId},Series={SeriesId})", show.Name, show.Id, showInfo.Id);
                 await show.RefreshMetadata(new(DirectoryService) {
                     MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
@@ -635,16 +663,31 @@ public class EventDispatchService
                 .ToList();
             foreach (var seasonInfo in seasonList) {
                 var seasons = LibraryManager
-                    .GetItemList(
-                        new() {
-                            IncludeItemTypes = [BaseItemKind.Season],
-                            HasAnyProviderId = new Dictionary<string, string> { { ShokoSeriesId.Name, seasonInfo.Id } },
-                            DtoOptions = new(true),
-                        },
-                        true
-                    )
+                    .GetItemList(new() {
+                        IncludeItemTypes = [BaseItemKind.Season],
+                        HasAnyProviderId = new Dictionary<string, string> { { ShokoSeriesId.Name, seasonInfo.Id } },
+                        DtoOptions = new(true),
+                    })
+                    .DistinctBy(s => s.Id)
+                    .OfType<TvSeason>()
                     .ToList();
                 foreach (var season in seasons) {
+                    var showId = season.SeriesId;
+                    if (RecentlyUpdatedEntitiesDict.ContainsKey(showId)) {
+                        Logger.LogTrace("Show is already being updated. (Check=1,Show={ShowId},Season={SeasonId},Series={SeriesId})", showId, season.Id, seasonInfo.Id);
+                        continue;
+                    }
+
+                    if (RecentlyUpdatedEntitiesDict.ContainsKey(season.Id)) {
+                        Logger.LogTrace("Season is already being updated. (Check=2,Show={ShowId},Season={SeasonId},Series={SeriesId})", showId, season.Id, seasonInfo.Id);
+                        continue;
+                    }
+
+                    if (!RecentlyUpdatedEntitiesDict.TryAdd(season.Id, true)) {
+                        Logger.LogTrace("Season is already being updated. (Check=3,Show={ShowId},Season={SeasonId},Series={SeriesId})", showId, season.Id, seasonInfo.Id);
+                        continue;
+                    }
+
                     Logger.LogInformation("Refreshing season {SeasonName}. (Season={SeasonId},Series={SeriesId},ExtraSeries={ExtraIds})", season.Name, season.Id, seasonInfo.Id, seasonInfo.ExtraIds);
                     await season.RefreshMetadata(new(DirectoryService) {
                         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
@@ -666,16 +709,37 @@ public class EventDispatchService
                 .ToList();
             foreach (var episodeInfo in episodeList) {
                 var episodes = LibraryManager
-                    .GetItemList(
-                        new() {
-                            IncludeItemTypes = [BaseItemKind.Episode],
-                            HasAnyProviderId = new Dictionary<string, string> { { ShokoEpisodeId.Name, episodeInfo.Id } },
-                            DtoOptions = new(true),
-                        },
-                        true
-                    )
+                    .GetItemList(new() {
+                        IncludeItemTypes = [BaseItemKind.Episode],
+                        HasAnyProviderId = new Dictionary<string, string> { { ShokoEpisodeId.Name, episodeInfo.Id } },
+                        DtoOptions = new(true),
+                    })
+                    .DistinctBy(e => e.Id)
+                    .OfType<TvEpisode>()
                     .ToList();
                 foreach (var episode in episodes) {
+                    var showId = episode.SeriesId;
+                    var seasonId = episode.SeasonId;
+                    if (RecentlyUpdatedEntitiesDict.ContainsKey(showId)) {
+                        Logger.LogTrace("Show is already being updated. (Check=1,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
+                        continue;
+                    }
+
+                    if (RecentlyUpdatedEntitiesDict.ContainsKey(seasonId)) {
+                        Logger.LogTrace("Season is already being updated. (Check=2,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
+                        continue;
+                    }
+
+                    if (RecentlyUpdatedEntitiesDict.ContainsKey(episode.Id)) {
+                        Logger.LogTrace("Episode is already being updated. (Check=3,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
+                        continue;
+                    }
+
+                    if (!RecentlyUpdatedEntitiesDict.TryAdd(episode.Id, true)) {
+                        Logger.LogTrace("Episode is already being updated. (Check=4,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
+                        continue;
+                    }
+
                     Logger.LogInformation("Refreshing episode {EpisodeName}. (Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", episode.Name, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
                     await episode.RefreshMetadata(new(DirectoryService) {
                         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
@@ -709,16 +773,25 @@ public class EventDispatchService
             .ToList();
         foreach (var episodeInfo in episodeList) {
             var movies = LibraryManager
-                .GetItemList(
-                    new() {
-                        IncludeItemTypes = [BaseItemKind.Movie],
-                        HasAnyProviderId = new Dictionary<string, string> { { ShokoEpisodeId.Name, episodeInfo.Id } },
-                        DtoOptions = new(true),
-                    },
-                    true
-                )
+                .GetItemList(new() {
+                    IncludeItemTypes = [BaseItemKind.Movie],
+                    HasAnyProviderId = new Dictionary<string, string> { { ShokoEpisodeId.Name, episodeInfo.Id } },
+                    DtoOptions = new(true),
+                })
+                .DistinctBy(e => e.Id)
+                .OfType<Movie>()
                 .ToList();
             foreach (var movie in movies) {
+                if (RecentlyUpdatedEntitiesDict.ContainsKey(movie.Id)) {
+                    Logger.LogTrace("Movie is already being updated. (Check=1,Movie={MovieId},Episode={EpisodeId},Series={SeriesId},ExtraSeries={ExtraIds})", movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
+                    continue;
+                }
+
+                if (!RecentlyUpdatedEntitiesDict.TryAdd(movie.Id, true)) {
+                    Logger.LogTrace("Movie is already being updated. (Check=2,Movie={MovieId},Episode={EpisodeId},Series={SeriesId},ExtraSeries={ExtraIds})", movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
+                    continue;
+                }
+
                 Logger.LogInformation("Refreshing movie {MovieName}. (Movie={MovieId},Episode={EpisodeId},Series={SeriesId},ExtraSeries={ExtraIds})", movie.Name, movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
                 await movie.RefreshMetadata(new(DirectoryService) {
                     MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
