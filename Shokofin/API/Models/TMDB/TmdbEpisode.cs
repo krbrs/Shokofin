@@ -88,11 +88,6 @@ public class TmdbEpisode {
     public IReadOnlyList<Role> Crew { get; set; } = [];
 
     /// <summary>
-    /// All available ordering for the episode, if they should be included.
-    /// </summary>
-    public IReadOnlyList<OrderingInformation> Ordering { get; set; } = [];
-
-    /// <summary>
     /// TMDB episode to file cross-references.
     /// </summary>
     public IReadOnlyList<CrossReference> FileCrossReferences { get; set; } = [];
@@ -112,60 +107,4 @@ public class TmdbEpisode {
     /// remote.
     /// </summary>
     public DateTime LastUpdatedAt { get; set; }
-
-    public class OrderingInformation {
-        /// <summary>
-        /// The ordering ID.
-        /// </summary>
-        [JsonPropertyName("OrderingID")]
-        public string OrderingId { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The alternate ordering type. Will not be set if the main ordering is
-        /// used.
-        /// </summary>
-        public AlternateOrderingType? OrderingType { get; set; }
-
-        /// <summary>
-        /// English name of the alternate ordering scheme.
-        /// </summary>
-        public string OrderingName { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The season id. Will be a stringified integer for the main ordering,
-        /// or a hex id any alternate ordering.
-        /// </summary>
-        [JsonPropertyName("SeasonID")]
-        public string SeasonId { get; set; } = string.Empty;
-
-        /// <summary>
-        /// English name of the season.
-        /// </summary>
-        public string SeasonName { get; set; } = string.Empty;
-
-        /// <summary>
-        /// The season number for the ordering.
-        /// </summary>
-        public int SeasonNumber { get; set; }
-
-        /// <summary>
-        /// The episode number for the ordering.
-        /// </summary>
-        public int EpisodeNumber { get; set; }
-
-        /// <summary>
-        /// Indicates the current ordering is the default ordering for the episode.
-        /// </summary>
-        public bool IsDefault { get; set; }
-
-        /// <summary>
-        /// Indicates the current ordering is the preferred ordering for the episode.
-        /// </summary>
-        public bool IsPreferred { get; set; }
-
-        /// <summary>
-        /// Indicates the current ordering is in use for the episode.
-        /// </summary>
-        public bool InUse { get; set; }
-    }
 }
