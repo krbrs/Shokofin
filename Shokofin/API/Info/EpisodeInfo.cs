@@ -15,6 +15,8 @@ public class EpisodeInfo
 
     public string SeriesId;
 
+    public string SeasonId;
+
     public string? AnidbId;
 
     public string? TmdbId;
@@ -60,6 +62,7 @@ public class EpisodeInfo
             .FirstOrDefault();
         Id = episode.IDs.Shoko.ToString();
         SeriesId = episode.IDs.ParentSeries.ToString();
+        SeasonId = episode.IDs.ParentSeries.ToString();
         AnidbId = episode.AniDB.Id.ToString();
         StructureType = SeriesStructureType.Shoko_Groups;
         Type = episode.AniDB.Type;
@@ -94,6 +97,7 @@ public class EpisodeInfo
     {
         Id = episode.Id.ToString();
         SeriesId = episode.ShowId.ToString();
+        SeasonId = episode.SeasonId;
         TmdbId = episode.Id.ToString();
         StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
         Type = episode.SeasonNumber is 0 ? EpisodeType.Special : EpisodeType.Normal;
