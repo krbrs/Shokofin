@@ -10,4 +10,6 @@ public class SeriesConfiguration
     public bool EpisodesAsSpecials { get; set; }
 
     public bool SpecialsAsEpisodes { get; set; }
+
+    public bool OrderByAirdate { get; set; }
 }

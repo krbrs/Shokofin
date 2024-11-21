@@ -151,6 +151,7 @@ public class ShokoAPIManager : IDisposable
                 MergeOverride = SeriesMergingOverride.None,
                 EpisodesAsSpecials = false,
                 SpecialsAsEpisodes = false,
+                OrderByAirdate = false,
             };
             var tags = await GetNamespacedTagsForSeries(id);
             if (!tags.TryGetValue("/custom user tags/shokofin", out var customTags))
@@ -182,6 +183,11 @@ public class ShokoAPIManager : IDisposable
                 else if (tags.ContainsKey("/no specials as episodes"))
                     seriesSettings.SpecialsAsEpisodes = false;
             }
+
+            if (tags.ContainsKey("/order by airdate"))
+                seriesSettings.OrderByAirdate = true;
+            else if (tags.ContainsKey("/no order by airdate"))
+                seriesSettings.OrderByAirdate = false;
 
             return seriesSettings;
         });

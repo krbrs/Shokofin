@@ -201,24 +201,26 @@ public class SeasonInfo
         // We order the lists after sorting them into buckets because the bucket
         // sort we're doing above have the episodes ordered by air date to get
         // the previous episode anchors right.
-        episodesList = episodesList
-            .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
-            .ThenBy(e => e.Type)
-            .ThenBy(e => e.SeasonNumber)
-            .ThenBy(e => e.EpisodeNumber)
-            .ToList();
-        specialsList = specialsList
-            .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
-            .ThenBy(e => e.Type)
-            .ThenBy(e => e.SeasonNumber)
-            .ThenBy(e => e.EpisodeNumber)
-            .ToList();
-        altEpisodesList = altEpisodesList
-            .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
-            .ThenBy(e => e.Type)
-            .ThenBy(e => e.SeasonNumber)
-            .ThenBy(e => e.EpisodeNumber)
-            .ToList();
+        if (!seriesConfigurationMap[seriesId].OrderByAirdate) {
+            episodesList = episodesList
+                .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+                .ThenBy(e => e.Type)
+                .ThenBy(e => e.SeasonNumber)
+                .ThenBy(e => e.EpisodeNumber)
+                .ToList();
+            altEpisodesList = altEpisodesList
+                .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+                .ThenBy(e => e.Type)
+                .ThenBy(e => e.SeasonNumber)
+                .ThenBy(e => e.EpisodeNumber)
+                .ToList();
+            specialsList = specialsList
+                .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+                .ThenBy(e => e.Type)
+                .ThenBy(e => e.SeasonNumber)
+                .ThenBy(e => e.EpisodeNumber)
+                .ToList();
+        }
 
         // Replace the normal episodes if we've hidden all the normal episodes and we have at least one
         // alternate episode locally.
