@@ -5,8 +5,7 @@ using Shokofin.Events.Interfaces;
 
 namespace Shokofin.Events.Stub;
 
-public class FileEventArgsStub : IFileEventArgs
-{
+public class FileEventArgsStub : IFileEventArgs {
     /// <inheritdoc/>
     public int FileId { get; private init; }
 
@@ -25,8 +24,7 @@ public class FileEventArgsStub : IFileEventArgs
     /// <inheritdoc/>
     public List<IFileEventArgs.FileCrossReference> CrossReferences { get; private init; }
 
-    public FileEventArgsStub(int fileId, int? fileLocationId, int importFolderId, string relativePath, IEnumerable<IFileEventArgs.FileCrossReference> xrefs)
-    {
+    public FileEventArgsStub(int fileId, int? fileLocationId, int importFolderId, string relativePath, IEnumerable<IFileEventArgs.FileCrossReference> xrefs) {
         FileId = fileId;
         FileLocationId = fileLocationId;
         ImportFolderId = importFolderId;
@@ -34,8 +32,7 @@ public class FileEventArgsStub : IFileEventArgs
         CrossReferences = xrefs.ToList();
     }
 
-    public FileEventArgsStub(File.Location location, File file)
-    {
+    public FileEventArgsStub(File.Location location, File file) {
         FileId = file.Id;
         FileLocationId = location.Id;
         ImportFolderId = location.ImportFolderId;

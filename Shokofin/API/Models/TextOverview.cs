@@ -2,8 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models;
 
-public class TextOverview
-{
+public class TextOverview {
     /// <summary>
     /// The title.
     /// </summary>

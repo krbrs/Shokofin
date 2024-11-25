@@ -5,8 +5,7 @@ using Shokofin.Events.Interfaces;
 
 namespace Shokofin.SignalR.Models;
 
-public class SeriesInfoUpdatedEventArgs : IMetadataUpdatedEventArgs
-{
+public class SeriesInfoUpdatedEventArgs : IMetadataUpdatedEventArgs {
     /// <summary>
     /// The update reason.
     /// </summary>
@@ -31,12 +30,6 @@ public class SeriesInfoUpdatedEventArgs : IMetadataUpdatedEventArgs
     [JsonInclude, JsonPropertyName("ShokoSeriesIDs")]
     public List<int> SeriesIds { get; set; } = [];
 
-    /// <summary>
-    /// Shoko group ids affected by this update.
-    /// </summary>
-    [JsonInclude, JsonPropertyName("ShokoGroupIDs")]
-    public List<int> GroupIds { get; set; } = [];
-
     #region IMetadataUpdatedEventArgs Impl.
 
     BaseItemKind IMetadataUpdatedEventArgs.Kind => BaseItemKind.Series;
@@ -46,8 +39,6 @@ public class SeriesInfoUpdatedEventArgs : IMetadataUpdatedEventArgs
     IReadOnlyList<int> IMetadataUpdatedEventArgs.EpisodeIds => [];
 
     IReadOnlyList<int> IMetadataUpdatedEventArgs.SeriesIds => SeriesIds;
-
-    IReadOnlyList<int> IMetadataUpdatedEventArgs.GroupIds => GroupIds;
 
     #endregion
 }

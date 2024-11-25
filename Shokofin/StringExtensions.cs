@@ -4,12 +4,12 @@ using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
 using MediaBrowser.Common.Providers;
+using MediaBrowser.Model.Entities;
 using Shokofin.ExternalIds;
 
 namespace Shokofin;
 
-public static partial class StringExtensions
-{
+public static partial class StringExtensions {
     public static string Replace(this string input, Regex regex, string replacement, int count, int startAt)
         =>  regex.Replace(input, replacement, count, startAt);
 
@@ -28,34 +28,29 @@ public static partial class StringExtensions
     public static string Replace(this string input, Regex regex, string replacement, int count)
         =>  regex.Replace(input, replacement, count);
 
-    public static void Deconstruct(this IList<string> list, out string first)
-    {
+    public static void Deconstruct(this IList<string> list, out string first) {
         first = list.Count > 0 ? list[0] : string.Empty;
     }
 
-    public static void Deconstruct(this IList<string> list, out string first, out string second)
-    {
+    public static void Deconstruct(this IList<string> list, out string first, out string second) {
         first = list.Count > 0 ? list[0] : string.Empty;
         second = list.Count > 1 ? list[1] : string.Empty;
     }
 
-    public static void Deconstruct(this IList<string> list, out string first, out string second, out string third)
-    {
+    public static void Deconstruct(this IList<string> list, out string first, out string second, out string third) {
         first = list.Count > 0 ? list[0] : string.Empty;
         second = list.Count > 1 ? list[1] : string.Empty;
         third = list.Count > 2 ? list[2] : string.Empty;
     }
 
-    public static void Deconstruct(this IList<string> list, out string first, out string second, out string third, out string forth)
-    {
+    public static void Deconstruct(this IList<string> list, out string first, out string second, out string third, out string forth) {
         first = list.Count > 0 ? list[0] : string.Empty;
         second = list.Count > 1 ? list[1] : string.Empty;
         third = list.Count > 2 ? list[2] : string.Empty;
         forth = list.Count > 3 ? list[3] : string.Empty;
     }
 
-    public static void Deconstruct(this IList<string> list, out string first, out string second, out string third, out string forth, out string fifth)
-    {
+    public static void Deconstruct(this IList<string> list, out string first, out string second, out string third, out string forth, out string fifth) {
         first = list.Count > 0 ? list[0] : string.Empty;
         second = list.Count > 1 ? list[1] : string.Empty;
         third = list.Count > 2 ? list[2] : string.Empty;
@@ -113,8 +108,7 @@ public static partial class StringExtensions
     /// <param name="attribute">The attribute name to extract.</param>
     /// <returns>The extracted attribute value, or null.</returns>
     /// <exception cref="ArgumentException"><paramref name="text" /> or <paramref name="attribute" /> is empty.</exception>
-    public static string? GetAttributeValue(this string text, string attribute)
-    {
+    public static string? GetAttributeValue(this string text, string attribute) {
         if (text.Length == 0)
             throw new ArgumentException("String can't be empty.", nameof(text));
 
@@ -125,8 +119,7 @@ public static partial class StringExtensions
         // then we offset it by 1, because we want the index and not length.
         var attributeIndex = text.IndexOf(attribute, StringComparison.OrdinalIgnoreCase);
         var maxIndex = text.Length - attribute.Length - 2;
-        while (attributeIndex > -1 && attributeIndex < maxIndex)
-        {
+        while (attributeIndex > -1 && attributeIndex < maxIndex) {
             var attributeEnd = attributeIndex + attribute.Length;
             if (
                 attributeIndex > 0 &&
@@ -156,8 +149,7 @@ public static partial class StringExtensions
     [GeneratedRegex(@"\.pt(?<partNumber>\d+)(?:\.[a-z0-9]+)?$", RegexOptions.IgnoreCase)]
     private static partial Regex GetPartRegex();
 
-    public static bool TryGetAttributeValue(this string text, string attribute, [NotNullWhen(true)] out string? value)
-    {
+    public static bool TryGetAttributeValue(this string text, string attribute, [NotNullWhen(true)] out string? value) {
         value = GetAttributeValue(text, attribute);
 
         // Select the correct id for the part number in the stringified list of file ids.
@@ -170,4 +162,21 @@ public static partial class StringExtensions
         return !string.IsNullOrEmpty(value);
     }
 
+    public static bool TryGetSeasonId(this IHasProviderIds providerIds, [NotNullWhen(true)] out string? seasonId) {
+        if (!providerIds.TryGetProviderId(ShokoInternalId.Name, out var internalId)) {
+            seasonId = null;
+            return false;
+        }
+
+        seasonId = internalId.StartsWith(ShokoInternalId.Namespace, StringComparison.OrdinalIgnoreCase)
+            ? internalId[ShokoInternalId.Namespace.Length..]
+            : null;
+        return !string.IsNullOrEmpty(seasonId);
+    }
+
+    public static bool TryGetSeasonIdFromInternalId(this string internalId, [NotNullWhen(true)] out string? seasonId)
+        => !string.IsNullOrEmpty(seasonId = internalId.StartsWith(ShokoInternalId.Namespace, StringComparison.OrdinalIgnoreCase)
+            ? internalId[ShokoInternalId.Namespace.Length..]
+            : null
+        );
 }

@@ -132,16 +132,6 @@ createControllerFactory({
                 }
             });
 
-            form.querySelector("#DefaultLibraryStructure").addEventListener("change", function () {
-                form.querySelector("#SeasonOrdering").disabled = this.value === "Shoko_Groups";
-                if (this.value === "Shoko_Groups") {
-                    form.querySelector("#SeasonOrderingContainer").removeAttribute("hidden");
-                }
-                else {
-                    form.querySelector("#SeasonOrderingContainer").setAttribute("hidden", "");
-                }
-            });
-
             form.addEventListener("submit", function (event) {
                 event.preventDefault();
                 if (!event.submitter) return;
@@ -386,7 +376,8 @@ function applyFormToConfig(form, config) {
             config.SynopsisCleanMultiEmptyLines = form.querySelector("#CleanupAniDBDescriptions").checked;
             config.SynopsisCleanMiscLines = form.querySelector("#CleanupAniDBDescriptions").checked;
             config.SynopsisRemoveSummary = form.querySelector("#CleanupAniDBDescriptions").checked;
-            config.AddImageLanguageCode = form.querySelector("#AddImageLanguageCode").checked;
+            config.AddImageLanguageCodeForShows = retrieveCheckboxList(form, "AddImageLanguageCodeForShows");
+            config.AddImageLanguageCodeForMovies = retrieveCheckboxList(form, "AddImageLanguageCodeForMovies");
             config.RespectPreferredImage = form.querySelector("#RespectPreferredImage").checked;
             config.HideUnverifiedTags = form.querySelector("#HideUnverifiedTags").checked;
             config.TagSources = retrieveCheckboxList(form, "TagSources").join(", ");
@@ -482,6 +473,7 @@ function applyFormToConfig(form, config) {
             config.SignalR_AutoReconnectInSeconds = reconnectIntervals;
             form.querySelector("#SignalRAutoReconnectIntervals").value = reconnectIntervals.join(", ");
             config.SignalR_EventSources = retrieveCheckboxList(form, "SignalREventSources");
+            config.SignalR_ReplaceImagesDuringRefresh = form.querySelector("#SignalRReplaceImagesDuringRefresh").checked;
 
             config.SignalR_FileEvents = form.querySelector("#SignalRDefaultFileEvents").checked;
             config.SignalR_RefreshEnabled = form.querySelector("#SignalRDefaultRefreshEvents").checked;
@@ -538,7 +530,8 @@ async function applyConfigToForm(form, config) {
                 config.SynopsisRemoveSummary ||
                 config.SynopsisCleanMiscLines
             );
-            form.querySelector("#AddImageLanguageCode").checked = config.AddImageLanguageCode;
+            renderCheckboxList(form, "AddImageLanguageCodeForShows", config.AddImageLanguageCodeForShows);
+            renderCheckboxList(form, "AddImageLanguageCodeForMovies", config.AddImageLanguageCodeForMovies);
             form.querySelector("#RespectPreferredImage").checked = config.RespectPreferredImage;
             form.querySelector("#HideUnverifiedTags").checked = config.HideUnverifiedTags;
             renderCheckboxList(form, "TagSources", config.TagSources.split(",").map(s => s.trim()).filter(s => s));
@@ -568,14 +561,7 @@ async function applyConfigToForm(form, config) {
                     return acc;
                 }, []);
 
-            if ((form.querySelector("#DefaultLibraryStructure").value = config.DefaultLibraryStructure) === "Shoko_Groups") {
-                form.querySelector("#SeasonOrderingContainer").removeAttribute("hidden");
-                form.querySelector("#SeasonOrdering").disabled = false;
-            }
-            else {
-                form.querySelector("#SeasonOrderingContainer").setAttribute("hidden", "");
-                form.querySelector("#SeasonOrdering").disabled = true;
-            }
+            form.querySelector("#DefaultLibraryStructure").value = config.DefaultLibraryStructure;
             form.querySelector("#SeasonOrdering").value = config.SeasonOrdering;
             form.querySelector("#SeparateMovies").checked = config.SeparateMovies;
             form.querySelector("#DisableFilterMovieLibraries").checked = !config.FilterMovieLibraries;
@@ -640,6 +626,7 @@ async function applyConfigToForm(form, config) {
             form.querySelector("#SignalRAutoConnect").checked = config.SignalR_AutoConnectEnabled;
             form.querySelector("#SignalRAutoReconnectIntervals").value = config.SignalR_AutoReconnectInSeconds.join(", ");
             renderCheckboxList(form, "SignalREventSources", config.SignalR_EventSources);
+            form.querySelector("#SignalRReplaceImagesDuringRefresh").checked = config.SignalR_ReplaceImagesDuringRefresh;
 
             form.querySelector("#SignalRDefaultFileEvents").checked = config.SignalR_FileEvents;
             form.querySelector("#SignalRDefaultRefreshEvents").checked = config.SignalR_RefreshEnabled;
@@ -1021,7 +1008,6 @@ async function removeLibraryConfig(form) {
         config.MediaFolders.splice(index, 1);
         index = config.MediaFolders.findIndex((m) => m.LibraryId === libraryId);
     }
-
 
     const libraries = config.MediaFolders
         .reduce((acc, mediaFolder) => {

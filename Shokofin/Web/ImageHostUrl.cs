@@ -9,8 +9,7 @@ namespace Shokofin.Web;
 /// Responsible for tracking the base url we need for the next set of images
 /// to-be presented to a client.
 /// </summary>
-public class ImageHostUrl : IAsyncActionFilter
-{
+public class ImageHostUrl : IAsyncActionFilter {
     /// <summary>
     /// The internal base url. Will be null if the base url haven't been used
     /// yet.
@@ -37,8 +36,7 @@ public class ImageHostUrl : IAsyncActionFilter
 
     private static Regex RemoteImagesRegex = new(@"/Items/(?<itemId>[0-9a-fA-F]{32})/RemoteImages$", RegexOptions.Compiled);
 
-    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
-    {
+    public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next) {
         var request = context.HttpContext.Request;
         var uriBuilder = new UriBuilder(request.Scheme, request.Host.Host, request.Host.Port ?? (request.Scheme == "https" ? 443 : 80), $"{request.PathBase}{request.Path}", request.QueryString.HasValue ? request.QueryString.Value : null);
         var result = RemoteImagesRegex.Match(uriBuilder.Path);
@@ -54,6 +52,6 @@ public class ImageHostUrl : IAsyncActionFilter
                     InternalBasePath = path;
             }
         }
-        await next();
+        await next().ConfigureAwait(false);
     }
 }

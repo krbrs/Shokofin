@@ -23,8 +23,7 @@ using TvSeries = MediaBrowser.Controller.Entities.TV.Series;
 namespace Shokofin.Resolvers;
 #pragma warning disable CS8768
 
-public class ShokoResolver : IItemResolver, IMultiItemResolver
-{
+public class ShokoResolver : IItemResolver, IMultiItemResolver {
     private readonly ILogger<ShokoResolver> Logger;
 
     private readonly IIdLookup Lookup;
@@ -33,7 +32,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
 
     private readonly IFileSystem FileSystem;
 
-    private readonly ShokoAPIManager ApiManager;
+    private readonly ShokoApiManager ApiManager;
 
     private readonly VirtualFileSystemService ResolveManager;
 
@@ -44,11 +43,10 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
         IIdLookup lookup,
         ILibraryManager libraryManager,
         IFileSystem fileSystem,
-        ShokoAPIManager apiManager,
+        ShokoApiManager apiManager,
         VirtualFileSystemService resolveManager,
         NamingOptions namingOptions
-    )
-    {
+    ) {
         Logger = logger;
         Lookup = lookup;
         LibraryManager = libraryManager;
@@ -58,8 +56,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
         NamingOptions = namingOptions;
     }
 
-    public async Task<BaseItem?> ResolveSingle(Folder? parent, CollectionType? collectionType, FileSystemMetadata fileInfo)
-    {
+    public async Task<BaseItem?> ResolveSingle(Folder? parent, CollectionType? collectionType, FileSystemMetadata fileInfo) {
         if (!(collectionType is CollectionType.tvshows or CollectionType.movies or null) || parent is null || fileInfo is null)
             return null;
 
@@ -85,7 +82,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
                 return null;
 
             if (parent.Id == mediaFolder.Id && fileInfo.IsDirectory) {
-                if (!fileInfo.Name.TryGetAttributeValue(ShokoSeriesId.Name, out var seriesId) || !int.TryParse(seriesId, out _))
+                if (!fileInfo.Name.TryGetAttributeValue(ShokoSeriesId.Name, out var seasonId))
                     return null;
 
                 return new TvSeries() {
@@ -105,8 +102,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
         }
     }
 
-    public async Task<MultiItemResolverResult?> ResolveMultiple(Folder? parent, CollectionType? collectionType, List<FileSystemMetadata> fileInfoList)
-    {
+    public async Task<MultiItemResolverResult?> ResolveMultiple(Folder? parent, CollectionType? collectionType, List<FileSystemMetadata> fileInfoList) {
         if (!(collectionType is CollectionType.tvshows or CollectionType.movies or null) || parent is null)
             return null;
 
@@ -134,10 +130,10 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
                 var items = (FileSystem.DirectoryExists(vfsPath) ? FileSystem.GetDirectories(vfsPath) : [])
                     .AsParallel()
                     .SelectMany(dirInfo => {
-                        if (!dirInfo.Name.TryGetAttributeValue(ShokoSeriesId.Name, out var seriesId) || !int.TryParse(seriesId, out _))
+                        if (!dirInfo.Name.TryGetAttributeValue(ShokoSeriesId.Name, out var seasonId))
                             return [];
 
-                        var season = ApiManager.GetSeasonInfoForSeries(seriesId)
+                        var season = ApiManager.GetSeasonInfo(seasonId)
                             .ConfigureAwait(false)
                             .GetAwaiter()
                             .GetResult();
@@ -154,7 +150,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
                                     if (!NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(fileInfo.Name)))
                                         return null;
 
-                                    if (!VirtualFileSystemService.TryGetIdsForPath(fileInfo.FullName, out seriesId, out var fileId))
+                                    if (!VirtualFileSystemService.TryGetIdsForPath(fileInfo.FullName, out var fileId, out var seriesId))
                                         return null;
 
                                     // This will hopefully just re-use the pre-cached entries from the cache, but it may
@@ -249,7 +245,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver
             .GetResult();
 
     #endregion
-    
+
     #region IMultiItemResolver
 
     MultiItemResolverResult? IMultiItemResolver.ResolveMultiple(Folder parent, List<FileSystemMetadata> files, CollectionType? collectionType, IDirectoryService directoryService)

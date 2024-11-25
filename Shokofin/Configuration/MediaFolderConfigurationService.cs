@@ -18,28 +18,7 @@ using Shokofin.Utils;
 
 namespace Shokofin.Configuration;
 
-public static class MediaFolderConfigurationExtensions
-{
-    public static Folder GetFolderForPath(this string mediaFolderPath)
-        => BaseItem.LibraryManager.FindByPath(mediaFolderPath, true) as Folder ??
-            throw new Exception($"Unable to find folder by path \"{mediaFolderPath}\".");
-
-    public static IReadOnlyList<(int importFolderId, string importFolderSubPath, IReadOnlyList<string> mediaFolderPaths)> ToImportFolderList(this IEnumerable<MediaFolderConfiguration> mediaConfigs)
-        => mediaConfigs
-            .GroupBy(a => (a.ImportFolderId, a.ImportFolderRelativePath))
-            .Select(g => (g.Key.ImportFolderId, g.Key.ImportFolderRelativePath, g.Select(a => a.MediaFolderPath).ToList() as IReadOnlyList<string>))
-            .ToList();
-
-    public static IReadOnlyList<(string importFolderSubPath, bool vfsEnabled, IReadOnlyList<string> mediaFolderPaths)> ToImportFolderList(this IEnumerable<MediaFolderConfiguration> mediaConfigs, int importFolderId, string relativePath)
-        => mediaConfigs
-            .Where(a => a.ImportFolderId == importFolderId && a.IsEnabledForPath(relativePath))
-            .GroupBy(a => (a.ImportFolderId, a.ImportFolderRelativePath, a.IsVirtualFileSystemEnabled))
-            .Select(g => (g.Key.ImportFolderRelativePath, g.Key.IsVirtualFileSystemEnabled, g.Select(a => a.MediaFolderPath).ToList() as IReadOnlyList<string>))
-            .ToList();
-}
-
-public class MediaFolderConfigurationService
-{
+public class MediaFolderConfigurationService {
     private readonly ILogger<MediaFolderConfigurationService> Logger;
 
     private readonly ILibraryManager LibraryManager;
@@ -54,7 +33,7 @@ public class MediaFolderConfigurationService
 
     private readonly UsageTracker UsageTracker;
 
-    private readonly ShokoAPIClient ApiClient;
+    private readonly ShokoApiClient ApiClient;
 
     private readonly NamingOptions NamingOptions;
 
@@ -80,10 +59,9 @@ public class MediaFolderConfigurationService
         LibraryScanWatcher libraryScanWatcher,
         IIdLookup lookup,
         UsageTracker usageTracker,
-        ShokoAPIClient apiClient,
+        ShokoApiClient apiClient,
         NamingOptions namingOptions
-    )
-    {
+    ) {
         Logger = logger;
         LibraryManager = libraryManager;
         FileSystem = fileSystem;
@@ -102,8 +80,7 @@ public class MediaFolderConfigurationService
         Plugin.Instance.ConfigurationChanged += OnConfigurationChanged;
     }
 
-    ~MediaFolderConfigurationService()
-    {
+    ~MediaFolderConfigurationService() {
         LibraryManager.ItemRemoved -= OnLibraryManagerItemRemoved;
         Plugin.Instance.ConfigurationChanged -= OnConfigurationChanged;
         LibraryScanWatcher.ValueChanged -= OnLibraryScanValueChanged;
@@ -114,21 +91,18 @@ public class MediaFolderConfigurationService
 
     #region Changes Tracking
 
-    private void OnLibraryScanValueChanged(object? sender, bool isRunning)
-    {
+    private void OnLibraryScanValueChanged(object? sender, bool isRunning) {
         if (isRunning)
             return;
 
         Task.Run(() => EditLibraries(true));
     }
 
-    private void OnUsageTrackerStalled(object? sender, EventArgs eventArgs)
-    {
+    private void OnUsageTrackerStalled(object? sender, EventArgs eventArgs) {
         Task.Run(() => EditLibraries(false));
     }
 
-    private async Task EditLibraries(bool shouldScheduleLibraryScan)
-    {
+    private async Task EditLibraries(bool shouldScheduleLibraryScan) {
         await LockObj.WaitAsync().ConfigureAwait(false);
         try {
             ShouldGenerateAllConfigurations = true;
@@ -139,8 +113,7 @@ public class MediaFolderConfigurationService
             var libraryEdits = LibraryEdits.ToList();
             LibraryEdits.Clear();
             foreach (var (libraryId, (libraryName, add, remove)) in libraryEdits) {
-                foreach (var vfsPath in add)
-                {
+                foreach (var vfsPath in add) {
                     // Before we add the media folder we need to
                     //   a) make sure it exists so we can add it without Jellyfin throwing a fit, and
                     //   b) make sure it's not empty to make sure Jellyfin doesn't skip resolving it.
@@ -155,7 +128,7 @@ public class MediaFolderConfigurationService
                     LibraryManager.RemoveMediaPath(libraryName, new(vfsPath));
             }
             if (shouldScheduleLibraryScan)
-                await LibraryManager.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None);
+                await LibraryManager.ValidateMediaLibrary(new Progress<double>(), CancellationToken.None).ConfigureAwait(false);
         }
         finally {
             LockObj.Release();
@@ -165,8 +138,7 @@ public class MediaFolderConfigurationService
     private static string ConstructKey(MediaFolderConfiguration config)
         => $"IsMapped={config.IsMapped},IsFileEventsEnabled={config.IsFileEventsEnabled},IsRefreshEventsEnabled={config.IsRefreshEventsEnabled},IsVirtualFileSystemEnabled={config.IsVirtualFileSystemEnabled},LibraryFilteringMode={config.LibraryFilteringMode}";
 
-    private void OnConfigurationChanged(object? sender, PluginConfiguration config)
-    {
+    private void OnConfigurationChanged(object? sender, PluginConfiguration config) {
         foreach (var mediaConfig in config.MediaFolders) {
             var currentKey = ConstructKey(mediaConfig);
             if (MediaFolderChangeKeys.TryGetValue(mediaConfig.MediaFolderId, out var previousKey) && previousKey != currentKey) {
@@ -178,11 +150,10 @@ public class MediaFolderConfigurationService
         }
     }
 
-    private async void OnLibraryManagerItemRemoved(object? sender, ItemChangeEventArgs e)
-    {
+    private async void OnLibraryManagerItemRemoved(object? sender, ItemChangeEventArgs e) {
         var root = LibraryManager.RootFolder;
         if (e.Item != null && root != null && e.Item != root && e.Item is Folder folder && folder.ParentId == Guid.Empty  && !string.IsNullOrEmpty(folder.Path) && !folder.Path.StartsWith(root.Path)) {
-            await LockObj.WaitAsync();
+            await LockObj.WaitAsync().ConfigureAwait(false);
             try {
                 var mediaFolderConfig = Plugin.Instance.Configuration.MediaFolders.FirstOrDefault(c => c.MediaFolderId == folder.Id);
                 if (mediaFolderConfig != null) {
@@ -209,13 +180,11 @@ public class MediaFolderConfigurationService
 
     #region Media Folder Mapping
 
-    public async Task<IReadOnlyList<(string vfsPath, string mainMediaFolderPath, CollectionType? collectionType, IReadOnlyList<MediaFolderConfiguration> mediaList)>> GetAvailableMediaFoldersForLibraries(Func<MediaFolderConfiguration, bool>? filter = null)
-    {
-        await LockObj.WaitAsync();
+    public async Task<IReadOnlyList<(string vfsPath, string mainMediaFolderPath, CollectionType? collectionType, IReadOnlyList<MediaFolderConfiguration> mediaList)>> GetAvailableMediaFoldersForLibraries(Func<MediaFolderConfiguration, bool>? filter = null) {
+        await LockObj.WaitAsync().ConfigureAwait(false);
         try {
             var virtualFolders = LibraryManager.GetVirtualFolders();
-            if (ShouldGenerateAllConfigurations)
-            {
+            if (ShouldGenerateAllConfigurations) {
                 ShouldGenerateAllConfigurations = false;
                 await GenerateAllConfigurations(virtualFolders).ConfigureAwait(false);
             }
@@ -246,10 +215,9 @@ public class MediaFolderConfigurationService
         }
     }
 
-    public async Task<(string vfsPath, string mainMediaFolderPath, IReadOnlyList<MediaFolderConfiguration> mediaList, bool skipGeneration)> GetMediaFoldersForLibraryInVFS(Folder mediaFolder, CollectionType? collectionType, Func<MediaFolderConfiguration, bool>? filter = null)
-    {
-        var mediaFolderConfig = await GetOrCreateConfigurationForMediaFolder(mediaFolder, collectionType);
-        await LockObj.WaitAsync();
+    public async Task<(string vfsPath, string mainMediaFolderPath, IReadOnlyList<MediaFolderConfiguration> mediaList, bool skipGeneration)> GetMediaFoldersForLibraryInVFS(Folder mediaFolder, CollectionType? collectionType, Func<MediaFolderConfiguration, bool>? filter = null) {
+        var mediaFolderConfig = await GetOrCreateConfigurationForMediaFolder(mediaFolder, collectionType).ConfigureAwait(false);
+        await LockObj.WaitAsync().ConfigureAwait(false);
         try {
             var skipGeneration = LibraryEdits.Count is > 0 && LibraryManager.IsScanRunning;
             if (LibraryManager.GetItemById(mediaFolderConfig.LibraryId) is not Folder libraryFolder)
@@ -275,9 +243,8 @@ public class MediaFolderConfigurationService
         }
     }
 
-    public async Task<MediaFolderConfiguration> GetOrCreateConfigurationForMediaFolder(Folder mediaFolder, CollectionType? collectionType = CollectionType.unknown)
-    {
-        await LockObj.WaitAsync();
+    public async Task<MediaFolderConfiguration> GetOrCreateConfigurationForMediaFolder(Folder mediaFolder, CollectionType? collectionType = CollectionType.unknown) {
+        await LockObj.WaitAsync().ConfigureAwait(false);
         try {
             var allVirtualFolders = LibraryManager.GetVirtualFolders();
             if (allVirtualFolders.FirstOrDefault(p => p.Locations.Contains(mediaFolder.Path) && (collectionType is CollectionType.unknown || p.CollectionType.ConvertToCollectionType() == collectionType)) is not { } library)
@@ -286,8 +253,7 @@ public class MediaFolderConfigurationService
             if (string.IsNullOrEmpty(library.ItemId) || !Guid.TryParse(library.ItemId, out var libraryId))
                 throw new Exception($"Unable to parse library id for library \"{library.Name}\" to use for media folder \"{mediaFolder.Path}\". This is not a plugin bug, but the media folder is missing from the default view in Jellyfin.");
 
-            if (ShouldGenerateAllConfigurations)
-            {
+            if (ShouldGenerateAllConfigurations) {
                 ShouldGenerateAllConfigurations = false;
                 await GenerateAllConfigurations(allVirtualFolders).ConfigureAwait(false);
             }
@@ -301,13 +267,10 @@ public class MediaFolderConfigurationService
         }
     }
 
-    private async Task GenerateAllConfigurations(List<VirtualFolderInfo> allVirtualFolders)
-    {
+    private async Task GenerateAllConfigurations(List<VirtualFolderInfo> allVirtualFolders) {
         var filteredVirtualFolders = allVirtualFolders
-            .Where(virtualFolder =>
-            {
-                if (virtualFolder is not { ItemId: not null, LibraryOptions: { } })
-                {
+            .Where(virtualFolder => {
+                if (virtualFolder is not { ItemId: not null, LibraryOptions: { } }) {
                     Logger.LogWarning("Skipping virtual folder {Name} because it has no ItemId or LibraryOptions.", virtualFolder.Name);
                     return false;
                 }
@@ -326,14 +289,12 @@ public class MediaFolderConfigurationService
             MediaFolderConfiguration? mediaFolderConfig = null;
             var libraryConfig = config.MediaFolders.FirstOrDefault(c => c.LibraryId == libraryId);
             foreach (var mediaFolderPath in virtualFolder.Locations) {
-                if (LibraryManager.FindByPath(mediaFolderPath, true) is not Folder secondFolder)
-                {
+                if (LibraryManager.FindByPath(mediaFolderPath, true) is not Folder secondFolder) {
                     Logger.LogTrace("Unable to find database entry for {Path} (Library={LibraryId})", mediaFolderPath, libraryId);
                     continue;
                 }
 
-                if (config.MediaFolders.Find(c => string.Equals(mediaFolderPath, c.MediaFolderPath) && c.LibraryId == libraryId) is { } mfc)
-                {
+                if (config.MediaFolders.Find(c => string.Equals(mediaFolderPath, c.MediaFolderPath) && c.LibraryId == libraryId) is { } mfc) {
                     Logger.LogTrace("Found existing entry for media folder at {Path} (Library={LibraryId})", mediaFolderPath, libraryId);
                     mediaFolderConfig = mfc;
                     continue;
@@ -380,8 +341,7 @@ public class MediaFolderConfigurationService
         }
     }
 
-    private async Task<MediaFolderConfiguration> CreateConfigurationForPath(Guid libraryId, Folder mediaFolder, MediaFolderConfiguration? libraryConfig)
-    {
+    private async Task<MediaFolderConfiguration> CreateConfigurationForPath(Guid libraryId, Folder mediaFolder, MediaFolderConfiguration? libraryConfig) {
         // Check if we should introduce the VFS for the media folder.
         var config = Plugin.Instance.Configuration;
         var mediaFolderConfig = new MediaFolderConfiguration() {
@@ -439,7 +399,7 @@ public class MediaFolderConfigurationService
             }
 
             try {
-                var importFolder = await ApiClient.GetImportFolder(mediaFolderConfig.ImportFolderId);
+                var importFolder = await ApiClient.GetImportFolder(mediaFolderConfig.ImportFolderId).ConfigureAwait(false);
                 if (importFolder != null)
                     mediaFolderConfig.ImportFolderName = importFolder.Name;
             }
@@ -489,12 +449,10 @@ public class MediaFolderConfigurationService
     /// <param name="mediaFolder">The media folder to get the sample paths
     /// for.</param>
     /// <returns>The sample paths for the given media folder.</returns> 
-    private IEnumerable<string> GetSamplePaths(string mediaFolder)
-    {
+    private IEnumerable<string> GetSamplePaths(string mediaFolder) {
         var count = 0;
         var rootFiles = FileSystem.GetFilePaths(mediaFolder, false);
-        foreach (var filePath in rootFiles)
-        {
+        foreach (var filePath in rootFiles) {
             if (IgnorePatterns.ShouldIgnore(filePath))
                 continue;
 
@@ -505,14 +463,12 @@ public class MediaFolderConfigurationService
         }
 
         var rootFolders = FileSystem.GetDirectoryPaths(mediaFolder, false);
-        foreach (var directoryPath in rootFolders)
-        {
+        foreach (var directoryPath in rootFolders) {
             if (IgnorePatterns.ShouldIgnore(directoryPath))
                 continue;
 
             var files = FileSystem.GetFilePaths(directoryPath, true);
-            foreach (var filePath in files)
-            {
+            foreach (var filePath in files) {
                 if (IgnorePatterns.ShouldIgnore(filePath))
                     continue;
 

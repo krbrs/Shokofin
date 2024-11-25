@@ -4,8 +4,7 @@ using Jellyfin.Data.Enums;
 
 namespace Shokofin.Events.Interfaces;
 
-public interface IMetadataUpdatedEventArgs
-{
+public interface IMetadataUpdatedEventArgs {
     /// <summary>
     /// The update reason.
     /// </summary>
@@ -60,14 +59,4 @@ public interface IMetadataUpdatedEventArgs
     /// Shoko series ids affected by this update.
     /// </summary>
     IReadOnlyList<int> SeriesIds { get; }
-
-    /// <summary>
-    /// The first shoko group id affected by this update.
-    /// </summary>
-    int? GroupId => GroupIds.Count > 0 ? GroupIds[0] : null;
-
-    /// <summary>
-    /// Shoko group ids affected by this update.
-    /// </summary>
-    IReadOnlyList<int> GroupIds { get; }
 }

@@ -1,7 +1,6 @@
 namespace Shokofin.API.Models;
 
-public class Rating
-{
+public class Rating {
     /// <summary>
     /// The rating value relative to the <see cref="Rating.MaxValue"/>.
     /// </summary>
@@ -28,7 +27,5 @@ public class Rating
     public string? Type { get; set; }
 
     public float ToFloat(uint scale = 1)
-    {
-        return (float)((Value * scale) / MaxValue);
-    }
+        => (float)((Value * scale) / MaxValue);
 }

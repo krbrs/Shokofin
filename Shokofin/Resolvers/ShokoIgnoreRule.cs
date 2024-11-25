@@ -17,8 +17,7 @@ using Shokofin.Utils;
 namespace Shokofin.Resolvers;
 #pragma warning disable CS8766
 
-public class ShokoIgnoreRule : IResolverIgnoreRule
-{
+public class ShokoIgnoreRule : IResolverIgnoreRule {
     private readonly ILogger<ShokoIgnoreRule> Logger;
 
     private readonly IIdLookup Lookup;
@@ -27,7 +26,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
 
     private readonly IFileSystem FileSystem;
 
-    private readonly ShokoAPIManager ApiManager;
+    private readonly ShokoApiManager ApiManager;
 
     private readonly MediaFolderConfigurationService ConfigurationService;
 
@@ -38,11 +37,10 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
         IIdLookup lookup,
         ILibraryManager libraryManager,
         IFileSystem fileSystem,
-        ShokoAPIManager apiManager,
+        ShokoApiManager apiManager,
         MediaFolderConfigurationService configurationService,
         NamingOptions namingOptions
-    )
-    {
+    ) {
         Lookup = lookup;
         Logger = logger;
         LibraryManager = libraryManager;
@@ -52,8 +50,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
         NamingOptions = namingOptions;
     }
 
-    public async Task<bool> ShouldFilterItem(Folder? parent, FileSystemMetadata fileInfo)
-    {
+    public async Task<bool> ShouldFilterItem(Folder? parent, FileSystemMetadata fileInfo) {
         // Check if the parent is not made yet, or the file info is missing.
         if (parent is null || fileInfo is null)
             return false;
@@ -95,7 +92,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
             var (mediaFolder, partialPath) = ApiManager.FindMediaFolder(fullPath, parent);
 
             // Ignore any media folders that aren't mapped to shoko.
-            var mediaFolderConfig = await ConfigurationService.GetOrCreateConfigurationForMediaFolder(mediaFolder);
+            var mediaFolderConfig = await ConfigurationService.GetOrCreateConfigurationForMediaFolder(mediaFolder).ConfigureAwait(false);
             if (!mediaFolderConfig.IsMapped) {
                 Logger.LogDebug("Skipped media folder for path {Path} (MediaFolder={MediaFolderId})", fileInfo.FullName, mediaFolderConfig.MediaFolderId);
                 return false;
@@ -130,8 +127,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
         }
     }
 
-    private async Task<bool> ShouldFilterDirectory(string partialPath, string fullPath, CollectionType? collectionType, bool shouldIgnore)
-    {
+    private async Task<bool> ShouldFilterDirectory(string partialPath, string fullPath, CollectionType? collectionType, bool shouldIgnore) {
         var season = await ApiManager.GetSeasonInfoByPath(fullPath).ConfigureAwait(false);
 
         // We inform/warn here since we enabled the provider in our library, but we can't find a match for the given folder path.
@@ -144,7 +140,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
                     foreach (var entry in entries) {
                         season = await ApiManager.GetSeasonInfoByPath(entry.FullName).ConfigureAwait(false);
                         if (season is not null) {
-                            Logger.LogDebug("Found shoko series {SeriesName} for sub-directory of path {Path} (Series={SeriesId},ExtraSeries={ExtraIds})", season.Shoko.Name, partialPath, season.Id, season.ExtraIds);
+                            Logger.LogDebug("Found shoko series {SeriesName} for sub-directory of path {Path} (Season={SeasonId},ExtraSeries={ExtraIds})", season.DefaultTitle, partialPath, season.Id, season.ExtraIds);
                             break;
                         }
                     }
@@ -165,29 +161,28 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
         switch (collectionType) {
             case CollectionType.tvshows:
                 if (isMovieSeason && Plugin.Instance.Configuration.SeparateMovies) {
-                    Logger.LogInformation("Found movie in show library and library separation is enabled, ignoring shoko series. (Series={SeriesId},ExtraSeries={ExtraIds})", season.Id, season.ExtraIds);
+                    Logger.LogInformation("Found movie in show library and library separation is enabled, ignoring shoko series. (Season={SeasonId},ExtraSeries={ExtraIds})", season.Id, season.ExtraIds);
                     return true;
                 }
                 break;
             case CollectionType.movies:
                 if (!isMovieSeason && Plugin.Instance.Configuration.FilterMovieLibraries) {
-                    Logger.LogInformation("Found show in movie library, ignoring shoko series. (Series={SeriesId},ExtraSeries={ExtraIds})", season.Id, season.ExtraIds);
+                    Logger.LogInformation("Found show in movie library, ignoring shoko series. (Season={SeasonId},ExtraSeries={ExtraIds})", season.Id, season.ExtraIds);
                     return true;
                 }
                 break;
         }
 
-        var show = await ApiManager.GetShowInfoForSeries(season.Id).ConfigureAwait(false)!;
-        if (!string.IsNullOrEmpty(show!.GroupId))
-            Logger.LogInformation("Found shoko group {GroupName} (Series={SeriesId},ExtraSeries={ExtraIds},Group={GroupId})", show.Name, season.Id, season.ExtraIds, show.GroupId);
+        var show = await ApiManager.GetShowInfoBySeasonId(season.Id).ConfigureAwait(false)!;
+        if (!string.IsNullOrEmpty(show?.ShokoGroupId))
+            Logger.LogInformation("Found shoko group {GroupName} (Season={SeasonId},ExtraSeries={ExtraIds},Group={GroupId})", show.DefaultTitle, season.Id, season.ExtraIds, show.ShokoGroupId);
         else
-            Logger.LogInformation("Found shoko series {SeriesName} (Series={SeriesId},ExtraSeries={ExtraIds})", season.Shoko.Name, season.Id, season.ExtraIds);
+            Logger.LogInformation("Found series {SeriesName} (Season={SeasonId},ExtraSeries={ExtraIds})", season.DefaultTitle, season.Id, season.ExtraIds);
 
         return false;
     }
 
-    private async Task<bool> ShouldFilterFile(string partialPath, string fullPath, bool shouldIgnore)
-    {
+    private async Task<bool> ShouldFilterFile(string partialPath, string fullPath, bool shouldIgnore) {
         var (file, season, _) = await ApiManager.GetFileInfoByPath(fullPath).ConfigureAwait(false);
 
         // We inform/warn here since we enabled the provider in our library, but we can't find a match for the given file path.
@@ -199,11 +194,11 @@ public class ShokoIgnoreRule : IResolverIgnoreRule
             return shouldIgnore;
         }
 
-        Logger.LogInformation("Found {EpisodeCount} shoko episode(s) for {SeriesName} (Series={SeriesId},ExtraSeries={ExtraIds},File={FileId})", file.EpisodeList.Count, season.Shoko.Name, season.Id, season.ExtraIds, file.Id);
+        Logger.LogInformation("Found {EpisodeCount} shoko episode(s) for {SeriesName} (Season={SeasonId},ExtraSeries={ExtraIds},File={FileId})", file.EpisodeList.Count, season.DefaultTitle, season.Id, season.ExtraIds, file.Id);
 
         // We're going to post process this file later, but we don't want to include it in our library for now.
         if (file.EpisodeList.Any(eI => season.IsExtraEpisode(eI.Episode))) {
-            Logger.LogInformation("File was assigned an extra type, ignoring file. (Series={SeriesId},ExtraSeries={ExtraIds},File={FileId})", season.Id, season.ExtraIds, file.Id);
+            Logger.LogInformation("File was assigned an extra type, ignoring file. (Season={SeasonId},ExtraSeries={ExtraIds},File={FileId})", season.Id, season.ExtraIds, file.Id);
             return true;
         }
 

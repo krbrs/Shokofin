@@ -34,11 +34,10 @@ using TvSeries = MediaBrowser.Controller.Entities.TV.Series;
 
 namespace Shokofin.Events;
 
-public class EventDispatchService
-{
-    private readonly ShokoAPIManager ApiManager;
+public class EventDispatchService {
+    private readonly ShokoApiManager ApiManager;
 
-    private readonly ShokoAPIClient ApiClient;
+    private readonly ShokoApiClient ApiClient;
 
     private readonly ILibraryManager LibraryManager;
 
@@ -76,8 +75,8 @@ public class EventDispatchService
     private static readonly TimeSpan DetectChangesThreshold = TimeSpan.FromSeconds(5);
 
     public EventDispatchService(
-        ShokoAPIManager apiManager,
-        ShokoAPIClient apiClient,
+        ShokoApiManager apiManager,
+        ShokoApiClient apiClient,
         ILibraryManager libraryManager,
         VirtualFileSystemService resolveManager,
         MediaFolderConfigurationService configurationService,
@@ -87,8 +86,7 @@ public class EventDispatchService
         IDirectoryService directoryService,
         ILogger<EventDispatchService> logger,
         UsageTracker usageTracker
-    )
-    {
+    ) {
         ApiManager = apiManager;
         ApiClient = apiClient;
         LibraryManager = libraryManager;
@@ -105,14 +103,12 @@ public class EventDispatchService
         ChangesDetectionTimer.Elapsed += OnIntervalElapsed;
     }
 
-    ~EventDispatchService()
-    {
+    ~EventDispatchService() {
         UsageTracker.Stalled -= OnStalled;
         ChangesDetectionTimer.Elapsed -= OnIntervalElapsed;
     }
 
-    private void OnStalled(object? sender, EventArgs eventArgs)
-    {
+    private void OnStalled(object? sender, EventArgs eventArgs) {
         Clear();
     }
 
@@ -120,8 +116,7 @@ public class EventDispatchService
 
     #region Event Detection
 
-    public IDisposable RegisterEventSubmitter()
-    {
+    public IDisposable RegisterEventSubmitter() {
         var count = ChangesDetectionSubmitterCount++;
         if (count is 0)
             ChangesDetectionTimer.Start();
@@ -129,8 +124,7 @@ public class EventDispatchService
         return new DisposableAction(() => DeregisterEventSubmitter());
     }
 
-    private void DeregisterEventSubmitter()
-    {
+    private void DeregisterEventSubmitter() {
         var count = --ChangesDetectionSubmitterCount;
         if (count is 0) {
             ChangesDetectionTimer.Stop();
@@ -141,8 +135,7 @@ public class EventDispatchService
         }
     }
 
-    private void OnIntervalElapsed(object? sender, ElapsedEventArgs eventArgs)
-    {
+    private void OnIntervalElapsed(object? sender, ElapsedEventArgs eventArgs) {
         var filesToProcess = new List<(int, List<(UpdateReason Reason, int ImportFolderId, string Path, IFileEventArgs Event)>, Guid trackerId)>();
         var seriesToProcess = new List<(string, List<IMetadataUpdatedEventArgs>, Guid trackerId)>();
         lock (ChangesPerFile) {
@@ -175,8 +168,7 @@ public class EventDispatchService
             Task.Run(() => ProcessMetadataEvents(metadataId, changes, trackerId));
     }
 
-    private void ClearFileEvents()
-    {
+    private void ClearFileEvents() {
         var filesToProcess = new List<(int, List<(UpdateReason Reason, int ImportFolderId, string Path, IFileEventArgs Event)>, Guid trackerId)>();
         lock (ChangesPerFile) {
             foreach (var (fileId, (lastUpdated, list, trackerId)) in ChangesPerFile) {
@@ -188,8 +180,7 @@ public class EventDispatchService
             Task.Run(() => ProcessFileEvents(fileId, changes, trackerId));
     }
 
-    private void ClearMetadataUpdatedEvents()
-    {
+    private void ClearMetadataUpdatedEvents() {
         var seriesToProcess = new List<(string, List<IMetadataUpdatedEventArgs>, Guid trackerId)>();
         lock (ChangesPerSeries) {
             foreach (var (metadataId, (lastUpdated, list, trackerId)) in ChangesPerSeries) {
@@ -205,8 +196,7 @@ public class EventDispatchService
 
     #region File Events
 
-    public void AddFileEvent(int fileId, UpdateReason reason, int importFolderId, string filePath, IFileEventArgs eventArgs)
-    {
+    public void AddFileEvent(int fileId, UpdateReason reason, int importFolderId, string filePath, IFileEventArgs eventArgs) {
         lock (ChangesPerFile) {
             if (ChangesPerFile.TryGetValue(fileId, out var tuple))
                 tuple.LastUpdated = DateTime.Now;
@@ -216,8 +206,7 @@ public class EventDispatchService
         }
     }
 
-    private async Task ProcessFileEvents(int fileId, List<(UpdateReason Reason, int ImportFolderId, string Path, IFileEventArgs Event)> changes, Guid trackerId)
-    {
+    private async Task ProcessFileEvents(int fileId, List<(UpdateReason Reason, int ImportFolderId, string Path, IFileEventArgs Event)> changes, Guid trackerId) {
         try {
             if (LibraryScanWatcher.IsScanRunning) {
                 Logger.LogInformation("Skipped processing {EventCount} file change events because a library scan is running. (File={FileId})", changes.Count, fileId);
@@ -229,7 +218,7 @@ public class EventDispatchService
             // Something was added or updated.
             var locationsToNotify = new List<string>();
             var mediaFoldersToNotify = new Dictionary<string, (string pathToReport, Folder mediaFolder)>();
-            var seriesIds = await GetSeriesIdsForFile(fileId, changes.Select(t => t.Event).LastOrDefault(e => e.HasCrossReferences));
+            var seriesIds = await GetSeriesIdsForFile(fileId, changes.Select(t => t.Event).LastOrDefault(e => e.HasCrossReferences)).ConfigureAwait(false);
             var libraries = await ConfigurationService.GetAvailableMediaFoldersForLibraries(c => c.IsFileEventsEnabled).ConfigureAwait(false);
             var (reason, importFolderId, relativePath, lastEvent) = changes.Last();
             if (reason is not UpdateReason.Removed) {
@@ -330,7 +319,7 @@ public class EventDispatchService
                             var result = new LinkGenerationResult();
                             var vfsSymbolicLinks = new HashSet<string>();
                             var topFolders = new HashSet<string>();
-                            var newSourceLocation = await GetNewSourceLocation(importFolderId, importFolderSubPath, fileId, relativePath, mediaFolderPath);
+                            var newSourceLocation = await GetNewSourceLocation(importFolderId, importFolderSubPath, fileId, relativePath, mediaFolderPath).ConfigureAwait(false);
                             if (!string.IsNullOrEmpty(newSourceLocation)) {
                                 var vfsLocations = (await Task.WhenAll(seriesIds.Select(seriesId => ResolveManager.GenerateLocationsForFile(collectionType, vfsPath, newSourceLocation, fileId.ToString(), seriesId))).ConfigureAwait(false))
                                 .Where(tuple => tuple.symbolicLinks.Length > 0 && tuple.importedAt.HasValue)
@@ -405,8 +394,7 @@ public class EventDispatchService
         }
     }
 
-    private async Task<IReadOnlySet<string>> GetSeriesIdsForFile(int fileId, IFileEventArgs? fileEvent)
-    {
+    private async Task<IReadOnlySet<string>> GetSeriesIdsForFile(int fileId, IFileEventArgs? fileEvent) {
         HashSet<string> seriesIds;
         if (fileEvent is not null && fileEvent.CrossReferences.All(xref => xref.ShokoSeriesId.HasValue && xref.ShokoEpisodeId.HasValue)) {
             seriesIds = fileEvent.CrossReferences.Select(xref => xref.ShokoSeriesId!.Value.ToString())
@@ -414,33 +402,32 @@ public class EventDispatchService
                 .ToHashSet();
         }
         else {
-            try {
-                var file = await ApiClient.GetFile(fileId.ToString());
-                seriesIds = file.CrossReferences
-                    .Where(xref => xref.Series.Shoko.HasValue && xref.Episodes.All(e => e.Shoko.HasValue))
-                    .Select(xref => xref.Series.Shoko!.Value.ToString())
-                    .Distinct()
-                    .ToHashSet();
-            }
-            catch (ApiException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound) {
+            var file = await ApiClient.GetFile(fileId.ToString()).ConfigureAwait(false);
+            if (file is null)
                 return new HashSet<string>();
-            }
+
+            seriesIds = file.CrossReferences
+                .Where(xref => xref.Series.Shoko.HasValue && xref.Episodes.All(e => e.Shoko.HasValue))
+                .Select(xref => xref.Series.Shoko!.Value.ToString())
+                .Distinct()
+                .ToHashSet();
         }
 
         // TODO: Postpone the processing of the file if the episode or series is not available yet.
 
         var filteredSeriesIds = new HashSet<string>();
         foreach (var seriesId in seriesIds) {
-            try {
-                var (primaryId, extraIds) = await ApiManager.GetSeriesIdsForSeason(seriesId);
-                var seriesPathSet = await ApiManager.GetPathSetForSeries(primaryId, extraIds);
-                if (seriesPathSet.Count > 0) {
-                    filteredSeriesIds.Add(seriesId);
-                }
+            var (primaryId, extraIds) = await ApiManager.GetSeriesIdsForShokoSeries(seriesId).ConfigureAwait(false);
+            if (await ApiManager.GetPathSetForSeries(primaryId).ConfigureAwait(false) is { Count: > 0 }) {
+                filteredSeriesIds.Add(seriesId);
             }
-            // If we fail to find the series data (most likely because it's already gone) then just abort early. We'll handle it elsewhere.
-            catch (ApiException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound) {
-                return new HashSet<string>();
+            else if (extraIds.Count > 0) {
+                foreach (var extraId in extraIds) {
+                    if (await ApiManager.GetPathSetForSeries(extraId).ConfigureAwait(false) is { Count: > 0 }) {
+                        filteredSeriesIds.Add(seriesId);
+                        break;
+                    }
+                }
             }
         }
 
@@ -450,30 +437,26 @@ public class EventDispatchService
         return filteredSeriesIds.Count is 0 ? seriesIds : filteredSeriesIds;
     }
 
-    private async Task<string?> GetNewSourceLocation(int importFolderId, string importFolderSubPath, int fileId, string relativePath, string mediaFolderPath)
-    {
+    private async Task<string?> GetNewSourceLocation(int importFolderId, string importFolderSubPath, int fileId, string relativePath, string mediaFolderPath) {
         // Check if the file still exists, and if it has any other locations we can use.
-        try {
-            var file = await ApiClient.GetFile(fileId.ToString());
-            var usableLocation = file.Locations
-                .Where(loc => loc.ImportFolderId == importFolderId && (string.IsNullOrEmpty(importFolderSubPath) || relativePath.StartsWith(importFolderSubPath + Path.DirectorySeparatorChar)) && loc.RelativePath != relativePath)
-                .FirstOrDefault();
-            if (usableLocation is null)
-                return null;
-
-            var sourceLocation = Path.Join(mediaFolderPath, usableLocation.RelativePath[importFolderSubPath.Length..]);
-            if (!File.Exists(sourceLocation))
-                return null;
-
-            return sourceLocation;
-        }
-        catch (ApiException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound) {
+        var file = await ApiClient.GetFile(fileId.ToString()).ConfigureAwait(false);
+        if (file is null)
             return null;
-        }
+
+        var usableLocation = file.Locations
+            .Where(loc => loc.ImportFolderId == importFolderId && (string.IsNullOrEmpty(importFolderSubPath) || relativePath.StartsWith(importFolderSubPath + Path.DirectorySeparatorChar)) && loc.RelativePath != relativePath)
+            .FirstOrDefault();
+        if (usableLocation is null)
+            return null;
+
+        var sourceLocation = Path.Join(mediaFolderPath, usableLocation.RelativePath[importFolderSubPath.Length..]);
+        if (!File.Exists(sourceLocation))
+            return null;
+
+        return sourceLocation;
     }
 
-    private void RemoveSymbolicLink(string filePath)
-    {
+    private void RemoveSymbolicLink(string filePath) {
         // TODO: If this works better, then move it to an utility and also use it in the VFS if needed, or remove this comment if that's not needed.
         try {
             var fileExists = File.Exists(filePath);
@@ -501,8 +484,7 @@ public class EventDispatchService
         }
     }
 
-    private async Task ReportMediaFolderChanged(Folder mediaFolder, string pathToReport)
-    {
+    private async Task ReportMediaFolderChanged(Folder mediaFolder, string pathToReport) {
         // Don't block real-time file events on the media folder that uses a physical VFS root, or if real-time monitoring is disabled.
         if (mediaFolder.Path.StartsWith(Plugin.Instance.VirtualRoot) ||
             LibraryManager.GetLibraryOptions(mediaFolder) is not LibraryOptions libraryOptions ||
@@ -556,8 +538,7 @@ public class EventDispatchService
 
     #region Refresh Events
 
-    public void AddSeriesEvent(string metadataId, IMetadataUpdatedEventArgs eventArgs)
-    {
+    public void AddSeriesEvent(string metadataId, IMetadataUpdatedEventArgs eventArgs) {
         lock (ChangesPerSeries) {
             if (ChangesPerSeries.TryGetValue(metadataId, out var tuple))
                 tuple.LastUpdated = DateTime.Now;
@@ -567,36 +548,51 @@ public class EventDispatchService
         }
     }
 
-    private async Task ProcessMetadataEvents(string metadataId, List<IMetadataUpdatedEventArgs> changes, Guid trackerId)
-    {
+    private async Task ProcessMetadataEvents(string metadataId, List<IMetadataUpdatedEventArgs> changes, Guid trackerId) {
         try {
             if (LibraryScanWatcher.IsScanRunning) {
                 Logger.LogDebug("Skipped processing {EventCount} metadata change events because a library scan is running. (Metadata={ProviderUniqueId})", changes.Count, metadataId);
                 return;
             }
 
-            if (!changes.Any(e => e.Kind is BaseItemKind.Episode && e.EpisodeId.HasValue || e.Kind is BaseItemKind.Series && e.SeriesId.HasValue)) {
+            if (!changes.Any(e => e.Kind is BaseItemKind.Episode or BaseItemKind.Movie && e.EpisodeId.HasValue || e.Kind is BaseItemKind.Series && e.SeriesId.HasValue)) {
                 Logger.LogDebug("Skipped processing {EventCount} metadata change events because no series or episode ids to use. (Metadata={ProviderUniqueId})", changes.Count, metadataId);
                 return;
             }
 
-            var seriesId = changes.First(e => e.SeriesId.HasValue).SeriesId!.Value.ToString();
-            var showInfo = await ApiManager.GetShowInfoForSeries(seriesId);
-            if (showInfo is null) {
-                Logger.LogDebug("Unable to find show info for series id. (Series={SeriesId},Metadata={ProviderUniqueId})", seriesId, metadataId);
+            var allSeriesIds = changes.SelectMany(e => e.SeriesIds).ToHashSet();
+            var seasonInfoDict = new Dictionary<string, SeasonInfo>();
+            var seriesIdDict = new Dictionary<int, string[]>();
+            foreach (var seriesId in allSeriesIds) {
+                var seasonInfoList = await ApiManager.GetSeasonInfosForShokoSeries(seriesId.ToString()).ConfigureAwait(false);
+                foreach (var seasonInfo in seasonInfoList) {
+                    seasonInfoDict.Add(seasonInfo.Id, seasonInfo);
+                }
+                seriesIdDict.Add(seriesId, seasonInfoList.Select(s => s.Id).ToArray());
+            }
+
+            if (seasonInfoDict.Count is 0) {
+                Logger.LogDebug("Unable to find season info for series id. (Metadata={ProviderUniqueId})", metadataId);
                 return;
             }
 
-            var seasonInfo = await ApiManager.GetSeasonInfoForSeries(seriesId);
-            if (seasonInfo is null) {
-                Logger.LogDebug("Unable to find season info for series id. (Series={SeriesId},Metadata={ProviderUniqueId})", seriesId, metadataId);
+            var showInfoList = (await Task.WhenAll(seasonInfoDict.Values.Select(s => ApiManager.GetShowInfoBySeasonId(s.Id))).ConfigureAwait(false))
+                .OfType<ShowInfo>()
+                .DistinctBy(s => s.Id)
+                .ToList();
+            if (showInfoList.Count is 0) {
+                Logger.LogDebug("Unable to find show info for series id. (Metadata={ProviderUniqueId})", metadataId);
                 return;
             }
 
             Logger.LogInformation("Processing {EventCount} metadata change events… (Metadata={ProviderUniqueId})", changes.Count, metadataId);
 
-            var updateCount = await ProcessSeriesEvents(showInfo, changes);
-            updateCount += await ProcessMovieEvents(seasonInfo, changes);
+            var updateCount = 0;
+            foreach (var showInfo in showInfoList)
+                updateCount += await ProcessSeriesEvents(showInfo, changes, seriesIdDict).ConfigureAwait(false);
+
+            foreach (var seasonInfo in seasonInfoDict.Values)
+                updateCount += await ProcessMovieEvents(seasonInfo, changes).ConfigureAwait(false);
 
             Logger.LogInformation("Scheduled {UpdateCount} updates for {EventCount} metadata change events. (Metadata={ProviderUniqueId})", updateCount, changes.Count, metadataId);
         }
@@ -608,29 +604,22 @@ public class EventDispatchService
         }
     }
 
-    private async Task<int> ProcessSeriesEvents(ShowInfo showInfo, List<IMetadataUpdatedEventArgs> changes)
-    {
-        // Update the series if we got a series event _or_ an episode removed event.
+    private async Task<int> ProcessSeriesEvents(ShowInfo showInfo, List<IMetadataUpdatedEventArgs> changes, IReadOnlyDictionary<int, string[]> seriesIdDict) {
+        // Update the series if we got a series event.
         var updateCount = 0;
-        var animeEvent = changes.Find(e => e.Kind is BaseItemKind.Series || e.Kind is BaseItemKind.Episode && e.Reason is UpdateReason.Removed);
-        if (animeEvent is not null) {
+        if (changes.Find(e => e.Kind is BaseItemKind.Series) is not null) {
             var shows = LibraryManager
                 .GetItemList(new() {
                     IncludeItemTypes = [BaseItemKind.Series],
-                    HasAnyProviderId = new Dictionary<string, string> { { ShokoSeriesId.Name, showInfo.Id } },
+                    HasAnyProviderId = new Dictionary<string, string> { { ShokoInternalId.Name, showInfo.InternalId } },
                     DtoOptions = new(true),
                 })
                 .DistinctBy(s => s.Id)
                 .OfType<TvSeries>()
                 .ToList();
             foreach (var show in shows) {
-                if (RecentlyUpdatedEntitiesDict.ContainsKey(show.Id)) {
-                    Logger.LogTrace("Show {ShowName} is already being updated. (Check=1,Show={ShowId},Series={SeriesId})", show.Name, show.Id, showInfo.Id);
-                    continue;
-                }
-
                 if (!RecentlyUpdatedEntitiesDict.TryAdd(show.Id, true)) {
-                    Logger.LogTrace("Show {ShowName} is already being updated. (Check=2,Show={ShowId},Series={SeriesId})", show.Name, show.Id, showInfo.Id);
+                    Logger.LogTrace("Show {ShowName} is already being updated. (Show={ShowId},Series={SeriesId})", show.Name, show.Id, showInfo.Id);
                     continue;
                 }
 
@@ -639,12 +628,12 @@ public class EventDispatchService
                     MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                     ImageRefreshMode = MetadataRefreshMode.FullRefresh,
                     ReplaceAllMetadata = true,
-                    ReplaceAllImages = true,
+                    ReplaceAllImages = Plugin.Instance.Configuration.SignalR_ReplaceImagesDuringRefresh,
                     RemoveOldMetadata = true,
                     ReplaceImages = Enum.GetValues<ImageType>().ToArray(),
                     IsAutomated = true,
                     EnableRemoteContentProbe = true,
-                }, CancellationToken.None);
+                }, CancellationToken.None).ConfigureAwait(false);
                 updateCount++;
             }
         }
@@ -652,11 +641,15 @@ public class EventDispatchService
         else {
             var episodeIds = changes
                 .Where(e => e.EpisodeId.HasValue && e.Reason is not UpdateReason.Removed)
-                .Select(e => e.EpisodeId!.Value.ToString())
+                .SelectMany(e => new List<string>([
+                    ..e.EpisodeIds.Select(eI => eI.ToString()),
+                    ..((e.Kind is BaseItemKind.Movie && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbMovie + e.ProviderId.ToString()] : Array.Empty<string>()),
+                    ..((e.Kind is BaseItemKind.Episode && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbShow + e.ProviderId.ToString()] : Array.Empty<string>()),
+                ]))
                 .ToHashSet();
             var seasonIds = changes
                 .Where(e => e.EpisodeId.HasValue && e.SeriesId.HasValue && e.Reason is UpdateReason.Removed)
-                .Select(e => e.SeriesId!.Value.ToString())
+                .SelectMany(e => e.SeriesIds.SelectMany(s => seriesIdDict[s]))
                 .ToHashSet();
             var seasonList = showInfo.SeasonList
                 .Where(seasonInfo => seasonIds.Contains(seasonInfo.Id) || seasonIds.Overlaps(seasonInfo.ExtraIds))
@@ -665,7 +658,7 @@ public class EventDispatchService
                 var seasons = LibraryManager
                     .GetItemList(new() {
                         IncludeItemTypes = [BaseItemKind.Season],
-                        HasAnyProviderId = new Dictionary<string, string> { { ShokoSeriesId.Name, seasonInfo.Id } },
+                        HasAnyProviderId = new Dictionary<string, string> { { ShokoInternalId.Name, seasonInfo.InternalId } },
                         DtoOptions = new(true),
                     })
                     .DistinctBy(s => s.Id)
@@ -674,31 +667,26 @@ public class EventDispatchService
                 foreach (var season in seasons) {
                     var showId = season.SeriesId;
                     if (RecentlyUpdatedEntitiesDict.ContainsKey(showId)) {
-                        Logger.LogTrace("Show is already being updated. (Check=1,Show={ShowId},Season={SeasonId},Series={SeriesId})", showId, season.Id, seasonInfo.Id);
-                        continue;
-                    }
-
-                    if (RecentlyUpdatedEntitiesDict.ContainsKey(season.Id)) {
-                        Logger.LogTrace("Season is already being updated. (Check=2,Show={ShowId},Season={SeasonId},Series={SeriesId})", showId, season.Id, seasonInfo.Id);
+                        Logger.LogTrace("Show is already being updated. (Check=1,Show={ShowId},TvSeason={SeasonId},Season={SeasonId})", showId, season.Id, seasonInfo.Id);
                         continue;
                     }
 
                     if (!RecentlyUpdatedEntitiesDict.TryAdd(season.Id, true)) {
-                        Logger.LogTrace("Season is already being updated. (Check=3,Show={ShowId},Season={SeasonId},Series={SeriesId})", showId, season.Id, seasonInfo.Id);
+                        Logger.LogTrace("Season is already being updated. (Check=2,Show={ShowId},TvSeason={SeasonId},Season={SeasonId})", showId, season.Id, seasonInfo.Id);
                         continue;
                     }
 
-                    Logger.LogInformation("Refreshing season {SeasonName}. (Season={SeasonId},Series={SeriesId},ExtraSeries={ExtraIds})", season.Name, season.Id, seasonInfo.Id, seasonInfo.ExtraIds);
+                    Logger.LogInformation("Refreshing season {SeasonName}. (TvSeason={SeasonId},Season={SeasonId},ExtraSeries={ExtraIds})", season.Name, season.Id, seasonInfo.Id, seasonInfo.ExtraIds);
                     await season.RefreshMetadata(new(DirectoryService) {
                         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                         ImageRefreshMode = MetadataRefreshMode.FullRefresh,
                         ReplaceAllMetadata = true,
-                        ReplaceAllImages = true,
+                        ReplaceAllImages = Plugin.Instance.Configuration.SignalR_ReplaceImagesDuringRefresh,
                         RemoveOldMetadata = true,
                         ReplaceImages = Enum.GetValues<ImageType>().ToArray(),
                         IsAutomated = true,
                         EnableRemoteContentProbe = true,
-                    }, CancellationToken.None);
+                    }, CancellationToken.None).ConfigureAwait(false);
                     updateCount++;
                 }
             }
@@ -721,36 +709,31 @@ public class EventDispatchService
                     var showId = episode.SeriesId;
                     var seasonId = episode.SeasonId;
                     if (RecentlyUpdatedEntitiesDict.ContainsKey(showId)) {
-                        Logger.LogTrace("Show is already being updated. (Check=1,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
+                        Logger.LogTrace("Show is already being updated. (Check=1,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Season={SeasonId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeasonId);
                         continue;
                     }
 
                     if (RecentlyUpdatedEntitiesDict.ContainsKey(seasonId)) {
-                        Logger.LogTrace("Season is already being updated. (Check=2,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
-                        continue;
-                    }
-
-                    if (RecentlyUpdatedEntitiesDict.ContainsKey(episode.Id)) {
-                        Logger.LogTrace("Episode is already being updated. (Check=3,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
+                        Logger.LogTrace("Season is already being updated. (Check=2,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Season={SeasonId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeasonId);
                         continue;
                     }
 
                     if (!RecentlyUpdatedEntitiesDict.TryAdd(episode.Id, true)) {
-                        Logger.LogTrace("Episode is already being updated. (Check=4,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
+                        Logger.LogTrace("Episode is already being updated. (Check=3,Show={ShowId},Season={SeasonId},Episode={EpisodeId},Episode={EpisodeId},Season={SeasonId})", showId, seasonId, episode.Id, episodeInfo.Id, episodeInfo.SeasonId);
                         continue;
                     }
 
-                    Logger.LogInformation("Refreshing episode {EpisodeName}. (Episode={EpisodeId},Episode={EpisodeId},Series={SeriesId})", episode.Name, episode.Id, episodeInfo.Id, episodeInfo.SeriesId);
+                    Logger.LogInformation("Refreshing episode {EpisodeName}. (Episode={EpisodeId},Episode={EpisodeId},Season={SeasonId})", episode.Name, episode.Id, episodeInfo.Id, episodeInfo.SeasonId);
                     await episode.RefreshMetadata(new(DirectoryService) {
                         MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                         ImageRefreshMode = MetadataRefreshMode.FullRefresh,
                         ReplaceAllMetadata = true,
-                        ReplaceAllImages = true,
+                        ReplaceAllImages = Plugin.Instance.Configuration.SignalR_ReplaceImagesDuringRefresh,
                         RemoveOldMetadata = true,
                         ReplaceImages = Enum.GetValues<ImageType>().ToArray(),
                         IsAutomated = true,
                         EnableRemoteContentProbe = true,
-                    }, CancellationToken.None);
+                    }, CancellationToken.None).ConfigureAwait(false);
                     updateCount++;
                 }
             }
@@ -758,13 +741,16 @@ public class EventDispatchService
         return updateCount;
     }
 
-    private async Task<int> ProcessMovieEvents(SeasonInfo seasonInfo, List<IMetadataUpdatedEventArgs> changes)
-    {
+    private async Task<int> ProcessMovieEvents(SeasonInfo seasonInfo, List<IMetadataUpdatedEventArgs> changes) {
         // Find movies and refresh them.
         var updateCount = 0;
         var episodeIds = changes
             .Where(e => e.EpisodeId.HasValue && e.Reason is not UpdateReason.Removed)
-            .Select(e => e.EpisodeId!.Value.ToString())
+            .SelectMany(e => new List<string>([
+                ..e.EpisodeIds.Select(eI => eI.ToString()),
+                ..((e.Kind is BaseItemKind.Movie && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbMovie + e.ProviderId.ToString()] : Array.Empty<string>()),
+                ..((e.Kind is BaseItemKind.Episode && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbShow + e.ProviderId.ToString()] : Array.Empty<string>()),
+            ]))
             .ToHashSet();
         var episodeList = seasonInfo.EpisodeList
             .Concat(seasonInfo.AlternateEpisodesList)
@@ -782,27 +768,22 @@ public class EventDispatchService
                 .OfType<Movie>()
                 .ToList();
             foreach (var movie in movies) {
-                if (RecentlyUpdatedEntitiesDict.ContainsKey(movie.Id)) {
-                    Logger.LogTrace("Movie is already being updated. (Check=1,Movie={MovieId},Episode={EpisodeId},Series={SeriesId},ExtraSeries={ExtraIds})", movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
-                    continue;
-                }
-
                 if (!RecentlyUpdatedEntitiesDict.TryAdd(movie.Id, true)) {
-                    Logger.LogTrace("Movie is already being updated. (Check=2,Movie={MovieId},Episode={EpisodeId},Series={SeriesId},ExtraSeries={ExtraIds})", movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
+                    Logger.LogTrace("Movie is already being updated. (Movie={MovieId},Episode={EpisodeId},Season={SeasonId},ExtraSeasons={ExtraIds})", movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
                     continue;
                 }
 
-                Logger.LogInformation("Refreshing movie {MovieName}. (Movie={MovieId},Episode={EpisodeId},Series={SeriesId},ExtraSeries={ExtraIds})", movie.Name, movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
+                Logger.LogInformation("Refreshing movie {MovieName}. (Movie={MovieId},Episode={EpisodeId},Season={SeasonId},ExtraSeasons={ExtraIds})", movie.Name, movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
                 await movie.RefreshMetadata(new(DirectoryService) {
                     MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
                     ImageRefreshMode = MetadataRefreshMode.FullRefresh,
                     ReplaceAllMetadata = true,
-                    ReplaceAllImages = true,
+                    ReplaceAllImages = Plugin.Instance.Configuration.SignalR_ReplaceImagesDuringRefresh,
                     RemoveOldMetadata = true,
                     ReplaceImages = Enum.GetValues<ImageType>().ToArray(),
                     IsAutomated = true,
                     EnableRemoteContentProbe = true,
-                }, CancellationToken.None);
+                }, CancellationToken.None).ConfigureAwait(false);
                 updateCount++;
             }
         }

@@ -25,11 +25,10 @@ using File = System.IO.File;
 
 namespace Shokofin.Resolvers;
 
-public class VirtualFileSystemService
-{
-    private readonly ShokoAPIManager ApiManager;
+public class VirtualFileSystemService {
+    private readonly ShokoApiManager ApiManager;
 
-    private readonly ShokoAPIClient ApiClient;
+    private readonly ShokoApiClient ApiClient;
 
     private readonly ILibraryManager LibraryManager;
 
@@ -64,16 +63,15 @@ public class VirtualFileSystemService
     ];
 
     public VirtualFileSystemService(
-        ShokoAPIManager apiManager,
-        ShokoAPIClient apiClient,
+        ShokoApiManager apiManager,
+        ShokoApiClient apiClient,
         MediaFolderConfigurationService configurationService,
         ILibraryManager libraryManager,
         IFileSystem fileSystem,
         ILogger<VirtualFileSystemService> logger,
         ILocalizationManager localizationManager,
         NamingOptions namingOptions
-    )
-    {
+    ) {
         ApiManager = apiManager;
         ApiClient = apiClient;
         ConfigurationService = configurationService;
@@ -86,8 +84,7 @@ public class VirtualFileSystemService
         Plugin.Instance.Tracker.Stalled += OnTrackerStalled;
     }
 
-    ~VirtualFileSystemService()
-    {
+    ~VirtualFileSystemService() {
         Plugin.Instance.Tracker.Stalled -= OnTrackerStalled;
         DataCache.Dispose();
     }
@@ -95,16 +92,14 @@ public class VirtualFileSystemService
     private void OnTrackerStalled(object? sender, EventArgs eventArgs)
         => Clear();
 
-    public void Clear()
-    {
+    public void Clear() {
         Logger.LogDebug("Clearing data…");
         DataCache.Clear();
     }
 
     #region Preview Structure
 
-    public async Task<(HashSet<string> filesBefore, HashSet<string> filesAfter, VirtualFolderInfo? virtualFolder, LinkGenerationResult? result, string vfsPath)> PreviewChangesForLibrary(Guid libraryId)
-    {
+    public async Task<(HashSet<string> filesBefore, HashSet<string> filesAfter, VirtualFolderInfo? virtualFolder, LinkGenerationResult? result, string vfsPath)> PreviewChangesForLibrary(Guid libraryId) {
         // Don't allow starting a preview if a library scan is running.
 
         var virtualFolders = LibraryManager.GetVirtualFolders();
@@ -116,7 +111,7 @@ public class VirtualFileSystemService
             return ([], [], selectedFolder, null, string.Empty);
 
         var collectionType = selectedFolder.CollectionType.ConvertToCollectionType();
-        var (vfsPath, _, mediaConfigs, _) = await ConfigurationService.GetMediaFoldersForLibraryInVFS(mediaFolder, collectionType, config => config.IsVirtualFileSystemEnabled);
+        var (vfsPath, _, mediaConfigs, _) = await ConfigurationService.GetMediaFoldersForLibraryInVFS(mediaFolder, collectionType, config => config.IsVirtualFileSystemEnabled).ConfigureAwait(false);
         if (string.IsNullOrEmpty(vfsPath) || mediaConfigs.Count is 0)
             return ([], [], selectedFolder, null, string.Empty);
 
@@ -127,7 +122,7 @@ public class VirtualFileSystemService
         return await DataCache.GetOrCreateAsync($"preview-changes:{vfsPath}", async () => {
             var allPaths = GetPathsForMediaFolders(mediaConfigs);
             var allFiles = GetFilesForImportFolders(mediaConfigs, allPaths);
-            var result = await GenerateStructure(collectionType, vfsPath, allFiles, preview: true);
+            var result = await GenerateStructure(collectionType, vfsPath, allFiles, preview: true).ConfigureAwait(false);
             result += CleanupStructure(vfsPath, vfsPath, result.Paths.ToArray(), preview: true);
 
             // This call will be slow depending on the size of your collection.
@@ -142,7 +137,7 @@ public class VirtualFileSystemService
                 .ToHashSet();
 
             return (existingPaths, alteredPaths, selectedFolder, result, vfsPath);
-        });
+        }).ConfigureAwait(false);
     }
 
     #endregion
@@ -155,9 +150,8 @@ public class VirtualFileSystemService
     /// <param name="mediaFolder">The media folder to generate a structure for.</param>
     /// <param name="path">The file or folder within the media folder to generate a structure for.</param>
     /// <returns>The VFS path, if it succeeded.</returns>
-    public async Task<(string?, bool)> GenerateStructureInVFS(Folder mediaFolder, CollectionType? collectionType, string path)
-    {
-        var (vfsPath, mainMediaFolderPath, mediaConfigs, skipGeneration) = await ConfigurationService.GetMediaFoldersForLibraryInVFS(mediaFolder, collectionType, config => config.IsVirtualFileSystemEnabled);
+    public async Task<(string?, bool)> GenerateStructureInVFS(Folder mediaFolder, CollectionType? collectionType, string path) {
+        var (vfsPath, mainMediaFolderPath, mediaConfigs, skipGeneration) = await ConfigurationService.GetMediaFoldersForLibraryInVFS(mediaFolder, collectionType, config => config.IsVirtualFileSystemEnabled).ConfigureAwait(false);
         if (string.IsNullOrEmpty(vfsPath) || string.IsNullOrEmpty(mainMediaFolderPath) || mediaConfigs.Count is 0)
             return (null, false);
 
@@ -201,34 +195,31 @@ public class VirtualFileSystemService
                     // show/movie-folder level
                     case 1: {
                         var seriesName = pathSegments[0];
-                        if (!seriesName.TryGetAttributeValue(ShokoSeriesId.Name, out var seriesId) || !int.TryParse(seriesId, out _))
+                        if (!seriesName.TryGetAttributeValue(ShokoSeriesId.Name, out var seasonId))
                             break;
 
                         // movie-folder
                         if (seriesName.TryGetAttributeValue(ShokoEpisodeId.Name, out var episodeId) ) {
-                            if (!int.TryParse(episodeId, out _))
-                                break;
-
                             pathToClean = path;
-                            allFiles = GetFilesForMovie(episodeId, seriesId, mediaConfigs, allPaths);
+                            allFiles = GetFilesForMovie(episodeId, seasonId, mediaConfigs, allPaths);
                             break;
                         }
 
                         // show
                         pathToClean = path;
-                        allFiles = GetFilesForShow(seriesId, null, mediaConfigs, allPaths);
+                        allFiles = GetFilesForShow(seasonId, null, mediaConfigs, allPaths);
                         break;
                     }
 
                     // season/movie level
                     case 2: {
                         var (seriesName, seasonOrMovieName) = pathSegments;
-                        if (!seriesName.TryGetAttributeValue(ShokoSeriesId.Name, out var seriesId) || !int.TryParse(seriesId, out _))
+                        if (!seriesName.TryGetAttributeValue(ShokoSeriesId.Name, out var seasonId))
                             break;
 
                         // movie
                         if (seriesName.TryGetAttributeValue(ShokoEpisodeId.Name, out _)) {
-                            if (!seasonOrMovieName.TryGetAttributeValue(ShokoSeriesId.Name, out seriesId) || !int.TryParse(seriesId, out _))
+                            if (!seasonOrMovieName.TryGetAttributeValue(ShokoSeriesId.Name, out var seriesId) || !int.TryParse(seriesId, out _))
                                 break;
 
                             if (!seasonOrMovieName.TryGetAttributeValue(ShokoFileId.Name, out var fileId) || !int.TryParse(fileId, out _))
@@ -243,20 +234,20 @@ public class VirtualFileSystemService
                             break;
 
                         pathToClean = path;
-                        allFiles = GetFilesForShow(seriesId, seasonNumber, mediaConfigs, allPaths);
+                        allFiles = GetFilesForShow(seasonId, seasonNumber, mediaConfigs, allPaths);
                         break;
                     }
 
                     // episodes level
                     case 3: {
                         var (seriesName, seasonName, episodeName) = pathSegments;
-                        if (!seriesName.TryGetAttributeValue(ShokoSeriesId.Name, out var seriesId) || !int.TryParse(seriesId, out _))
+                        if (!seriesName.TryGetAttributeValue(ShokoSeriesId.Name, out var seasonId))
                             break;
 
                         if (!seasonName.StartsWith("Season ") || !int.TryParse(seasonName.Split(' ').Last(), out _))
                             break;
 
-                        if (!episodeName.TryGetAttributeValue(ShokoSeriesId.Name, out seriesId) || !int.TryParse(seriesId, out _))
+                        if (!episodeName.TryGetAttributeValue(ShokoSeriesId.Name, out var seriesId) || !int.TryParse(seriesId, out _))
                             break;
 
                         if (!episodeName.TryGetAttributeValue(ShokoFileId.Name, out var fileId) || !int.TryParse(fileId, out _))
@@ -282,7 +273,7 @@ public class VirtualFileSystemService
                 return true;
 
             // Generate and cleanup the structure in the VFS.
-            var result = await GenerateStructure(collectionType, vfsPath, allFiles);
+            var result = await GenerateStructure(collectionType, vfsPath, allFiles).ConfigureAwait(false);
             if (!string.IsNullOrEmpty(pathToClean))
                 result += CleanupStructure(vfsPath, pathToClean, result.Paths.ToArray());
 
@@ -291,7 +282,7 @@ public class VirtualFileSystemService
             result.Print(Logger, mediaConfigs.Any(config => path.StartsWith(config.MediaFolderPath)) ? vfsPath : path);
 
             return true;
-        });
+        }).ConfigureAwait(false);
 
         return (
             shouldReturnPath ? vfsPath : null,
@@ -299,8 +290,7 @@ public class VirtualFileSystemService
         );
     }
 
-    private HashSet<string> GetPathsForMediaFolders(IReadOnlyList<MediaFolderConfiguration> mediaConfigs)
-    {
+    private HashSet<string> GetPathsForMediaFolders(IReadOnlyList<MediaFolderConfiguration> mediaConfigs) {
         var libraryId = mediaConfigs[0].LibraryId;
         Logger.LogDebug("Looking for files in library across {Count} folders. (Library={LibraryId})", mediaConfigs.Count, libraryId);
         var start = DateTime.UtcNow;
@@ -320,13 +310,16 @@ public class VirtualFileSystemService
         return paths;
     }
 
-    private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForEpisode(string fileId, string seriesId, IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet)
-    {
+    private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForEpisode(string fileId, string seriesId, IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet) {
         var totalFiles = 0;
         var start = DateTime.UtcNow;
-        var file = ApiClient.GetFile(fileId).ConfigureAwait(false).GetAwaiter().GetResult();
+        var file = ApiClient.GetFile(fileId)
+            .ConfigureAwait(false)
+            .GetAwaiter()
+            .GetResult();
         if (file is null || !file.CrossReferences.Any(xref => xref.Series.ToString() == seriesId))
             yield break;
+
         Logger.LogDebug(
             "Iterating files to potentially use within {Count} media folders. (File={FileId},Series={SeriesId},Library={LibraryId})",
             mediaConfigs.Count,
@@ -368,25 +361,31 @@ public class VirtualFileSystemService
         );
     }
 
-    private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForMovie(string episodeId, string seriesId, IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet)
-    {
+    private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForMovie(string episodeId, string seasonId, IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet) {
         var start = DateTime.UtcNow;
         var totalFiles = 0;
-        var seasonInfo = ApiManager.GetSeasonInfoForSeries(seriesId).ConfigureAwait(false).GetAwaiter().GetResult();
+        var seasonInfo = ApiManager.GetSeasonInfo(seasonId)
+            .ConfigureAwait(false)
+            .GetAwaiter()
+            .GetResult();
         if (seasonInfo is null)
             yield break;
+
         Logger.LogDebug(
-            "Iterating files to potentially use within {Count} media folders. (Episode={EpisodeId},Series={SeriesId},Library={LibraryId})",
+            "Iterating files to potentially use within {Count} media folders. (Episode={EpisodeId},Season={SeasonId},Library={LibraryId})",
             mediaConfigs.Count,
             episodeId,
-            seriesId,
+            seasonId,
             mediaConfigs[0].LibraryId
         );
 
         var episodeIds = seasonInfo.ExtrasList.Select(episode => episode.Id).Append(episodeId).ToHashSet();
-        var files = ApiManager.GetFilesForSeason(seasonInfo).ConfigureAwait(false).GetAwaiter().GetResult();
+        var files = seasonInfo.GetFiles()
+            .ConfigureAwait(false)
+            .GetAwaiter()
+            .GetResult();
         var fileLocations = files
-            .Where(tuple => tuple.file.CrossReferences.Any(xref => episodeIds.Overlaps(xref.Episodes.Where(e => e.Shoko.HasValue).Select(e => e.Shoko!.Value.ToString()))))
+            .Where(tuple => tuple.episodeIds.Overlaps(episodeIds))
             .SelectMany(tuple => tuple.file.Locations.Select(location => (tuple.file, tuple.seriesId, location)))
             .ToList();
         foreach (var (file, fileSeriesId, location) in fileLocations) {
@@ -411,26 +410,25 @@ public class VirtualFileSystemService
 
         var timeSpent = DateTime.UtcNow - start;
         Logger.LogDebug(
-            "Iterated {Count} file(s) to potentially use within {Count} media folders in {TimeSpan} (Episode={EpisodeId},Series={SeriesId},Library={LibraryId})",
+            "Iterated {Count} file(s) to potentially use within {Count} media folders in {TimeSpan} (Episode={EpisodeId},Season={SeasonId},Library={LibraryId})",
             totalFiles,
             mediaConfigs.Count,
             timeSpent,
             episodeId,
-            seriesId,
+            seasonId,
             mediaConfigs[0].LibraryId
         );
     }
 
-    private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForShow(string seriesId, int? seasonNumber, IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet)
-    {
+    private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForShow(string seasonId, int? seasonNumber, IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet) {
         var start = DateTime.UtcNow;
-        var showInfo = ApiManager.GetShowInfoForSeries(seriesId).ConfigureAwait(false).GetAwaiter().GetResult();
+        var showInfo = ApiManager.GetShowInfoBySeasonId(seasonId).ConfigureAwait(false).GetAwaiter().GetResult();
         if (showInfo is null)
             yield break;
         Logger.LogDebug(
-            "Iterating files to potentially use within {Count} media folders. (Series={SeriesId},Season={SeasonNumber},Library={LibraryId})",
+            "Iterating files to potentially use within {Count} media folders. (MainSeason={MainSeasonId},Season={SeasonNumber},Library={LibraryId})",
             mediaConfigs.Count,
-            seriesId,
+            seasonId,
             seasonNumber,
             mediaConfigs[0].LibraryId
         );
@@ -443,9 +441,9 @@ public class VirtualFileSystemService
             if (seasonNumber.Value is 0) {
                 foreach (var seasonInfo in showInfo.SeasonList) {
                     var episodeIds = seasonInfo.SpecialsList.Select(episode => episode.Id).ToHashSet();
-                    var files = ApiManager.GetFilesForSeason(seasonInfo).ConfigureAwait(false).GetAwaiter().GetResult();
+                    var files = seasonInfo.GetFiles().ConfigureAwait(false).GetAwaiter().GetResult();
                     var fileLocations = files
-                        .Where(tuple => tuple.file.CrossReferences.Any(xref => episodeIds.Overlaps(xref.Episodes.Where(e => e.Shoko.HasValue).Select(e => e.Shoko!.Value.ToString()))))
+                        .Where(tuple => tuple.episodeIds.Overlaps(episodeIds))
                         .SelectMany(tuple => tuple.file.Locations.Select(location => (tuple.file, tuple.seriesId, location)))
                         .ToList();
                     foreach (var (file, fileSeriesId, location) in fileLocations) {
@@ -476,9 +474,9 @@ public class VirtualFileSystemService
                     var baseNumber = showInfo.GetBaseSeasonNumberForSeasonInfo(seasonInfo);
                     var offset = seasonNumber.Value - baseNumber;
                     var episodeIds = (offset is 0 ? seasonInfo.EpisodeList.Concat(seasonInfo.ExtrasList) : seasonInfo.AlternateEpisodesList).Select(episode => episode.Id).ToHashSet();
-                    var files = ApiManager.GetFilesForSeason(seasonInfo).ConfigureAwait(false).GetAwaiter().GetResult();
+                    var files = seasonInfo.GetFiles().ConfigureAwait(false).GetAwaiter().GetResult();
                     var fileLocations = files
-                        .Where(tuple => tuple.file.CrossReferences.Any(xref => episodeIds.Overlaps(xref.Episodes.Where(e => e.Shoko.HasValue).Select(e => e.Shoko!.Value.ToString()))))
+                        .Where(tuple => tuple.episodeIds.Overlaps(episodeIds))
                         .SelectMany(tuple => tuple.file.Locations.Select(location => (tuple.file, tuple.seriesId, location)))
                         .ToList();
                     foreach (var (file, fileSeriesId, location) in fileLocations) {
@@ -506,7 +504,7 @@ public class VirtualFileSystemService
         // Return all files for the show.
         else {
             foreach (var seasonInfo in showInfo.SeasonList) {
-                var files = ApiManager.GetFilesForSeason(seasonInfo).ConfigureAwait(false).GetAwaiter().GetResult();
+                var files = seasonInfo.GetFiles().ConfigureAwait(false).GetAwaiter().GetResult();
                 var fileLocations = files
                     .SelectMany(tuple => tuple.file.Locations.Select(location => (tuple.file, tuple.seriesId, location)))
                     .ToList();
@@ -534,25 +532,24 @@ public class VirtualFileSystemService
 
         var timeSpent = DateTime.UtcNow - start;
         Logger.LogDebug(
-            "Iterated {FileCount} files to potentially use within {Count} media folders in {TimeSpan} (Series={SeriesId},Season={SeasonNumber},Library={LibraryId})",
+            "Iterated {FileCount} files to potentially use within {Count} media folders in {TimeSpan} (MainSeason={MainSeasonId},Season={SeasonNumber},Library={LibraryId})",
             totalFiles,
             mediaConfigs.Count,
             timeSpent,
-            seriesId,
+            seasonId,
             seasonNumber,
             mediaConfigs[0].LibraryId
         );
     }
 
-    private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForImportFolders(IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet)
-    {
+    private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForImportFolders(IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet) {
         var start = DateTime.UtcNow;
         var singleSeriesIds = new HashSet<int>();
         var multiSeriesFiles = new List<(API.Models.File, string)>();
         var totalSingleSeriesFiles = 0;
         var libraryId = mediaConfigs[0].LibraryId;
         foreach (var (importFolderId, importFolderSubPath, mediaFolderPaths) in mediaConfigs.ToImportFolderList()) {
-            var firstPage = ApiClient.GetFilesForImportFolder(importFolderId, importFolderSubPath);
+            var firstPage = ApiClient.GetFilesInImportFolder(importFolderId, importFolderSubPath);
             var pageData = firstPage
                 .ConfigureAwait(false)
                 .GetAwaiter()
@@ -628,13 +625,13 @@ public class VirtualFileSystemService
         var totalMultiSeriesFiles = 0;
         if (multiSeriesFiles.Count > 0) {
             var mappedSingleSeriesIds = singleSeriesIds
-                .Select(seriesId =>
-                    ApiManager.GetShowInfoForSeries(seriesId.ToString())
+                .SelectMany(seriesId =>
+                    ApiManager.GetShowInfosForShokoSeries(seriesId.ToString())
                         .ConfigureAwait(false)
                         .GetAwaiter()
-                        .GetResult()?.Id
+                        .GetResult()
+                        .Select(showInfo => showInfo.Id)
                 )
-                .OfType<string>()
                 .ToHashSet();
             foreach (var (file, sourceLocation) in multiSeriesFiles) {
                 var seriesIds = file.CrossReferences
@@ -643,9 +640,9 @@ public class VirtualFileSystemService
                     .Distinct()
                     .Select(seriesId => (
                         seriesId,
-                        showId: ApiManager.GetShowInfoForSeries(seriesId).ConfigureAwait(false).GetAwaiter().GetResult()?.Id
+                        showIds: ApiManager.GetShowInfosForShokoSeries(seriesId).ConfigureAwait(false).GetAwaiter().GetResult().Select(showInfo => showInfo.Id).ToHashSet()
                     ))
-                    .Where(tuple => !string.IsNullOrEmpty(tuple.showId) && mappedSingleSeriesIds.Contains(tuple.showId))
+                    .Where(tuple => tuple.showIds.Count > 0 && mappedSingleSeriesIds.Overlaps(tuple.showIds))
                     .Select(tuple => tuple.seriesId)
                     .ToList();
                 foreach (var seriesId in seriesIds)
@@ -666,14 +663,12 @@ public class VirtualFileSystemService
         );
     }
 
-    private async Task<ListResult<API.Models.File>> GetImportFolderFilesPage(int importFolderId, string importFolderSubPath, int page, SemaphoreSlim semaphore)
-    {
+    private async Task<ListResult<API.Models.File>> GetImportFolderFilesPage(int importFolderId, string importFolderSubPath, int page, SemaphoreSlim semaphore) {
         await semaphore.WaitAsync().ConfigureAwait(false);
-        return await ApiClient.GetFilesForImportFolder(importFolderId, importFolderSubPath, page).ConfigureAwait(false);
+        return await ApiClient.GetFilesInImportFolder(importFolderId, importFolderSubPath, page).ConfigureAwait(false);
     }
 
-    private async Task<LinkGenerationResult> GenerateStructure(CollectionType? collectionType, string vfsPath, IEnumerable<(string sourceLocation, string fileId, string seriesId)> allFiles, bool preview = false)
-    {
+    private async Task<LinkGenerationResult> GenerateStructure(CollectionType? collectionType, string vfsPath, IEnumerable<(string sourceLocation, string fileId, string seriesId)> allFiles, bool preview = false) {
         var result = new LinkGenerationResult();
         var maxTotalExceptions = Plugin.Instance.Configuration.VFS_MaxTotalExceptionsBeforeAbort;
         var maxSeriesExceptions = Plugin.Instance.Configuration.VFS_MaxSeriesExceptionsBeforeAbort;
@@ -719,8 +714,7 @@ public class VirtualFileSystemService
             finally {
                 semaphore.Release();
             }
-        }))
-            .ConfigureAwait(false);
+        })).ConfigureAwait(false);
 
         // Throw an `AggregateException` if any series exceeded the maximum number of exceptions, or if the total number of exceptions exceeded the maximum allowed. Additionally,
         // if no links were generated and there were any exceptions, but we haven't reached the maximum allowed exceptions yet, then also throw an `AggregateException`.
@@ -732,9 +726,16 @@ public class VirtualFileSystemService
         return result;
     }
 
-    public async Task<(string[] symbolicLinks, DateTime? importedAt)> GenerateLocationsForFile(CollectionType? collectionType, string vfsPath, string sourceLocation, string fileId, string seriesId)
-    {
-        var season = await ApiManager.GetSeasonInfoForSeries(seriesId).ConfigureAwait(false);
+    public async Task<(string[] symbolicLinks, DateTime? importedAt)> GenerateLocationsForFile(CollectionType? collectionType, string vfsPath, string sourceLocation, string fileId, string seriesId) {
+        var file = await ApiManager.GetFileInfo(fileId, seriesId).ConfigureAwait(false);
+        if (file is null)
+            return ([], null);
+
+        if (file.EpisodeList is not { Count: > 0 })
+            return ([], null);
+
+        var (episode, episodeXref, _) = file.EpisodeList[0];
+        var season = await ApiManager.GetSeasonInfo(episode.SeasonId).ConfigureAwait(false);
         if (season is null)
             return ([], null);
 
@@ -748,19 +749,11 @@ public class VirtualFileSystemService
         if (shouldAbort)
             return ([], null);
 
-        var show = await ApiManager.GetShowInfoForSeries(season.Id).ConfigureAwait(false);
+        var show = await ApiManager.GetShowInfoBySeasonId(season.Id).ConfigureAwait(false);
         if (show is null)
             return ([], null);
 
-        var file = await ApiManager.GetFileInfo(fileId, seriesId).ConfigureAwait(false);
-        var (episode, episodeXref, _) = (file?.EpisodeList ?? []).FirstOrDefault();
-        if (file is null || episode is null)
-            return ([], null);
-
-        if (season is null || episode is null)
-            return ([], null);
-
-        var showName = show.DefaultSeason.AniDB.Title?.ReplaceInvalidPathCharacters() ?? $"Shoko Series {show.Id}";
+        var showName = (show.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.IsDefault)?.Value ?? show.DefaultTitle)?.ReplaceInvalidPathCharacters() ?? $"Shoko Series {show.Id}";
         var episodeNumber = Ordering.GetEpisodeNumber(show, season, episode);
         var episodeName = (episode.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.LanguageCode == "en")?.Value ?? $"{(episode.Type is EpisodeType.Normal ? "Episode " : $"{episode.Type} ")}{episodeNumber}").ReplaceInvalidPathCharacters();
 
@@ -798,7 +791,7 @@ public class VirtualFileSystemService
         if (collectionType is CollectionType.movies || (collectionType is null && isMovieSeason)) {
             if (extrasFolders != null) {
                 foreach (var extrasFolder in extrasFolders)
-                    foreach (var episodeInfo in season.EpisodeList.Where(a => a.FileCount > 0))
+                    foreach (var episodeInfo in season.EpisodeList.Where(e => e.IsAvailable))
                         folders.Add(Path.Join(vfsPath, $"{showName} [{ShokoSeriesId.Name}={show.Id}] [{ShokoEpisodeId.Name}={episodeInfo.Id}]", extrasFolder));
             }
             else {
@@ -825,7 +818,10 @@ public class VirtualFileSystemService
                 episodeName = $"{showName} S{(isSpecial ? 0 : seasonNumber).ToString().PadLeft(2, '0')}E{episodeNumber.ToString().PadLeft(show.EpisodePadding, '0')}";
                 if ((episodeXref.Percentage?.Group ?? 1) is not 1) {
                     var list = episode.CrossReferences.Where(xref => xref.ReleaseGroup == episodeXref.ReleaseGroup && xref.Percentage!.Group == episodeXref.Percentage!.Group).ToList();
-                    var files = await Task.WhenAll(list.Select(xref => ApiClient.GetFileByEd2kAndFileSize(xref.ED2K, xref.FileSize)));
+                    var files = (await Task.WhenAll(list.Select(xref => ApiClient.GetFileByEd2kAndFileSize(xref.ED2K, xref.FileSize))).ConfigureAwait(false))
+                        .OfType<API.Models.File>()
+                        .ToList();
+
                     var index = list.FindIndex(xref => xref.Percentage!.Start == episodeXref.Percentage!.Start && xref.Percentage!.End == episodeXref.Percentage!.End);
                     filePartSuffix = $".pt{index + 1}";
                     fileIdList = files.Select(f => f.Id.ToString()).Join(",");
@@ -856,8 +852,7 @@ public class VirtualFileSystemService
         return (symbolicLinks, (file.Shoko.ImportedAt ?? file.Shoko.CreatedAt).ToLocalTime());
     }
 
-    public LinkGenerationResult GenerateSymbolicLinks(string sourceLocation, string[] symbolicLinks, DateTime importedAt, bool preview = false)
-    {
+    public LinkGenerationResult GenerateSymbolicLinks(string sourceLocation, string[] symbolicLinks, DateTime importedAt, bool preview = false) {
         try {
             var result = new LinkGenerationResult();
             if (Plugin.Instance.Configuration.VFS_ResolveLinks && !preview) {
@@ -1035,8 +1030,7 @@ public class VirtualFileSystemService
         }
     }
 
-    private List<string> FindSubtitlesForPath(string sourcePath)
-    {
+    private List<string> FindSubtitlesForPath(string sourcePath) {
         var externalPaths = new List<string>();
         var folderPath = Path.GetDirectoryName(sourcePath);
         if (string.IsNullOrEmpty(folderPath) || !FileSystem.DirectoryExists(folderPath))
@@ -1062,8 +1056,7 @@ public class VirtualFileSystemService
         return externalPaths;
     }
 
-    private LinkGenerationResult CleanupStructure(string vfsPath, string directoryToClean, IReadOnlyList<string> allKnownPaths, bool preview = false)
-    {
+    private LinkGenerationResult CleanupStructure(string vfsPath, string directoryToClean, IReadOnlyList<string> allKnownPaths, bool preview = false) {
         if (!FileSystem.DirectoryExists(directoryToClean)) {
             if (!preview)
                 Logger.LogDebug("Skipped cleaning up folder because it does not exist: {Path}", directoryToClean);
@@ -1229,14 +1222,13 @@ public class VirtualFileSystemService
         return result;
     }
 
-    private bool TryMoveSubtitleFile(IReadOnlyList<string> allKnownPaths, string subtitlePath, bool preview, out bool skip)
-    {
-        if (!TryGetIdsForPath(subtitlePath, out var seriesId, out var fileId)){
+    private bool TryMoveSubtitleFile(IReadOnlyList<string> allKnownPaths, string subtitlePath, bool preview, out bool skip) {
+        if (!TryGetIdsForPath(subtitlePath, out var fileId, out var seriesId)){
             skip = false;
             return false;
         }
 
-        var symbolicLink = allKnownPaths.FirstOrDefault(knownPath => NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(knownPath)) && TryGetIdsForPath(knownPath, out var knownSeriesId, out var knownFileId) && seriesId == knownSeriesId && fileId == knownFileId);
+        var symbolicLink = allKnownPaths.FirstOrDefault(knownPath => NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(knownPath)) && TryGetIdsForPath(knownPath, out var knownFileId, out var knownSeriesId) && seriesId == knownSeriesId && fileId == knownFileId);
         if (string.IsNullOrEmpty(symbolicLink)){
             skip = false;
             return false;
@@ -1266,8 +1258,7 @@ public class VirtualFileSystemService
 
         try {
             var currentTarget = File.ResolveLinkTarget(subtitlePath, false)?.FullName;
-            if (!string.IsNullOrEmpty(currentTarget))
-            {
+            if (!string.IsNullOrEmpty(currentTarget)) {
                 // Just remove the link if the target doesn't exist.
                 if (!File.Exists(currentTarget)){
                     skip = false;
@@ -1290,21 +1281,20 @@ public class VirtualFileSystemService
         }
 
         var realSubtitlePath = realTarget[..^Path.GetExtension(realTarget).Length] + extName;
-        {
-            if (!File.Exists(realSubtitlePath)) {
-                try {
-                    File.Move(subtitlePath, realSubtitlePath);
-                }
-                catch (Exception) {
-                    Logger.LogWarning("Skipped moving {Path} to {RealPath} because we don't have permissions.", subtitlePath, realSubtitlePath);
-                    skip = true;
-                    return true;
-                }
+        if (!File.Exists(realSubtitlePath)) {
+            try {
+                File.Move(subtitlePath, realSubtitlePath);
             }
-            else {
-                File.Delete(subtitlePath);
+            catch (Exception) {
+                Logger.LogWarning("Skipped moving {Path} to {RealPath} because we don't have permissions.", subtitlePath, realSubtitlePath);
+                skip = true;
+                return true;
             }
         }
+        else {
+            File.Delete(subtitlePath);
+        }
+
         File.CreateSymbolicLink(subtitlePath, realSubtitlePath);
         Logger.LogDebug("Moved {Path} to {RealPath}", subtitlePath, realSubtitlePath);
 
@@ -1312,14 +1302,13 @@ public class VirtualFileSystemService
         return true;
     }
 
-    private bool TryMoveTrickplayDirectory(IReadOnlyList<string> allKnownPaths, string trickplayDirectory, bool preview, out bool skip)
-    {
-        if (!TryGetIdsForPath(trickplayDirectory, out var seriesId, out var fileId)) {
+    private bool TryMoveTrickplayDirectory(IReadOnlyList<string> allKnownPaths, string trickplayDirectory, bool preview, out bool skip) {
+        if (!TryGetIdsForPath(trickplayDirectory, out var fileId, out var seriesId)) {
             skip = false;
             return false;
         }
 
-        var linkToMove = allKnownPaths.FirstOrDefault(knownPath => NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(knownPath)) && TryGetIdsForPath(knownPath, out var knownSeriesId, out var knownFileId) && seriesId == knownSeriesId && fileId == knownFileId);
+        var linkToMove = allKnownPaths.FirstOrDefault(knownPath => NamingOptions.VideoFileExtensions.Contains(Path.GetExtension(knownPath)) && TryGetIdsForPath(knownPath, out var knownFileId, out var knownSeriesId) && seriesId == knownSeriesId && fileId == knownFileId);
         if (string.IsNullOrEmpty(linkToMove)){
             skip = false;
             return false;
@@ -1349,8 +1338,7 @@ public class VirtualFileSystemService
 
         try {
             var currentTarget = Directory.ResolveLinkTarget(trickplayDirectory, false)?.FullName;
-            if (!string.IsNullOrEmpty(currentTarget))
-            {
+            if (!string.IsNullOrEmpty(currentTarget)) {
                 // Just remove the link if the target doesn't exist.
                 if (!Directory.Exists(currentTarget)){
                     skip = false;
@@ -1400,13 +1388,11 @@ public class VirtualFileSystemService
         return true;
     }
 
-    private void CopyDirectory(string source, string destination)
-    {
+    private void CopyDirectory(string source, string destination) {
         if (!Directory.Exists(destination))
             Directory.CreateDirectory(destination);
 
-        foreach (var file in FileSystem.GetFilePaths(source, true))
-        {
+        foreach (var file in FileSystem.GetFilePaths(source, true)) {
             var newFile = Path.Combine(destination, file[(source.Length + 1)..]);
             var directoryOfFile = Path.GetDirectoryName(newFile)!;
             if (!FileSystem.DirectoryExists(directoryOfFile))
@@ -1415,15 +1401,13 @@ public class VirtualFileSystemService
         }
     }
 
-    private static bool ShouldIgnoreVideo(string vfsPath, string path)
-    {
+    private static bool ShouldIgnoreVideo(string vfsPath, string path) {
         // Ignore the video if it's within one of the folders to potentially ignore _and_ it doesn't have any shoko ids set.
         var parentDirectories = path[(vfsPath.Length + 1)..].Split(Path.DirectorySeparatorChar).SkipLast(1).ToArray();
         return parentDirectories.Length > 1 && IgnoreFolderNames.Contains(parentDirectories.Last()) && !TryGetIdsForPath(path, out _, out _);
     }
 
-    public static bool TryGetIdsForPath(string path, [NotNullWhen(true)] out string? seriesId, [NotNullWhen(true)] out string? fileId)
-    {
+    public static bool TryGetIdsForPath(string path, [NotNullWhen(true)] out string? fileId, [NotNullWhen(true)] out string? seriesId) {
         var fileName = Path.GetFileNameWithoutExtension(path);
         if (!fileName.TryGetAttributeValue(ShokoFileId.Name, out fileId) || !int.TryParse(fileId, out _) ||
             !fileName.TryGetAttributeValue(ShokoSeriesId.Name, out seriesId) || !int.TryParse(seriesId, out _)) {

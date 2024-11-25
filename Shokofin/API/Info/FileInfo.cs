@@ -4,29 +4,14 @@ using Shokofin.API.Models;
 
 namespace Shokofin.API.Info;
 
-public class FileInfo
-{
-    public string Id;
+public class FileInfo(File file, string seriesId, IReadOnlyList<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)> episodeList) {
+    public string Id { get; init; } = file.Id.ToString();
 
-    public string SeriesId;
+    public string SeriesId { get; init; } = seriesId;
 
-    public MediaBrowser.Model.Entities.ExtraType? ExtraType;
+    public MediaBrowser.Model.Entities.ExtraType? ExtraType { get; init; } = episodeList.FirstOrDefault(tuple => tuple.Episode.ExtraType != null).Episode?.ExtraType;
 
-    public File Shoko;
+    public File Shoko { get; init; } = file;
 
-    public List<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)> EpisodeList;
-
-    public List<List<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)>> AlternateEpisodeLists;
-
-    public FileInfo(File file, string seriesId, List<List<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)>> groupedEpisodeLists)
-    {
-        var episodeList = groupedEpisodeLists.FirstOrDefault() ?? [];
-        var alternateEpisodeLists = groupedEpisodeLists.Count > 1 ? groupedEpisodeLists.GetRange(1, groupedEpisodeLists.Count - 1) : [];
-        Id = file.Id.ToString();
-        SeriesId = seriesId;
-        ExtraType = episodeList.FirstOrDefault(tuple => tuple.Episode.ExtraType != null).Episode?.ExtraType;
-        Shoko = file;
-        EpisodeList = episodeList;
-        AlternateEpisodeLists = alternateEpisodeLists;
-    }
+    public IReadOnlyList<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)> EpisodeList { get; init; } = episodeList;
 }

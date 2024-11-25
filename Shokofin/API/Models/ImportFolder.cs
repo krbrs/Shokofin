@@ -2,8 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models;
 
-public class ImportFolder
-{
+public class ImportFolder {
     /// <summary>
     /// The ID of the import folder.
     /// </summary>

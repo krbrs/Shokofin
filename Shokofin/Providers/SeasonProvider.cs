@@ -17,27 +17,12 @@ using Info = Shokofin.API.Info;
 
 namespace Shokofin.Providers;
 
-public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasOrder
-{
+public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<SeasonProvider> _logger, ShokoApiManager _apiManager) : IRemoteMetadataProvider<Season, SeasonInfo>, IHasOrder {
     public string Name => Plugin.MetadataProviderName;
 
     public int Order => 0;
 
-    private readonly IHttpClientFactory HttpClientFactory;
-
-    private readonly ILogger<SeasonProvider> Logger;
-
-    private readonly ShokoAPIManager ApiManager;
-
-    public SeasonProvider(IHttpClientFactory httpClientFactory, ILogger<SeasonProvider> logger, ShokoAPIManager apiManager)
-    {
-        HttpClientFactory = httpClientFactory;
-        Logger = logger;
-        ApiManager = apiManager;
-    }
-
-    public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken cancellationToken)
-    {
+    public async Task<MetadataResult<Season>> GetMetadata(SeasonInfo info, CancellationToken cancellationToken) {
         var result = new MetadataResult<Season>();
         if (!info.IndexNumber.HasValue)
             return result;
@@ -58,27 +43,27 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
             return result;
         }
 
-        if (!info.SeriesProviderIds.TryGetValue(ShokoSeriesId.Name, out var seriesId) || !info.IndexNumber.HasValue) {
-            Logger.LogDebug("Unable refresh Season {SeasonNumber} {SeasonName}", info.IndexNumber, info.Name);
+        if (!info.SeriesProviderIds.TryGetValue(ShokoInternalId.Name, out var internalId) || !internalId.TryGetSeasonIdFromInternalId(out var seasonId)) {
+            _logger.LogDebug("Unable refresh Season {SeasonNumber} {SeasonName}", info.IndexNumber, info.Name);
             return result;
         }
 
         var seasonNumber = info.IndexNumber.Value;
-        var trackerId = Plugin.Instance.Tracker.Add($"Providing info for Season \"{info.Name}\". (Path=\"{info.Path}\",Series=\"{seriesId}\",Season={seasonNumber})");
+        var trackerId = Plugin.Instance.Tracker.Add($"Providing info for Season \"{info.Name}\". (Path=\"{info.Path}\",Series=\"{seasonId}\",Season={seasonNumber})");
         try {
-            var showInfo = await ApiManager.GetShowInfoForSeries(seriesId);
+            var showInfo = await _apiManager.GetShowInfoBySeasonId(seasonId).ConfigureAwait(false);
             if (showInfo == null) {
-                Logger.LogWarning("Unable to find show info for Season {SeasonNumber}. (Series={SeriesId})", seasonNumber, seriesId);
+                _logger.LogWarning("Unable to find show info for Season {SeasonNumber}. (MainSeason={MainSeasonId})", seasonNumber, seasonId);
                 return result;
             }
 
             var seasonInfo = showInfo.GetSeasonInfoBySeasonNumber(seasonNumber);
             if (seasonInfo == null || !showInfo.TryGetBaseSeasonNumberForSeasonInfo(seasonInfo, out var baseSeasonNumber)) {
-                Logger.LogWarning("Unable to find series info for Season {SeasonNumber}. (Series={SeriesId},Group={GroupId})", seasonNumber, seriesId, showInfo.GroupId);
+                _logger.LogWarning("Unable to find series info for Season {SeasonNumber}. (MainSeason={MainSeasonId},Group={GroupId})", seasonNumber, seasonId, showInfo.ShokoGroupId);
                 return result;
             }
 
-            Logger.LogInformation("Found info for Season {SeasonNumber} in Series {SeriesName} (Series={SeriesId},Group={GroupId})", seasonNumber, showInfo.Name, seriesId, showInfo.GroupId);
+            _logger.LogInformation("Found info for Season {SeasonNumber} in Series {SeriesName} (MainSeason={MainSeasonId},Group={GroupId})", seasonNumber, showInfo.DefaultTitle, seasonId, showInfo.ShokoGroupId);
 
             var offset = Math.Abs(seasonNumber - baseSeasonNumber);
 
@@ -91,7 +76,7 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
             return result;
         }
         catch (Exception ex) {
-            Logger.LogError(ex, "Threw unexpectedly while refreshing season {SeasonNumber}; {Message} (Path={Path},Series={SeriesId})", info.IndexNumber, ex.Message, info.Path, seriesId);
+            _logger.LogError(ex, "Threw unexpectedly while refreshing season {SeasonNumber}; {Message} (Path={Path},MainSeason={MainSeasonId})", info.IndexNumber, ex.Message, info.Path, seasonId);
             return new MetadataResult<Season>();
         }
         finally {
@@ -105,10 +90,9 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
     public static Season CreateMetadata(Info.SeasonInfo seasonInfo, int seasonNumber, int offset, Series series, Guid seasonId)
         => CreateMetadata(seasonInfo, seasonNumber, offset, series.GetPreferredMetadataLanguage(), series.GetPreferredMetadataCountryCode(), series, seasonId);
 
-    private static Season CreateMetadata(Info.SeasonInfo seasonInfo, int seasonNumber, int offset, string metadataLanguage, string metadataCountryCode, Series? series, Guid seasonId)
-    {
+    private static Season CreateMetadata(Info.SeasonInfo seasonInfo, int seasonNumber, int offset, string metadataLanguage, string metadataCountryCode, Series? series, Guid seasonId) {
         var (displayTitle, alternateTitle) = Text.GetSeasonTitles(seasonInfo, offset, metadataLanguage);
-        var sortTitle = $"S{seasonNumber} - {seasonInfo.Shoko.Name}";
+        var sortTitle = $"S{seasonNumber} - {seasonInfo.DefaultTitle}";
         Season season;
         if (series != null) {
             season = new Season {
@@ -120,15 +104,15 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
                 Id = seasonId,
                 IsVirtualItem = true,
                 Overview = Text.GetDescription(seasonInfo, metadataLanguage),
-                PremiereDate = seasonInfo.AniDB.AirDate,
-                EndDate = seasonInfo.AniDB.EndDate,
-                ProductionYear = seasonInfo.AniDB.AirDate?.Year,
+                PremiereDate = seasonInfo.PremiereDate,
+                EndDate = seasonInfo.EndDate,
+                ProductionYear = seasonInfo.PremiereDate?.Year,
                 Tags = seasonInfo.Tags.ToArray(),
                 Genres = seasonInfo.Genres.ToArray(),
                 Studios = seasonInfo.Studios.ToArray(),
-                ProductionLocations = TagFilter.GetSeasonProductionLocations(seasonInfo),
-                OfficialRating = ContentRating.GetSeasonContentRating(seasonInfo, metadataCountryCode),
-                CommunityRating = seasonInfo.AniDB.Rating?.ToFloat(10),
+                ProductionLocations = TagFilter.GetProductionLocations(seasonInfo),
+                OfficialRating = ContentRating.GetContentRating(seasonInfo, metadataCountryCode),
+                CommunityRating = seasonInfo.CommunityRating.ToFloat(10),
                 SeriesId = series.Id,
                 SeriesName = series.Name,
                 SeriesPresentationUniqueKey = series.GetPresentationUniqueKey(),
@@ -144,21 +128,23 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
                 SortName = sortTitle,
                 ForcedSortName = sortTitle,
                 Overview = Text.GetDescription(seasonInfo, metadataLanguage),
-                PremiereDate = seasonInfo.AniDB.AirDate,
-                EndDate = seasonInfo.AniDB.EndDate,
-                ProductionYear = seasonInfo.AniDB.AirDate?.Year,
+                PremiereDate = seasonInfo.PremiereDate,
+                EndDate = seasonInfo.EndDate,
+                ProductionYear = seasonInfo.PremiereDate?.Year,
                 Tags = seasonInfo.Tags.ToArray(),
                 Genres = seasonInfo.Genres.ToArray(),
                 Studios = seasonInfo.Studios.ToArray(),
-                ProductionLocations = TagFilter.GetSeasonProductionLocations(seasonInfo),
-                OfficialRating = ContentRating.GetSeasonContentRating(seasonInfo, metadataCountryCode),
-                CommunityRating = seasonInfo.AniDB.Rating?.ToFloat(10),
+                ProductionLocations = TagFilter.GetProductionLocations(seasonInfo),
+                OfficialRating = ContentRating.GetContentRating(seasonInfo, metadataCountryCode),
+                CommunityRating = seasonInfo.CommunityRating?.ToFloat(10),
             };
         }
-        season.SetProviderId(ShokoSeriesId.Name, seasonInfo.Id);
 
-        if (Plugin.Instance.Configuration.AddAniDBId)
-            season.SetProviderId("AniDB", seasonInfo.AniDB.Id.ToString());
+        season.SetProviderId(ShokoInternalId.Name, seasonInfo.InternalId);
+        if (!string.IsNullOrEmpty(seasonInfo.ShokoSeriesId))
+            season.SetProviderId(ShokoSeriesId.Name, seasonInfo.ShokoSeriesId);
+        if (Plugin.Instance.Configuration.AddAniDBId && !string.IsNullOrEmpty(seasonInfo.AnidbId))
+            season.SetProviderId(AnidbAnimeId.Name, seasonInfo.AnidbId);
 
         return season;
     }
@@ -167,6 +153,6 @@ public class SeasonProvider : IRemoteMetadataProvider<Season, SeasonInfo>, IHasO
         => Task.FromResult<IEnumerable<RemoteSearchResult>>([]);
 
     public Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
-        => HttpClientFactory.CreateClient().GetAsync(url, cancellationToken);
+        => _httpClientFactory.CreateClient().GetAsync(url, cancellationToken);
 }
 

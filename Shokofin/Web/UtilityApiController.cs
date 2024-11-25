@@ -18,8 +18,7 @@ namespace Shokofin.Web;
 [ApiController]
 [Route("Plugin/Shokofin/Utility")]
 [Produces(MediaTypeNames.Application.Json)]
-public class UtilityApiController(ILogger<UtilityApiController> logger, MediaFolderConfigurationService mediaFolderConfigurationService, VirtualFileSystemService virtualFileSystemService) : ControllerBase
-{
+public class UtilityApiController(ILogger<UtilityApiController> logger, MediaFolderConfigurationService mediaFolderConfigurationService, VirtualFileSystemService virtualFileSystemService) : ControllerBase {
     private readonly ILogger<UtilityApiController> Logger = logger;
 
     private readonly MediaFolderConfigurationService ConfigurationService = mediaFolderConfigurationService;
@@ -32,11 +31,10 @@ public class UtilityApiController(ILogger<UtilityApiController> logger, MediaFol
     /// <param name="libraryId">The id of the library to preview.</param>
     /// <returns>A <see cref="VfsLibraryPreview"/> or <see cref="ValidationProblemDetails"/> if the library is not found.</returns>
     [HttpPost("VFS/Library/{libraryId}/Preview")]
-    public async Task<ActionResult<VfsLibraryPreview>> PreviewVFS(Guid libraryId)
-    {
+    public async Task<ActionResult<VfsLibraryPreview>> PreviewVFS(Guid libraryId) {
         var trackerId = Plugin.Instance.Tracker.Add("Preview VFS");
         try {
-            var (filesBefore, filesAfter, virtualFolder, result, vfsPath) = await VirtualFileSystemService.PreviewChangesForLibrary(libraryId);
+            var (filesBefore, filesAfter, virtualFolder, result, vfsPath) = await VirtualFileSystemService.PreviewChangesForLibrary(libraryId).ConfigureAwait(false);
             if (virtualFolder is null)
                 return NotFound("Unable to find library with the given id.");
 

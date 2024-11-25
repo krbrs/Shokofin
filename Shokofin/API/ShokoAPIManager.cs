@@ -9,58 +9,57 @@ using System.Linq;
 using System.Threading.Tasks;
 using Shokofin.API.Info;
 using Shokofin.API.Models;
+using Shokofin.API.Models.Shoko;
+using Shokofin.API.Models.TMDB;
 using Shokofin.Configuration;
 using Shokofin.ExternalIds;
 using Shokofin.Utils;
 
+using ContentRating = Shokofin.Utils.ContentRating;
 using Path = System.IO.Path;
 using Regex = System.Text.RegularExpressions.Regex;
 using RegexOptions = System.Text.RegularExpressions.RegexOptions;
 
 namespace Shokofin.API;
 
-public class ShokoAPIManager : IDisposable
-{
+public partial class ShokoApiManager : IDisposable {
     // Note: This regex will only get uglier with time.
-    private static readonly Regex YearRegex = new(@"\s+\((?<year>\d{4})(?: dai [2-9] bu)?\)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    [System.Text.RegularExpressions.GeneratedRegex(@"\s+\((?<year>\d{4})(?: dai [2-9] bu)?\)\s*$", RegexOptions.Compiled | RegexOptions.IgnoreCase, "en-US")]
+    private static partial Regex YearRegex();
 
-    private readonly ILogger<ShokoAPIManager> Logger;
+    private readonly ILogger<ShokoApiManager> Logger;
 
-    private readonly ShokoAPIClient APIClient;
+    private readonly ShokoApiClient ApiClient;
 
     private readonly ILibraryManager LibraryManager;
+
+    private readonly GuardedMemoryCache DataCache;
 
     private readonly object MediaFolderListLock = new();
 
     private readonly List<Folder> MediaFolderList = [];
 
-    private readonly ConcurrentDictionary<string, string> PathToSeriesIdDictionary = new();
+    private readonly ConcurrentDictionary<string, string> PathToSeasonIdDictionary = new();
 
     private readonly ConcurrentDictionary<string, List<string>> PathToEpisodeIdsDictionary = new();
 
     private readonly ConcurrentDictionary<string, (string FileId, string SeriesId)> PathToFileIdAndSeriesIdDictionary = new();
 
-    private readonly ConcurrentDictionary<string, string> SeriesIdToDefaultSeriesIdDictionary = new();
+    private readonly ConcurrentDictionary<string, string> SeasonIdToShowIdDictionary = new();
 
-    private readonly ConcurrentDictionary<string, string?> SeriesIdToCollectionIdDictionary = new();
+    private readonly ConcurrentDictionary<string, string> EpisodeIdToSeasonIdDictionary = new();
 
-    private readonly ConcurrentDictionary<string, string> EpisodeIdToSeriesIdDictionary = new();
+    private readonly ConcurrentDictionary<string, List<string>> FileAndSeasonIdToEpisodeIdDictionary = new();
 
-    private readonly ConcurrentDictionary<string, List<string>> FileAndSeriesIdToEpisodeIdDictionary = new();
-
-    private readonly GuardedMemoryCache DataCache;
-
-    public ShokoAPIManager(ILogger<ShokoAPIManager> logger, ShokoAPIClient apiClient, ILibraryManager libraryManager)
-    {
+    public ShokoApiManager(ILogger<ShokoApiManager> logger, ShokoApiClient apiClient, ILibraryManager libraryManager) {
         Logger = logger;
-        APIClient = apiClient;
+        ApiClient = apiClient;
         LibraryManager = libraryManager;
         DataCache = new(logger, new() { ExpirationScanFrequency = TimeSpan.FromMinutes(25) }, new() { AbsoluteExpirationRelativeToNow = new(2, 30, 0) });
         Plugin.Instance.Tracker.Stalled += OnTrackerStalled;
     }
 
-    ~ShokoAPIManager()
-    {
+    ~ShokoApiManager() {
         Plugin.Instance.Tracker.Stalled -= OnTrackerStalled;
     }
 
@@ -81,8 +80,7 @@ public class ShokoAPIManager : IDisposable
     /// </param>
     /// <returns>The media folder and partial string within said folder for
     /// <paramref name="path"/>.</returns>
-    public (Folder mediaFolder, string partialPath) FindMediaFolder(string path, Folder parent)
-    {
+    public (Folder mediaFolder, string partialPath) FindMediaFolder(string path, Folder parent) {
         Folder? mediaFolder = null;
         lock (MediaFolderListLock)
             mediaFolder = MediaFolderList.FirstOrDefault((folder) => path.StartsWith(folder.Path + Path.DirectorySeparatorChar));
@@ -101,8 +99,7 @@ public class ShokoAPIManager : IDisposable
     /// </summary>
     /// <param name="fullPath">The full path to strip.</param>
     /// <returns>The partial path, void of the media folder.</returns>
-    public string StripMediaFolder(string fullPath)
-    {
+    public string StripMediaFolder(string fullPath) {
         Folder? mediaFolder = null;
         lock (MediaFolderListLock)
             mediaFolder = MediaFolderList.FirstOrDefault((folder) => fullPath.StartsWith(folder.Path + Path.DirectorySeparatorChar));
@@ -116,83 +113,94 @@ public class ShokoAPIManager : IDisposable
     }
 
     #endregion
+
     #region Clear
 
-    public void Dispose()
-    {
+    public void Dispose() {
         GC.SuppressFinalize(this);
         Clear();
     }
 
-    public void Clear()
-    {
+    public void Clear() {
         Logger.LogDebug("Clearing data…");
-        EpisodeIdToSeriesIdDictionary.Clear();
-        FileAndSeriesIdToEpisodeIdDictionary.Clear();
+        EpisodeIdToSeasonIdDictionary.Clear();
+        FileAndSeasonIdToEpisodeIdDictionary.Clear();
         lock (MediaFolderListLock)
             MediaFolderList.Clear();
         PathToEpisodeIdsDictionary.Clear();
         PathToFileIdAndSeriesIdDictionary.Clear();
-        PathToSeriesIdDictionary.Clear();
-        SeriesIdToDefaultSeriesIdDictionary.Clear();
-        SeriesIdToCollectionIdDictionary.Clear();
+        PathToSeasonIdDictionary.Clear();
+        SeasonIdToShowIdDictionary.Clear();
         DataCache.Clear();
         Logger.LogDebug("Cleanup complete.");
     }
 
     #endregion
+
     #region Series Settings
 
-    public Task<SeriesConfiguration> GetSeriesConfiguration(string id)
+    private Task<SeriesConfiguration> GetSeriesConfiguration(string id)
         => DataCache.GetOrCreateAsync($"series-settings:{id}", async () => {
-            var seriesSettings = new SeriesConfiguration()
-            {
+            var seriesSettings = new SeriesConfiguration() {
+                TypeOverride = null,
                 StructureType = Plugin.Instance.Configuration.DefaultLibraryStructure,
                 MergeOverride = SeriesMergingOverride.None,
                 EpisodesAsSpecials = false,
                 SpecialsAsEpisodes = false,
                 OrderByAirdate = false,
             };
-            var tags = await GetNamespacedTagsForSeries(id);
+            var tags = await GetNamespacedTagsForSeries(id).ConfigureAwait(false);
+            if (tags.TryGetValue("/custom user tags/series type", out var seriesTypeTag) &&
+                seriesTypeTag.Children.Count is > 1 &&
+                Enum.TryParse<SeriesType>(NormalizeCustomSeriesType(seriesTypeTag.Children.Keys.First()), out var seriesType) &&
+                seriesType is not SeriesType.Unknown
+            )
+                seriesSettings.TypeOverride = seriesType;
+
             if (!tags.TryGetValue("/custom user tags/shokofin", out var customTags))
                 return seriesSettings;
 
             tags = customTags.RecursiveNamespacedChildren;
-            if (tags.ContainsKey("/anidb structure"))  
+            if (tags.ContainsKey("/anidb structure"))
                 seriesSettings.StructureType = SeriesStructureType.AniDB_Anime;
             else if (tags.ContainsKey("/shoko structure"))
                 seriesSettings.StructureType = SeriesStructureType.Shoko_Groups;
             else if (tags.ContainsKey("/tmdb structure"))
                 seriesSettings.StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
 
-            if (tags.ContainsKey("/no merge"))
-                seriesSettings.MergeOverride = SeriesMergingOverride.NoMerge;
-            else if (tags.ContainsKey("/merge forward"))
-                seriesSettings.MergeOverride = SeriesMergingOverride.MergeForward;
-            else if (tags.ContainsKey("/merge backward"))
-                seriesSettings.MergeOverride = SeriesMergingOverride.MergeBackward;
+            if (tags.ContainsKey("/no merge")) {
+                seriesSettings.MergeOverride |= SeriesMergingOverride.NoMerge;
+            }
+            else {
+                if (tags.ContainsKey("/merge forward"))
+                    seriesSettings.MergeOverride |= SeriesMergingOverride.MergeForward;
+                if (tags.ContainsKey("/merge backward"))
+                    seriesSettings.MergeOverride |= SeriesMergingOverride.MergeBackward;
+            }
 
             if (tags.ContainsKey("/episodes as specials")) {
                 seriesSettings.EpisodesAsSpecials = true;
             }
-            else if (tags.ContainsKey("/no episodes as specials") || !seriesSettings.EpisodesAsSpecials) {
-                seriesSettings.EpisodesAsSpecials = false;
-
+            else {
                 if (tags.ContainsKey("/specials as episodes"))
                     seriesSettings.SpecialsAsEpisodes = true;
-                else if (tags.ContainsKey("/no specials as episodes"))
-                    seriesSettings.SpecialsAsEpisodes = false;
             }
 
             if (tags.ContainsKey("/order by airdate"))
                 seriesSettings.OrderByAirdate = true;
-            else if (tags.ContainsKey("/no order by airdate"))
-                seriesSettings.OrderByAirdate = false;
 
             return seriesSettings;
         });
 
+    private static string NormalizeCustomSeriesType(string seriesType) {
+        seriesType = seriesType.ToLowerInvariant().Replace(" ", "");
+        if (seriesType[^1] == 's')
+          seriesType = seriesType[..^1];
+        return seriesType;
+    }
+
     #endregion
+
     #region Tags, Genres, And Content Ratings
 
     public Task<IReadOnlyDictionary<string, ResolvedTag>> GetNamespacedTagsForSeries(string seriesId)
@@ -203,7 +211,7 @@ public class ShokoAPIManager : IDisposable
                 var hasCustomTags = false;
                 var rootTags = new List<Tag>();
                 var tagMap = new Dictionary<string, List<Tag>>();
-                var tags = (await APIClient.GetSeriesTags(seriesId).ConfigureAwait(false))
+                var tags = (await ApiClient.GetTagsForShokoSeries(seriesId).ConfigureAwait(false))
                     .OrderBy(tag => tag.Source)
                     .ThenBy(tag => tag.Source == "User" ? tag.Name.Split('/', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).Length : 0)
                     .ToList();
@@ -316,61 +324,29 @@ public class ShokoAPIManager : IDisposable
             }
         );
 
-    private async Task<string[]> GetTagsForSeries(string seriesId)
-    {
-        var tags = await GetNamespacedTagsForSeries(seriesId);
+    private async Task<string[]> GetTagsForSeries(string seriesId) {
+        var tags = await GetNamespacedTagsForSeries(seriesId).ConfigureAwait(false);
         return TagFilter.FilterTags(tags);
     }
 
-    private async Task<string[]> GetGenresForSeries(string seriesId)
-    {
-        var tags = await GetNamespacedTagsForSeries(seriesId);
+    private async Task<string[]> GetGenresForSeries(string seriesId) {
+        var tags = await GetNamespacedTagsForSeries(seriesId).ConfigureAwait(false);
         return TagFilter.FilterGenres(tags);
     }
 
-    private async Task<string[]> GetProductionLocations(string seriesId)
-    {
-        var tags = await GetNamespacedTagsForSeries(seriesId);
+    private async Task<string[]> GetProductionLocations(string seriesId) {
+        var tags = await GetNamespacedTagsForSeries(seriesId).ConfigureAwait(false);
         return TagFilter.GetProductionCountriesFromTags(tags);
     }
 
-    private async Task<string?> GetAssumedContentRating(string seriesId)
-    {
-        var tags = await GetNamespacedTagsForSeries(seriesId);
+    private async Task<string?> GetAssumedContentRating(string seriesId) {
+        var tags = await GetNamespacedTagsForSeries(seriesId).ConfigureAwait(false);
         return ContentRating.GetTagBasedContentRating(tags);
     }
 
-    private async Task<SeriesType?> GetCustomSeriesType(string seriesId)
-    {
-        var tags = await GetNamespacedTagsForSeries(seriesId);
-        if (tags.TryGetValue("/custom user tags/series type", out var seriesTypeTag) &&
-            seriesTypeTag.Children.Count is > 1 &&
-            Enum.TryParse<SeriesType>(NormalizeCustomSeriesType(seriesTypeTag.Children.Keys.First()), out var seriesType) &&
-            seriesType is not SeriesType.Unknown
-        )
-            return seriesType;
-        return null;
-    }
-
-    private static string NormalizeCustomSeriesType(string seriesType)
-    {
-        seriesType = seriesType.ToLowerInvariant().Replace(" ", "");
-        if (seriesType[^1] == 's')
-          seriesType = seriesType[..^1];
-        return seriesType;
-    }
-
     #endregion
-    #region Path Set And Local Episode IDs
 
-    public async Task<List<(File file, string seriesId)>> GetFilesForSeason(SeasonInfo seasonInfo)
-    {
-        // TODO: Optimise/cache this better now that we do it per season.
-        var list = (await APIClient.GetFilesForSeries(seasonInfo.Id)).Select(file => (file, seriesId: seasonInfo.Id)).ToList();
-        foreach (var extraId in seasonInfo.ExtraIds)
-            list.AddRange((await APIClient.GetFilesForSeries(extraId)).Select(file => (file, seriesId: extraId)));
-        return list;
-    }
+    #region Path Set And Local Episode IDs
 
     /// <summary>
     /// Get a set of paths that are unique to the series and don't belong to
@@ -378,75 +354,90 @@ public class ShokoAPIManager : IDisposable
     /// </summary>
     /// <param name="seriesId">Shoko series id.</param>
     /// <returns>Unique path set for the series</returns>
-    public async Task<HashSet<string>> GetPathSetForSeries(string seriesId, IEnumerable<string> extraIds)
-    {
-        // TODO: Optimise/cache this better now that we do it per season.
-        var (pathSet, _) = await GetPathSetAndLocalEpisodeIdsForSeries(seriesId).ConfigureAwait(false);
-        foreach (var extraId in extraIds)
-            foreach (var path in await GetPathSetAndLocalEpisodeIdsForSeries(extraId).ContinueWith(task => task.Result.Item1).ConfigureAwait(false))
-                pathSet.Add(path);
-        return pathSet;
-    }
+    public Task<HashSet<string>> GetPathSetForSeries(string seriesId)
+        => DataCache.GetOrCreateAsync(
+                $"series-path-set:${seriesId}",
+                async () => {
+                    var pathSet = new HashSet<string>();
+                    foreach (var file in await ApiClient.GetFilesForShokoSeries(seriesId).ConfigureAwait(false)) {
+                        if (file.CrossReferences.Count == 1 && file.CrossReferences[0] is { } xref && xref.Series.Shoko.HasValue && xref.Series.Shoko.ToString() == seriesId)
+                            foreach (var fileLocation in file.Locations)
+                                pathSet.Add((Path.GetDirectoryName(fileLocation.RelativePath) ?? string.Empty) + Path.DirectorySeparatorChar);
+                    }
+
+                    return pathSet;
+                }
+            );
 
     /// <summary>
     /// Get a set of local episode ids for the series.
     /// </summary>
-    /// <param name="seriesId">Shoko series id.</param>
+    /// <param name="seasonInfo">Season info.</param>
     /// <returns>Local episode ids for the series</returns>
-    public async Task<HashSet<string>> GetLocalEpisodeIdsForSeason(SeasonInfo seasonInfo)
-    {
-        // TODO: Optimise/cache this better now that we do it per season.
-        var (_, episodeIds) = await GetPathSetAndLocalEpisodeIdsForSeries(seasonInfo.Id).ConfigureAwait(false);
-        foreach (var extraId in seasonInfo.ExtraIds)
-            foreach (var episodeId in await GetPathSetAndLocalEpisodeIdsForSeries(extraId).ContinueWith(task => task.Result.Item2).ConfigureAwait(false))
-                episodeIds.Add(episodeId);
-        return episodeIds;
-    }
-
-    // Set up both at the same time.
-    private Task<(HashSet<string>, HashSet<string>)> GetPathSetAndLocalEpisodeIdsForSeries(string seriesId)
+    public Task<HashSet<string>> GetLocalEpisodeIdsForSeason(SeasonInfo seasonInfo)
         => DataCache.GetOrCreateAsync(
-            $"series-path-set-and-episode-ids:${seriesId}",
+            $"season-episode-ids:${seasonInfo.Id}",
             async () => {
-                var pathSet = new HashSet<string>();
                 var episodeIds = new HashSet<string>();
-                foreach (var file in await APIClient.GetFilesForSeries(seriesId).ConfigureAwait(false)) {
-                    if (file.CrossReferences.Count == 1 && file.CrossReferences[0] is { } xref && xref.Series.Shoko.HasValue && xref.Series.Shoko.ToString() == seriesId)
-                        foreach (var fileLocation in file.Locations)
-                            pathSet.Add((Path.GetDirectoryName(fileLocation.RelativePath) ?? string.Empty) + Path.DirectorySeparatorChar);
-                    xref = file.CrossReferences.FirstOrDefault(xref => xref.Series.Shoko.HasValue && xref.Series.Shoko.ToString() == seriesId);
-                    foreach (var episodeXRef in xref?.Episodes.Where(e => e.Shoko.HasValue) ?? [])
-                        episodeIds.Add(episodeXRef.Shoko!.Value.ToString());
+                foreach (var seasonId in new HashSet<string>([seasonInfo.Id, ..seasonInfo.ExtraIds])) {
+                    switch (seasonId[0]) {
+                        case IdPrefix.TmdbShow: {
+                            var files = await ApiClient.GetFilesForTmdbSeason(seasonId[1..]).ConfigureAwait(false);
+                            var episodes = await ApiClient.GetTmdbEpisodesInTmdbSeason(seasonId[1..]).ConfigureAwait(false);
+                            foreach (var episode in episodes) {
+                                if (files.Any(file => file.CrossReferences.Any(fileXref => fileXref.Episodes.Any(episodeXref => episodeXref.TMDB.Episode.Contains(episode.Id)))))
+                                    episodeIds.Add(IdPrefix.TmdbShow + episode.Id.ToString());
+                            }
+                            break;
+                        }
+
+                        case IdPrefix.TmdbMovie: {
+                            var files = await ApiClient.GetFilesForTmdbMovie(seasonId[1..]).ConfigureAwait(false);
+                            if (files.Count > 0)
+                                episodeIds.Add(seasonId);
+                            break;
+                        }
+
+                        default: {
+                            var files = await ApiClient.GetFilesForShokoSeries(seasonId).ConfigureAwait(false);
+                            foreach (var file in files) {
+                                var xref = file.CrossReferences.FirstOrDefault(xref => xref.Series.Shoko.HasValue && xref.Series.Shoko.ToString() == seasonId);
+                                foreach (var episodeXRef in xref?.Episodes.Where(e => e.Shoko.HasValue) ?? [])
+                                    episodeIds.Add(episodeXRef.Shoko!.Value.ToString());
+                            }
+                            break;
+                        }
+                    }
                 }
 
-                return (pathSet, episodeIds);
+                return episodeIds;
             },
             new()
         );
 
     #endregion
+
     #region File Info
 
-    internal void AddFileLookupIds(string path, string fileId, string seriesId, IEnumerable<string> episodeIds)
-    {
+    internal void AddFileLookupIds(string path, string fileId, string seriesId, IEnumerable<string> episodeIds) {
         PathToFileIdAndSeriesIdDictionary.TryAdd(path, (fileId, seriesId));
         PathToEpisodeIdsDictionary.TryAdd(path, episodeIds.ToList());
     }
 
-    public async Task<(FileInfo?, SeasonInfo?, ShowInfo?)> GetFileInfoByPath(string path)
-    {
+    public async Task<(FileInfo?, SeasonInfo?, ShowInfo?)> GetFileInfoByPath(string path) {
         // Use pointer for fast lookup.
-        if (PathToFileIdAndSeriesIdDictionary.ContainsKey(path)) {
-            var (fI, sI) = PathToFileIdAndSeriesIdDictionary[path];
+        if (PathToFileIdAndSeriesIdDictionary.TryGetValue(path, out (string FileId, string SeriesId) tuple)) {
+            var (fI, sI) = tuple;
             var fileInfo = await GetFileInfo(fI, sI).ConfigureAwait(false);
-            if (fileInfo == null)
+            if (fileInfo == null || fileInfo.EpisodeList.Count is 0)
                 return (null, null, null);
 
-            var seasonInfo = await GetSeasonInfoForSeries(sI).ConfigureAwait(false);
+            var selectedSeasonId = fileInfo.EpisodeList[0].Episode.SeasonId;
+            var seasonInfo = await GetSeasonInfo(selectedSeasonId).ConfigureAwait(false);
             if (seasonInfo == null)
                 return (null, null, null);
 
-            var showInfo = await GetShowInfoForSeries(sI).ConfigureAwait(false);
+            var showInfo = await GetShowInfoBySeasonId(selectedSeasonId).ConfigureAwait(false);
             if (showInfo == null)
                 return (null, null, null);
 
@@ -462,14 +453,15 @@ public class ShokoAPIManager : IDisposable
                 return (null, null, null);
 
             var fileInfo = await GetFileInfo(fI, sI).ConfigureAwait(false);
-            if (fileInfo == null)
+            if (fileInfo == null || fileInfo.EpisodeList.Count is 0)
                 return (null, null, null);
 
-            var seasonInfo = await GetSeasonInfoForSeries(sI).ConfigureAwait(false);
+            var selectedSeasonId = fileInfo.EpisodeList[0].Episode.SeasonId;
+            var seasonInfo = await GetSeasonInfo(selectedSeasonId).ConfigureAwait(false);
             if (seasonInfo == null)
                 return (null, null, null);
 
-            var showInfo = await GetShowInfoForSeries(sI).ConfigureAwait(false);
+            var showInfo = await GetShowInfoBySeasonId(selectedSeasonId).ConfigureAwait(false);
             if (showInfo == null)
                 return (null, null, null);
 
@@ -479,11 +471,11 @@ public class ShokoAPIManager : IDisposable
 
         // Strip the path and search for a match.
         var partialPath = StripMediaFolder(path);
-        var result = await APIClient.GetFileByPath(partialPath).ConfigureAwait(false);
+        var result = await ApiClient.GetFileByPath(partialPath).ConfigureAwait(false);
         Logger.LogDebug("Looking for a match for {Path}", partialPath);
 
         // Check if we found a match.
-        var file = result?.FirstOrDefault();
+        var file = result is { Count: > 0 } ? result[0] : null;
         if (file == null || file.CrossReferences.Count == 0) {
             Logger.LogTrace("Found no match for {Path}", partialPath);
             return (null, null, null);
@@ -508,23 +500,23 @@ public class ShokoAPIManager : IDisposable
             var seriesId = seriesXRef.Series.Shoko!.Value.ToString();
 
             // Check if the file is in the series folder.
-            var (primaryId, extraIds) = await GetSeriesIdsForSeason(seriesId);
-            var pathSet = await GetPathSetForSeries(primaryId, extraIds).ConfigureAwait(false);
+            var pathSet = await GetPathSetForSeries(seriesId).ConfigureAwait(false);
             if (!pathSet.Contains(selectedPath))
                 continue;
 
-            // Find the season info.
-            var seasonInfo = await GetSeasonInfoForSeries(primaryId).ConfigureAwait(false);
+            // Find the file info for the series.
+            var fileInfo = await CreateFileInfo(file, fileId, seriesId).ConfigureAwait(false);
+            if (fileInfo.EpisodeList.Count is 0)
+                return (null, null, null);
+
+            var seasonId = fileInfo.EpisodeList[0].Episode.SeasonId;
+            var seasonInfo = await GetSeasonInfo(seasonId).ConfigureAwait(false);
             if (seasonInfo == null)
                 return (null, null, null);
 
-            // Find the show info.
-            var showInfo =  await GetShowInfoForSeries(primaryId).ConfigureAwait(false);
-            if (showInfo == null || showInfo.SeasonList.Count == 0)
+            var showInfo = await GetShowInfoBySeasonId(seasonId).ConfigureAwait(false);
+            if (showInfo == null)
                 return (null, null, null);
-
-            // Find the file info for the series.
-            var fileInfo = await CreateFileInfo(file, fileId, seriesId).ConfigureAwait(false);
 
             // Add pointers for faster lookup.
             AddFileLookupIds(path, fileId, seriesId, fileInfo.EpisodeList.Select(episode => episode.Id));
@@ -536,8 +528,7 @@ public class ShokoAPIManager : IDisposable
         throw new Exception($"Unable to determine the series to use for the file based on it's location because the file resides within a mixed folder with multiple AniDB anime in it. You will either have to fix your file structure or use the VFS to avoid this issue. (File={fileId})\nFile location; {path}");
     }
 
-    public async Task<FileInfo?> GetFileInfo(string fileId, string seriesId)
-    {
+    public async Task<FileInfo?> GetFileInfo(string fileId, string seriesId) {
         if (string.IsNullOrEmpty(fileId) || string.IsNullOrEmpty(seriesId))
             return null;
 
@@ -545,14 +536,8 @@ public class ShokoAPIManager : IDisposable
         if (DataCache.TryGetValue<FileInfo>(cacheKey, out var fileInfo))
             return fileInfo;
 
-        // Gracefully return if we can't find the file.
-        File file;
-        try {
-            file = await APIClient.GetFile(fileId).ConfigureAwait(false);
-        }
-        catch (ApiException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound) {
+        if (await ApiClient.GetFile(fileId).ConfigureAwait(false) is not { } file)
             return null;
-        }
 
         return await CreateFileInfo(file, fileId, seriesId).ConfigureAwait(false);
     }
@@ -566,7 +551,9 @@ public class ShokoAPIManager : IDisposable
                 Logger.LogTrace("Creating info object for file. (File={FileId},Series={SeriesId})", fileId, seriesId);
 
                 // Find the cross-references for the selected series.
-                var seriesXRef = file.CrossReferences.Where(xref => xref.Series.Shoko.HasValue && xref.Episodes.All(e => e.Shoko.HasValue))
+                var seriesConfig = await GetSeriesConfiguration(seriesId).ConfigureAwait(false);
+                var seriesXRef = file.CrossReferences
+                    .Where(xref => xref.Series.Shoko.HasValue && xref.Episodes.All(e => e.Shoko.HasValue))
                     .FirstOrDefault(xref => xref.Series.Shoko!.Value.ToString() == seriesId) ??
                     throw new Exception($"Unable to find any cross-references for the specified series for the file. (File={fileId},Series={seriesId})");
 
@@ -574,40 +561,72 @@ public class ShokoAPIManager : IDisposable
                 var episodeList = new List<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)>();
                 foreach (var episodeXRef in seriesXRef.Episodes) {
                     var episodeId = episodeXRef.Shoko!.Value.ToString();
-                    var episodeInfo = await GetEpisodeInfo(episodeId).ConfigureAwait(false) ??
-                        throw new Exception($"Unable to find episode cross-reference for the specified series and episode for the file. (File={fileId},Episode={episodeId},Series={seriesId})");
-                    if (episodeInfo.IsHidden) {
+                    if (await ApiClient.GetShokoEpisode(episodeId).ConfigureAwait(false) is not { } episode) {
+                        Logger.LogDebug("Skipped unknown episode linked to file. (File={FileId},Episode={EpisodeId},Series={SeriesId})", fileId, episodeId, seriesId);
+                        continue;
+                    }
+
+                    if (episode.IsHidden) {
                         Logger.LogDebug("Skipped hidden episode linked to file. (File={FileId},Episode={EpisodeId},Series={SeriesId})", fileId, episodeId, seriesId);
                         continue;
                     }
+
+                    if (seriesConfig.StructureType is SeriesStructureType.TMDB_SeriesAndMovies) {
+                        var tmdbEpisodes = await Task.WhenAll(episodeXRef.TMDB.Episode.Select(id => GetEpisodeInfo(IdPrefix.TmdbShow + id.ToString()))).ConfigureAwait(false);
+                        foreach (var tmdbEpisode in tmdbEpisodes) {
+                            if (tmdbEpisode == null)
+                                continue;
+                            episodeList.Add((tmdbEpisode, episodeXRef, tmdbEpisode.Id));
+                        }
+
+                        var tmdbMovies = await Task.WhenAll(episodeXRef.TMDB.Movie.Select(id => GetEpisodeInfo(IdPrefix.TmdbMovie + id.ToString()))).ConfigureAwait(false);
+                        foreach (var tmdbMovie in tmdbMovies) {
+                            if (tmdbMovie == null)
+                                continue;
+                            episodeList.Add((tmdbMovie, episodeXRef, tmdbMovie.Id));
+                        }
+                        continue;
+                    }
+                    var episodeInfo = await GetEpisodeInfo(episodeId).ConfigureAwait(false) ??
+                        throw new Exception($"Unable to find episode cross-reference for the specified series and episode for the file. (File={fileId},Episode={episodeId},Series={seriesId})");
                     episodeList.Add((episodeInfo, episodeXRef, episodeId));
                 }
 
-                // Group and order the episodes.
+                // Distinct the list in case the shoko episodes are linked to the same tmdb episode(s)/movie(s).
+                if (seriesConfig.StructureType is SeriesStructureType.TMDB_SeriesAndMovies) {
+                    episodeList = episodeList
+                        .DistinctBy(tuple => tuple.Id)
+                        .ToList();
+                }
+
+                // Group and order the episodes, then select the first group to use.
                 var groupedEpisodeLists = episodeList
-                    .GroupBy(tuple => (type: tuple.Episode.Type, group: tuple.CrossReference.Percentage?.Group ?? 1))
+                    .GroupBy(tuple => (type: tuple.Episode.Type, group: tuple.CrossReference.Percentage?.Group ?? 1, isStandalone: tuple.Episode.IsStandalone))
                     .OrderByDescending(a => Array.IndexOf(EpisodePickOrder, a.Key.type))
                     .ThenBy(a => a.Key.group)
-                    .Select(epList => epList.OrderBy(tuple => tuple.Episode.SeasonNumber).ThenBy(tuple => tuple.Episode.EpisodeNumber).ToList())
+                    .ThenByDescending(a => a.Key.isStandalone)
+                    .Select(epList => epList.OrderBy(tuple => tuple.Episode.SeasonNumber).ThenBy(tuple => tuple.Episode.EpisodeNumber).ToList() as IReadOnlyList<(EpisodeInfo Episode, CrossReference.EpisodeCrossReferenceIDs CrossReference, string Id)> ?? [])
                     .ToList();
+                var selectedEpisodeList = groupedEpisodeLists.FirstOrDefault() ?? [];
+                var fileInfo = new FileInfo(file, seriesId, selectedEpisodeList);
 
-                var fileInfo = new FileInfo(file, seriesId, groupedEpisodeLists);
+                FileAndSeasonIdToEpisodeIdDictionary[$"{fileId}:{seriesId}"] = episodeList.Select(episode => episode.Id).ToList();
 
-                FileAndSeriesIdToEpisodeIdDictionary[$"{fileId}:{seriesId}"] = episodeList.Select(episode => episode.Id).ToList();
                 return fileInfo;
             }
         );
 
-    public bool TryGetFileIdForPath(string path, [NotNullWhen(true)] out string? fileId)
-    {
+    public bool TryGetFileIdForPath(string path, [NotNullWhen(true)] out string? fileId, [NotNullWhen(true)] out string? seriesId) {
         if (string.IsNullOrEmpty(path)) {
             fileId = null;
+            seriesId = null;
             return false;
         }
 
         // Fast path; using the lookup.
         if (PathToFileIdAndSeriesIdDictionary.TryGetValue(path, out var pair)) {
             fileId = pair.FileId;
+            seriesId = pair.SeriesId;
             return true;
         }
 
@@ -617,6 +636,7 @@ public class ShokoAPIManager : IDisposable
             if (GetFileInfoByPath(path).ConfigureAwait(false).GetAwaiter().GetResult() is { } tuple && tuple.Item1 is not null) {
                 var (fileInfo, _, _) = tuple;
                 fileId = fileInfo.Id;
+                seriesId = fileInfo.SeriesId;
                 return true;
             }
         }
@@ -625,40 +645,125 @@ public class ShokoAPIManager : IDisposable
         }
 
         fileId = null;
+        seriesId = null;
         return false;
     }
 
     #endregion
+
     #region Episode Info
 
-    public async Task<EpisodeInfo?> GetEpisodeInfo(string episodeId)
-    {
+    public async Task<EpisodeInfo?> GetEpisodeInfo(string episodeId) {
         if (string.IsNullOrEmpty(episodeId))
             return null;
 
-        var key = $"episode:{episodeId}";
-        if (DataCache.TryGetValue<EpisodeInfo>(key, out var episodeInfo))
+        if (DataCache.TryGetValue<EpisodeInfo>($"episode:{episodeId}", out var episodeInfo))
             return episodeInfo;
 
-        var episode = await APIClient.GetEpisode(episodeId).ConfigureAwait(false);
-        return await CreateEpisodeInfo(episode, episodeId);
+        switch (episodeId[0]) {
+            case IdPrefix.TmdbShow:
+                if (await ApiClient.GetTmdbEpisode(episodeId[1..]).ConfigureAwait(false) is not { } tmdbEpisode)
+                    return null;
+
+                if (await ApiClient.GetTmdbShowForSeason(tmdbEpisode.SeasonId).ConfigureAwait(false) is not { } tmdbShow)
+                    return null;
+
+                return CreateEpisodeInfo(tmdbEpisode, tmdbShow);
+
+            case IdPrefix.TmdbMovie:
+                if (await ApiClient.GetTmdbMovie(episodeId[1..]).ConfigureAwait(false) is not { } tmdbMovie)
+                    return null;
+
+                return CreateEpisodeInfo(tmdbMovie);
+
+            default:
+                if (await ApiClient.GetShokoEpisode(episodeId).ConfigureAwait(false) is not { } shokoEpisode)
+                    return null;
+
+                return await CreateEpisodeInfo(shokoEpisode).ConfigureAwait(false);
+        }
     }
 
-    private Task<EpisodeInfo> CreateEpisodeInfo(Episode episode, string episodeId)
-        => DataCache.GetOrCreateAsync(
-            $"episode:{episodeId}",
-            async () => {
-                Logger.LogTrace("Creating info object for episode {EpisodeName}. (Episode={EpisodeId})", episode.Name, episodeId);
+    private EpisodeInfo CreateEpisodeInfo(TmdbMovie movie)
+        => DataCache.GetOrCreate(
+            $"episode:{IdPrefix.TmdbMovie}{movie.Id}",
+            () => {
+                Logger.LogTrace("Creating info object for episode {EpisodeName}. (Source=TMDB,Movie={MovieId})", movie.Title, movie.Id);
 
-                var tmdbEpisodeTasks = episode.IDs.TMDB.Episode
-                    .Select(e => APIClient.GetTmdbEpisode(e.ToString()));
-                var tmdbEpisodes = await Task.WhenAll(tmdbEpisodeTasks);
-                return new EpisodeInfo(episode, tmdbEpisodes);
+                return new EpisodeInfo(ApiClient, movie);
             }
         );
 
-    public bool TryGetEpisodeIdForPath(string path, [NotNullWhen(true)] out string? episodeId)
-    {
+    private EpisodeInfo CreateEpisodeInfo(TmdbEpisode episode, TmdbShow show)
+        => DataCache.GetOrCreate(
+            $"episode:{IdPrefix.TmdbShow}{episode.Id}",
+            () => {
+                Logger.LogTrace("Creating info object for episode {EpisodeName}. (Source=TMDB,Episode={EpisodeId})", episode.Title, episode.Id);
+
+                return new EpisodeInfo(ApiClient, episode, show);
+            }
+        );
+
+    private Task<EpisodeInfo> CreateEpisodeInfo(ShokoEpisode episode)
+        => DataCache.GetOrCreateAsync(
+            $"episode:{episode.Id}",
+            async () => {
+                Logger.LogTrace("Creating info object for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", episode.Name, episode.Id);
+
+                var (cast, genres, tags, productionLocations, contentRating) = await GetExtraEpisodeDetailsForShokoSeries(episode.IDs.ParentSeries.ToString()).ConfigureAwait(false);
+
+                ITmdbEntity? tmdbEntity = null;
+                ITmdbParentEntity? tmdbParentEntity = null;
+                foreach (var tmdbMovieId in episode.IDs.TMDB.Movie) {
+                    Logger.LogTrace("Trying to find TMDB movie {MovieId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbMovieId, episode.Name, episode.Id);
+                    if (await ApiClient.GetTmdbMovie(tmdbMovieId.ToString()).ConfigureAwait(false) is { } tmdbMovie) {
+                        tmdbEntity = tmdbMovie;
+                        Logger.LogTrace("Found TMDB movie {MovieId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbMovieId, episode.Name, episode.Id);
+                        break;
+                    }
+                    Logger.LogTrace("Did not find TMDB movie {MovieId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbMovieId, episode.Name, episode.Id);
+                }
+
+                if (tmdbEntity is null) {
+                    foreach (var tmdbEpisodeId in episode.IDs.TMDB.Episode) {
+                        Logger.LogTrace("Trying to find TMDB episode {EpisodeId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbEpisodeId, episode.Name, episode.Id);
+                        if (await ApiClient.GetTmdbEpisode(tmdbEpisodeId.ToString()).ConfigureAwait(false) is { } tmdbEpisode) {
+                            tmdbEntity = tmdbEpisode;
+                            Logger.LogTrace("Found TMDB episode {EpisodeId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbEpisodeId, episode.Name, episode.Id);
+
+                            if (await ApiClient.GetTmdbShowForSeason(tmdbEpisode.SeasonId).ConfigureAwait(false) is { } tmdbShow) {
+                                tmdbParentEntity = tmdbShow;
+                                Logger.LogTrace("Found TMDB show {ShowId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbShow.Id, episode.Name, episode.Id);
+                            }
+
+                            break;
+                        }
+                        Logger.LogTrace("Did not find TMDB episode {EpisodeId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbEpisodeId, episode.Name, episode.Id);
+                    }
+                }
+
+                return new EpisodeInfo(ApiClient, episode, cast, [.. genres], [.. tags], productionLocations, contentRating, tmdbEntity, tmdbParentEntity);
+            }
+        );
+
+    private Task<(IReadOnlyList<Role>, string[], string[], string[], string?)> GetExtraEpisodeDetailsForShokoSeries(string seriesId)
+        => DataCache.GetOrCreateAsync(
+            $"series-episode-details:{seriesId}",
+            async () => {
+                var cast = await ApiClient.GetCastForShokoSeries(seriesId).ConfigureAwait(false);
+                var genres = await GetGenresForSeries(seriesId).ConfigureAwait(false);
+                var tags = await GetTagsForSeries(seriesId).ConfigureAwait(false);
+                var productionLocations = await GetProductionLocations(seriesId).ConfigureAwait(false);
+                var contentRating = await GetAssumedContentRating(seriesId).ConfigureAwait(false);
+                return (cast, genres, tags, productionLocations, contentRating);
+            }
+        );
+
+    #endregion
+
+    #region Episode Id Helpers
+
+    public bool TryGetEpisodeIdForPath(string path, [NotNullWhen(true)] out string? episodeId) {
         if (string.IsNullOrEmpty(path)) {
             episodeId = null;
             return false;
@@ -669,8 +774,7 @@ public class ShokoAPIManager : IDisposable
         return result;
     }
 
-    public bool TryGetEpisodeIdsForPath(string path, [NotNullWhen(true)] out List<string>? episodeIds)
-    {
+    public bool TryGetEpisodeIdsForPath(string path, [NotNullWhen(true)] out List<string>? episodeIds) {
         if (string.IsNullOrEmpty(path)) {
             episodeIds = null;
             return false;
@@ -692,15 +796,14 @@ public class ShokoAPIManager : IDisposable
         return false;
     }
 
-    public bool TryGetEpisodeIdsForFileId(string fileId, string seriesId, [NotNullWhen(true)] out List<string>? episodeIds)
-    {
+    public bool TryGetEpisodeIdsForFileId(string fileId, string seriesId, [NotNullWhen(true)] out List<string>? episodeIds) {
         if (string.IsNullOrEmpty(fileId) || string.IsNullOrEmpty(seriesId)) {
             episodeIds = null;
             return false;
         }
 
         // Fast path; using the lookup.
-        if (FileAndSeriesIdToEpisodeIdDictionary.TryGetValue($"{fileId}:{seriesId}", out episodeIds))
+        if (FileAndSeasonIdToEpisodeIdDictionary.TryGetValue($"{fileId}:{seriesId}", out episodeIds))
             return true;
 
         // Slow path; getting the show from cache or remote and finding the default season's id.
@@ -714,240 +817,484 @@ public class ShokoAPIManager : IDisposable
         return false;
     }
 
-    public bool TryGetSeriesIdForEpisodeId(string episodeId, [NotNullWhen(true)] out string? seriesId)
-    {
-        if (string.IsNullOrEmpty(episodeId)) {
-            seriesId = null;
-            return false;
-        }
-
-        // Fast path; using the lookup.
-        if (EpisodeIdToSeriesIdDictionary.TryGetValue(episodeId, out seriesId))
-            return true;
-
-        // Slow path; asking the http client to get the series from remote to look up it's id.
-        Logger.LogDebug("Trying to find episode ids using the slow path. (Episode={EpisodeId})", episodeId);
-        try {
-            var series = APIClient.GetSeriesFromEpisode(episodeId).ConfigureAwait(false).GetAwaiter().GetResult();
-            seriesId = series.IDs.Shoko.ToString();
-            return true;
-        }
-        catch (ApiException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound) {
-            seriesId = null;
-            return false;
-        }
-    }
-
     #endregion
+
     #region Season Info
 
-    public async Task<SeasonInfo?> GetSeasonInfoByPath(string path)
-    {
-        var seriesId = await GetSeriesIdForPath(path).ConfigureAwait(false);
-        if (string.IsNullOrEmpty(seriesId))
+    public async Task<SeasonInfo?> GetSeasonInfo(string seasonId) {
+        if (string.IsNullOrEmpty(seasonId))
             return null;
 
-        var series = await APIClient.GetSeries(seriesId).ConfigureAwait(false);
-        return await CreateSeasonInfo(series).ConfigureAwait(false);
+        if (DataCache.TryGetValue<SeasonInfo>($"season:{seasonId}", out var seasonInfo))
+            return seasonInfo;
+
+        switch (seasonId[0]) {
+            case IdPrefix.TmdbShow:
+                if (await ApiClient.GetTmdbSeason(seasonId[1..]).ConfigureAwait(false) is not { } tmdbSeason)
+                    return null;
+
+                if (await ApiClient.GetTmdbShowForSeason(tmdbSeason.Id).ConfigureAwait(false) is not { } tmdbShow)
+                    return null;
+
+                return await CreateSeasonInfo(tmdbSeason, tmdbShow).ConfigureAwait(false);
+
+            case IdPrefix.TmdbMovie:
+                if (await ApiClient.GetTmdbMovie(seasonId[1..]).ConfigureAwait(false) is not { } tmdbMovie)
+                    return null;
+
+                return await CreateSeasonInfo(tmdbMovie).ConfigureAwait(false);
+
+            case IdPrefix.TmdbMovieCollection:
+                if (await ApiClient.GetTmdbMovieCollection(seasonId[1..]).ConfigureAwait(false) is not { } tmdbMovieCollection)
+                    return null;
+
+                return await CreateSeasonInfo(tmdbMovieCollection).ConfigureAwait(false);
+
+            default:
+                if (await ApiClient.GetShokoSeries(seasonId).ConfigureAwait(false) is not { } shokoSeries)
+                    return null;
+
+                return await CreateSeasonInfo(shokoSeries).ConfigureAwait(false);
+        }
     }
 
-    public async Task<SeasonInfo?> GetSeasonInfoForSeries(string seriesId)
-    {
-        if (string.IsNullOrEmpty(seriesId))
-            return null;
-
-        Series series;
-        try {
-            series = await APIClient.GetSeries(seriesId).ConfigureAwait(false);
-        }
-        catch (ApiException ex) when (ex.StatusCode is System.Net.HttpStatusCode.NotFound) {
-            return null;
-        }
-        return await CreateSeasonInfo(series).ConfigureAwait(false);
-    }
-
-    public async Task<SeasonInfo?> GetSeasonInfoForEpisode(string episodeId)
-    {
-        if (!EpisodeIdToSeriesIdDictionary.TryGetValue(episodeId, out var seriesId)) {
-            var series = await APIClient.GetSeriesFromEpisode(episodeId).ConfigureAwait(false);
-            if (series == null)
+    public async Task<SeasonInfo?> GetSeasonInfoByPath(string path) {
+        if (!PathToSeasonIdDictionary.TryGetValue(path, out var seasonId)) {
+            seasonId = await GetSeasonIdForPath(path).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(seasonId))
                 return null;
-            seriesId = series.IDs.Shoko.ToString();
-            return await CreateSeasonInfo(series).ConfigureAwait(false);
         }
 
-        return await GetSeasonInfoForSeries(seriesId).ConfigureAwait(false);
+        return await GetSeasonInfo(seasonId).ConfigureAwait(false);
     }
 
-    private async Task<SeasonInfo> CreateSeasonInfo(Series series)
-    {
-        var (seriesId, extraIds) = await GetSeriesIdsForSeason(series);
+    public async Task<SeasonInfo?> GetSeasonInfoForEpisode(string episodeId) {
+        if (string.IsNullOrEmpty(episodeId))
+            return null;
+
+        if (EpisodeIdToSeasonIdDictionary.TryGetValue(episodeId, out var seasonId))
+            return await GetSeasonInfo(seasonId).ConfigureAwait(false);
+
+        switch (episodeId[0]) {
+            case IdPrefix.TmdbShow:
+                if (await ApiClient.GetTmdbSeasonForTmdbEpisode(episodeId[1..]).ConfigureAwait(false) is not { } tmdbSeason)
+                    return null;
+
+                if (await ApiClient.GetTmdbShowForSeason(tmdbSeason.Id).ConfigureAwait(false) is not { } tmdbShow)
+                    return null;
+
+                return await CreateSeasonInfo(tmdbSeason, tmdbShow).ConfigureAwait(false);
+
+            case IdPrefix.TmdbMovie:
+                if (await ApiClient.GetTmdbMovie(episodeId[1..]).ConfigureAwait(false) is not { } tmdbMovie)
+                    return null;
+
+                var episodeInfo = CreateEpisodeInfo(tmdbMovie);
+                return await GetSeasonInfo(episodeInfo.SeasonId).ConfigureAwait(false);
+
+            default:
+                if (await ApiClient.GetShokoSeriesForShokoEpisode(episodeId).ConfigureAwait(false) is not { } shokoSeries)
+                    return null;
+
+                return await CreateSeasonInfo(shokoSeries).ConfigureAwait(false);
+        }
+    }
+
+    public Task<IReadOnlyList<SeasonInfo>> GetSeasonInfosForShokoSeries(string seriesId)
+        => DataCache.GetOrCreateAsync<IReadOnlyList<SeasonInfo>>(
+            $"seasons-by-series-id:{seriesId}",
+            (seasons) => Logger.LogTrace("Reusing info objects for seasons. (Series={SeriesId})", seriesId),
+            async () => {
+                Logger.LogTrace("Creating info objects for seasons for series {SeriesName}. (Series={SeriesId})", seriesId, seriesId);
+                if (await ApiClient.GetShokoSeries(seriesId).ConfigureAwait(false) is not { } series)
+                    return [];
+
+                var seriesConfig = await GetSeriesConfiguration(seriesId).ConfigureAwait(false);
+                if (seriesConfig.StructureType is SeriesStructureType.TMDB_SeriesAndMovies) {
+                    var seasons = new List<SeasonInfo>();
+                    var episodeXrefs = await ApiClient.GetTmdbCrossReferencesForShokoSeries(seriesId).ConfigureAwait(false);
+                    var showIds = episodeXrefs
+                        .GroupBy(x => x.TmdbShowId)
+                        .OrderByDescending(x => x.Count())
+                        .Select(x => x.Key)
+                        .Except([0])
+                        .ToList();
+                    foreach (var showId in showIds) {
+                        var episodes = (await ApiClient.GetTmdbEpisodesInTmdbShow(showId.ToString()).ConfigureAwait(false)).ToDictionary(e => e.Id);
+                        var seasonIds = episodeXrefs
+                            .Where(x => x.TmdbShowId == showId)
+                            .GroupBy(x => episodes.TryGetValue(x.TmdbEpisodeId, out var e) ? e.SeasonId : string.Empty)
+                            .OrderByDescending(x => x.Count())
+                            .Select(x => x.Key)
+                            .Except([string.Empty])
+                            .ToList();
+                        foreach (var seasonId in seasonIds) {
+                            if (await GetSeasonInfo(IdPrefix.TmdbShow + seasonId).ConfigureAwait(false) is not { } seasonInfo)
+                                continue;
+
+                            seasons.Add(seasonInfo);
+                        }
+                    }
+                    foreach (var movieId in series.IDs.TMDB.Movie) {
+                        if (await GetSeasonInfo(IdPrefix.TmdbMovie + movieId.ToString()).ConfigureAwait(false) is not { } seasonInfo)
+                            continue;
+
+                        seasons.Add(seasonInfo);
+                    }
+
+                    return seasons;
+                }
+                else {
+                    if (await GetSeasonInfo(seriesId).ConfigureAwait(false) is not { } seasonInfo)
+                        return [];
+
+                    return [seasonInfo];
+                }
+            }
+        );
+
+    private Task<SeasonInfo> CreateSeasonInfo(TmdbMovie tmdbMovie)
+        => DataCache.GetOrCreateAsync(
+            $"season:{IdPrefix.TmdbMovie}{tmdbMovie.Id}",
+            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,Movie={MovieId})", seasonInfo.DefaultTitle, tmdbMovie.Id),
+            async () => {
+                Logger.LogTrace("Creating info object for season {SeasonTitle}. (Source=TMDB,Movie={MovieId})", tmdbMovie.Title, tmdbMovie.Id);
+
+                var episodeInfo = CreateEpisodeInfo(tmdbMovie);
+                var animeIds = (await ApiClient.GetTmdbCrossReferencesForTmdbMovie(tmdbMovie.Id.ToString()).ConfigureAwait(false))
+                    .GroupBy(x => x.AnidbAnimeId)
+                    .OrderByDescending(x => x.Count())
+                    .Select(x => x.Key)
+                    .Except([0])
+                    .ToList();
+                var (shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"TMDB movie \"{tmdbMovie.Title}\"", $"Movie=\"{tmdbMovie.Id}\"").ConfigureAwait(false);
+                return new SeasonInfo(ApiClient, tmdbMovie, episodeInfo, shokoGroupId, shokoGroupId, topLevelShokoGroupId);
+            });
+
+    private Task<SeasonInfo> CreateSeasonInfo(TmdbMovieCollection tmdbMovieCollection)
+        => DataCache.GetOrCreateAsync(
+            $"season:{IdPrefix.TmdbMovieCollection}{tmdbMovieCollection.Id}",
+            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,MovieCollection={MovieId})", seasonInfo.DefaultTitle, tmdbMovieCollection.Id),
+            async () => {
+                Logger.LogTrace("Creating info object for season {SeasonTitle}. (Source=TMDB,MovieCollection={MovieId})", tmdbMovieCollection.Title, tmdbMovieCollection.Id);
+
+                var moviesInCollection = await ApiClient.GetTmdbMoviesInMovieCollection(tmdbMovieCollection.Id.ToString()).ConfigureAwait(false);
+                var episodeInfos = moviesInCollection.Select(tmdbMovie => CreateEpisodeInfo(tmdbMovie)).ToList();
+                var animeIds = (await Task.WhenAll(moviesInCollection.Select(tmdbMovie => ApiClient.GetTmdbCrossReferencesForTmdbMovie(tmdbMovie.Id.ToString()))).ConfigureAwait(false))
+                    .SelectMany(x => x)
+                    .GroupBy(x => x.AnidbAnimeId)
+                    .OrderByDescending(x => x.Count())
+                    .Select(x => x.Key)
+                    .Except([0])
+                    .ToList();
+                var (shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"TMDB movie collection \"{tmdbMovieCollection.Title}\"", $"MovieCollection=\"{tmdbMovieCollection.Id}\"").ConfigureAwait(false);
+                return new SeasonInfo(ApiClient, tmdbMovieCollection, moviesInCollection, episodeInfos, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
+            });
+
+    private Task<SeasonInfo> CreateSeasonInfo(TmdbSeason tmdbSeason, TmdbShow tmdbShow)
+        => DataCache.GetOrCreateAsync(
+            $"season:{IdPrefix.TmdbShow}{tmdbSeason.Id}",
+            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,Season={SeasonId},Show={ShowId})", seasonInfo.DefaultTitle, tmdbSeason.Id, tmdbSeason.ShowId),
+            async () => {
+                Logger.LogTrace("Creating info object for season {SeasonTitle}. (Source=TMDB,Season={SeasonId},Show={ShowId})", tmdbSeason.Title, tmdbSeason.Id, tmdbSeason.ShowId);
+
+                var tmdbEpisodes = (await ApiClient.GetTmdbEpisodesInTmdbSeason(tmdbSeason.Id).ConfigureAwait(false))
+                    .ToDictionary(e => e.Id);
+                var episodeInfos = tmdbEpisodes.Values.Select(tmdbEpisode => CreateEpisodeInfo(tmdbEpisode, tmdbShow)).ToList();
+
+                string? shokoSeriesId = null;
+                string? shokoGroupId = null;
+                string? topLevelShokoGroupId = null;
+                if (tmdbSeason.SeasonNumber > 0) {
+                    var animeIds = (await ApiClient.GetTmdbCrossReferencesForTmdbShow(tmdbSeason.ShowId.ToString()).ConfigureAwait(false))
+                        .Where(x => tmdbEpisodes[x.TmdbEpisodeId].SeasonId == tmdbSeason.Id)
+                        .GroupBy(x => x.AnidbAnimeId)
+                        .OrderByDescending(x => x.Count())
+                        .Select(x => x.Key)
+                        .Except([0])
+                        .ToList();
+                    (shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"season {tmdbSeason.SeasonNumber} in TMDB show \"{tmdbShow.Title}\"", $"Season=\"{tmdbSeason.Id}\",Show=\"{tmdbSeason.ShowId}\"").ConfigureAwait(false);
+                }
+
+                return new SeasonInfo(ApiClient, tmdbSeason, tmdbShow, episodeInfos, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
+            });
+
+#pragma warning disable CA2254 // Template should be a static method
+    private async Task<(string? shokoSeriesId, string? shokoGroupId, string? topLevelShokoGroupId)> GetGroupIdsForAnidbAnime(IReadOnlyList<int> animeIds, string entryName, string entryId) {
+        Logger.LogTrace($"Found {{AnidbAnimeCount}} AniDB anime for {entryName} to pick a Shoko Group to use. (Anime={{AnimeIds}},{entryId})", animeIds.Count, animeIds);
+
+        if (animeIds.Count is 0)
+            return (null, null, null);
+
+        string? shokoSeriesId = null;
+        string? shokoGroupId = null;
+        string? topLevelShokoGroupId = null;
+        var shokoGroupIdList = new List<(string shokoSeriesId, string shokoGroupId, string topLevelShokoGroupId)>();
+        foreach (var animeId in animeIds) {
+            if (await ApiClient.GetShokoSeriesForAnidbAnime(animeIds[0].ToString()).ConfigureAwait(false) is not { } shokoSeries)
+                continue;
+
+            shokoGroupIdList.Add((shokoSeries.IDs.Shoko.ToString(), shokoSeries.IDs.ParentGroup.ToString(), shokoSeries.IDs.TopLevelGroup.ToString()));
+
+            Logger.LogTrace($"Found Shoko series to use for {entryName}. (Anime={{AnimeId}},Series={{SeriesId}},Group={{GroupId}},{entryId})", animeIds[0], shokoSeries.Id, shokoSeries.IDs.ParentGroup.ToString());
+        }
+
+        var shokoGroupIdCounts = shokoGroupIdList
+            .GroupBy(x => x.shokoGroupId)
+            .OrderByDescending(x => x.Count())
+            .ToDictionary(x => x.Key, x => (x.Select(y => y.shokoSeriesId).Distinct().ToArray(), x.First().topLevelShokoGroupId));
+        if (shokoGroupIdCounts.Count is > 1) {
+            var topLevelGroupIdCount = shokoGroupIdList
+                .GroupBy(x => x.topLevelShokoGroupId)
+                .OrderByDescending(x => x.Count())
+                .Select(x => x.Key)
+                .ToList();
+            if (topLevelGroupIdCount.Count is 1) {
+                topLevelShokoGroupId = topLevelGroupIdCount[0];
+                Logger.LogTrace($"Multiple Shoko groups in the same top-level groups linked to {entryName}. (Anime={{AnimeIds}},TopLevelGroup={{TopLevelGroupId}},{entryId})", animeIds, topLevelShokoGroupId);
+            }
+            else {
+                Logger.LogTrace($"Multiple Shoko groups in multiple top-level groups linked to {entryName}. (Anime={{AnimeIds}},{entryId})", animeIds);
+            }
+        }
+        else if (shokoGroupIdCounts.Count is 1) {
+            (shokoGroupId, (var shokoSeriesIdList, topLevelShokoGroupId)) = shokoGroupIdCounts.First();
+            if (shokoSeriesIdList.Length is 1) {
+                shokoSeriesId = shokoSeriesIdList[0];
+                Logger.LogTrace($"Found Shoko series and Shoko group to use for {entryName}. (Series={{SeriesId}},Group={{GroupId}},TopLevelGroup={{TopLevelGroupId}},{entryId})", shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
+            }
+            else {
+                Logger.LogTrace($"Found Shoko group to use for {entryName}. (Group={{GroupId}},TopLevelGroup={{TopLevelGroupId}},{entryId})", shokoGroupId, topLevelShokoGroupId);
+            }
+        }
+        else {
+            Logger.LogTrace($"Could not find Shoko group for {entryName}. ({entryId})");
+        }
+
+        return (shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
+    }
+#pragma warning restore CA2254 // Template should be a static method
+
+    private async Task<SeasonInfo> CreateSeasonInfo(ShokoSeries series) {
+        var (primaryId, extraIds) = await GetSeriesIdsForSeason(series).ConfigureAwait(false);
         return await DataCache.GetOrCreateAsync(
-            $"season:{seriesId}",
-            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeriesName}. (Series={SeriesId})", seasonInfo.Shoko.Name, seriesId),
+            $"season:{primaryId}",
+            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=Shoko,Series={SeriesId},ExtraSeries={ExtraIds})", seasonInfo.DefaultTitle, primaryId, extraIds),
             async () => {
                 // We updated the "primary" series id for the merge group, so fetch the new series details from the client cache.
-                if (!string.Equals(series.IDs.Shoko.ToString(), seriesId, StringComparison.Ordinal))
-                    series = await APIClient.GetSeries(seriesId);
+                if (!string.Equals(series.Id, primaryId, StringComparison.Ordinal))
+                    series = await ApiClient.GetShokoSeries(primaryId).ConfigureAwait(false)
+                        ?? throw new InvalidOperationException("Could not find series with id " + primaryId);
 
-                Logger.LogTrace("Creating info object for season {SeriesName}. (Series={SeriesId},ExtraSeries={ExtraIds})", series.Name, seriesId, extraIds);
+                Logger.LogTrace("Creating info object for season {SeasonTitle}. (Source=Shoko,Series={SeriesId},ExtraSeries={ExtraIds})", series.Name, primaryId, extraIds);
 
-                var customSeriesType = await GetCustomSeriesType(seriesId).ConfigureAwait(false);
-                var contentRating = await GetAssumedContentRating(seriesId).ConfigureAwait(false);
-                var (earliestImportedAt, lastImportedAt) = await GetEarliestImportedAtForSeries(seriesId).ConfigureAwait(false);
                 var episodes = (await Task.WhenAll(
-                    extraIds.Prepend(seriesId)
-                        .Select(id => APIClient.GetEpisodesFromSeries(id)
-                            .ContinueWith(task => Task.WhenAll(task.Result.List.Select(e => CreateEpisodeInfo(e, e.IDs.Shoko.ToString()))))
+                    extraIds.Prepend(primaryId)
+                        .Select(id => ApiClient.GetShokoEpisodesInShokoSeries(id)
+                            .ContinueWith(task => Task.WhenAll(task.Result.Select(CreateEpisodeInfo)))
                             .Unwrap()
                         )
                 ).ConfigureAwait(false))
                     .SelectMany(list => list)
                     .ToList();
 
+                ITmdbEntity? tmdbEntity = null;
+                if (series.IDs.TMDB.Show.Count > 0 || series.IDs.TMDB.Movie.Count > 0) {
+                    if (series.IDs.TMDB.Show.Count > 0) {
+                        Logger.LogTrace("Found {TmdbShowCount} TMDB shows for Shoko Series {SeriesTitle} to pick a season to use. (Series={SeriesId})", series.IDs.TMDB.Show.Count, series.Name, primaryId);
+
+                        var episodeXrefs = await ApiClient.GetTmdbCrossReferencesForShokoSeries(primaryId).ConfigureAwait(false);
+                        var showIds = episodeXrefs
+                            .GroupBy(x => x.TmdbShowId)
+                            .OrderByDescending(x => x.Count())
+                            .Select(x => x.Key)
+                            .Except([0])
+                            .ToList();
+                        foreach (var showId in showIds) {
+                            var tmdbEpisodes = (await ApiClient.GetTmdbEpisodesInTmdbShow(showId.ToString()).ConfigureAwait(false)).ToDictionary(e => e.Id);
+                            var seasonIds = episodeXrefs
+                                .Where(x => x.TmdbShowId == showId)
+                                .GroupBy(x => tmdbEpisodes.TryGetValue(x.TmdbEpisodeId, out var e) ? e.SeasonId : string.Empty)
+                                .OrderByDescending(x => x.Count())
+                                .ExceptBy([string.Empty], x => x.Key)
+                                .ToDictionary(x => x.Key, x => x.Count());
+
+                            Logger.LogTrace("Found {TmdbSeasonCount} TMDB seasons to potentially use. (Series={SeriesId},Show={ShowId})", seasonIds.Count, primaryId, showId);
+
+                            var fullyMatchedSeasons = 0;
+                            foreach (var (seasonId, matchedEpisodeCount) in seasonIds) {
+                                if (await ApiClient.GetTmdbSeason(seasonId).ConfigureAwait(false) is { } tmdbSeason) {
+                                    if (tmdbSeason.SeasonNumber is 0) {
+                                        Logger.LogTrace("Found season zero for Shoko Series {SeriesTitle}. Skipping season match. (Series={SeriesId},Season={SeasonId},Show={ShowId})", series.Name, primaryId, tmdbSeason.Id, tmdbSeason.ShowId);
+                                        continue;
+                                    }
+
+                                    tmdbEntity ??= tmdbSeason;
+                                    Logger.LogTrace("Found TMDB season {TmdbSeasonTitle} for Shoko Series {SeriesTitle}. (Series={SeriesId},Season={SeasonId},Show={ShowId})", tmdbSeason.Title, series.Name, primaryId, tmdbSeason.Id, tmdbSeason.ShowId);
+
+                                    // If the Shoko Series is fully matched to more than one TMDB season that's not season zero, then switch to using the show instead.
+                                    if (tmdbSeason.EpisodeCount == matchedEpisodeCount) {
+                                        if (++fullyMatchedSeasons > 1)
+                                            break;
+                                        continue;
+                                    }
+
+                                    break;
+                                }
+                            }
+                            if (tmdbEntity is not null && fullyMatchedSeasons > 1) {
+                                if (await ApiClient.GetTmdbShowForSeason(((TmdbSeason)tmdbEntity).Id).ConfigureAwait(false) is { } tmdbShow) {
+                                    tmdbEntity = tmdbShow;
+                                    Logger.LogTrace("Found multiple TMDB seasons for Shoko Series {SeriesTitle}, so switched to show {ShowName} instead. (Series={SeriesId})", series.Name, tmdbShow.Title, primaryId);
+                                }
+                            }
+
+                            if (tmdbEntity is not null)
+                                break;
+                        }
+                    }
+
+                    if (tmdbEntity is null && series.IDs.TMDB.Movie.Count > 0) {
+                        Logger.LogTrace("Found {TmdbMovieCount} TMDB movies for Shoko Series {SeriesTitle} to pick a movie collection to use. (Series={SeriesId})", series.IDs.TMDB.Movie.Count, series.Name, primaryId);
+
+                        var collectionIds = new List<int>();
+                        foreach (var movieId in series.IDs.TMDB.Movie) {
+                            if (await ApiClient.GetTmdbMovie(movieId.ToString()).ConfigureAwait(false) is not { } tmdbMovie ||
+                                !tmdbMovie.CollectionId.HasValue)
+                                continue;
+
+                            collectionIds.Add(tmdbMovie.CollectionId.Value);
+                        }
+
+                        collectionIds = collectionIds
+                            .GroupBy(x => x)
+                            .OrderByDescending(x => x.Count())
+                            .Select(x => x.Key)
+                            .ToList();
+                        foreach (var collectionId in collectionIds) {
+                            if (await ApiClient.GetTmdbMovieCollection(collectionId.ToString()).ConfigureAwait(false) is { } tmdbCollection) {
+                                tmdbEntity = tmdbCollection;
+                                Logger.LogTrace("Found TMDB movie collection {TmdbCollectionTitle} for Shoko Series {SeriesTitle}. (Series={SeriesId},Collection={CollectionId})", tmdbCollection.Title, series.Name, primaryId, tmdbCollection.Id);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (tmdbEntity is null)
+                        Logger.LogTrace("Could not find TMDB entity to use for Shoko Series {SeriesTitle}. (Series={SeriesId})", series.Name, primaryId);
+                }
+
                 SeasonInfo seasonInfo;
                 if (extraIds.Count > 0) {
-                    var detailsIds = extraIds.Prepend(seriesId).ToList();
+                    var detailsIds = extraIds.Prepend(primaryId).ToList();
 
                     // Create the tasks.
-                    var castTasks = detailsIds.Select(id => APIClient.GetSeriesCast(id));
-                    var relationsTasks = detailsIds.Select(id => APIClient.GetSeriesRelations(id));
-                    var genresTasks = detailsIds.Select(id => GetGenresForSeries(id));
-                    var tagsTasks = detailsIds.Select(id => GetTagsForSeries(id));
-                    var productionLocationsTasks = detailsIds.Select(id => GetProductionLocations(id));
+                    var relationsTasks = detailsIds.Select(id => ApiClient.GetRelationsForShokoSeries(id));
                     var seriesConfigurationsTasks = detailsIds.Select(id => GetSeriesConfiguration(id));
 
                     // Await the tasks in order.
-                    var cast = (await Task.WhenAll(castTasks))
-                        .SelectMany(c => c)
-                        .Distinct()
-                        .ToList();
-                    var relations = (await Task.WhenAll(relationsTasks))
+                    var relations = (await Task.WhenAll(relationsTasks).ConfigureAwait(false))
                         .SelectMany(r => r)
                         .Where(r => r.RelatedIDs.Shoko.HasValue && !detailsIds.Contains(r.RelatedIDs.Shoko.Value.ToString()))
                         .ToList();
-                    var genres = (await Task.WhenAll(genresTasks))
-                        .SelectMany(g => g)
-                        .OrderBy(g => g)
-                        .Distinct()
-                        .ToArray();
-                    var tags = (await Task.WhenAll(tagsTasks))
-                        .SelectMany(t => t)
-                        .OrderBy(t => t)
-                        .Distinct()
-                        .ToArray();
-                    var productionLocations = (await Task.WhenAll(productionLocationsTasks))
-                        .SelectMany(g => g)
-                        .OrderBy(g => g)
-                        .Distinct()
-                        .ToArray();
-                    var seriesConfigurations = (await Task.WhenAll(seriesConfigurationsTasks))
+                    var seriesConfigurations = (await Task.WhenAll(seriesConfigurationsTasks).ConfigureAwait(false))
                         .Select((t, i) => (t, i))
                         .ToDictionary(t => detailsIds[t.i], (t) => t.t);
 
                     // Create the season info using the merged details.
-                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, seriesConfigurations, contentRating);
-                } else {
-                    var cast = await APIClient.GetSeriesCast(seriesId).ConfigureAwait(false);
-                    var relations = await APIClient.GetSeriesRelations(seriesId).ConfigureAwait(false);
-                    var genres = await GetGenresForSeries(seriesId).ConfigureAwait(false);
-                    var tags = await GetTagsForSeries(seriesId).ConfigureAwait(false);
-                    var productionLocations = await GetProductionLocations(seriesId).ConfigureAwait(false);
-                    var seriesConfigurations = new Dictionary<string, SeriesConfiguration>() {
-                        { seriesId, await GetSeriesConfiguration(seriesId).ConfigureAwait(false) },
+                    seasonInfo = new SeasonInfo(ApiClient, series, extraIds, episodes, relations, tmdbEntity, seriesConfigurations);
+                }
+                else {
+                    var relations = await ApiClient.GetRelationsForShokoSeries(primaryId).ConfigureAwait(false);
+                    var seriesConfigurations = new Dictionary<string, SeriesConfiguration>() { { primaryId, await GetSeriesConfiguration(primaryId).ConfigureAwait(false) },
                     };
-                    seasonInfo = new SeasonInfo(series, customSeriesType, extraIds, earliestImportedAt, lastImportedAt, episodes, cast, relations, genres, tags, productionLocations, seriesConfigurations, contentRating);
+                    seasonInfo = new SeasonInfo(ApiClient, series, extraIds, episodes, relations, tmdbEntity, seriesConfigurations);
                 }
 
                 foreach (var episode in episodes)
-                    EpisodeIdToSeriesIdDictionary.TryAdd(episode.Id, seriesId);
+                    EpisodeIdToSeasonIdDictionary.TryAdd(episode.Id, primaryId);
+
                 return seasonInfo;
             }
-        );
+        ).ConfigureAwait(false);
     }
 
-    private Task<(DateTime?, DateTime?)> GetEarliestImportedAtForSeries(string seriesId)
-        => DataCache.GetOrCreateAsync<(DateTime?, DateTime?)>(
-            $"series-earliest-imported-at:${seriesId}",
-            async () => {
-                var files = await APIClient.GetFilesForSeries(seriesId).ConfigureAwait(false);
-                if (!files.Any(f => f.ImportedAt.HasValue))
-                    return (null, null);
-                return (
-                    files.Any(f => f.ImportedAt.HasValue)
-                        ? files.Where(f => f.ImportedAt.HasValue).Select(f => f.ImportedAt!.Value).Min()
-                        : files.Select(f => f.CreatedAt).Min(),
-                    files.Any(f => f.ImportedAt.HasValue)
-                        ? files.Where(f => f.ImportedAt.HasValue).Select(f => f.ImportedAt!.Value).Max()
-                        : files.Select(f => f.CreatedAt).Max()
-                );
-            },
-            new()
-        );
+    #endregion
 
-    public async Task<(string primaryId, List<string> extraIds)> GetSeriesIdsForSeason(string seriesId)
-        => await GetSeriesIdsForSeason(await APIClient.GetSeries(seriesId));
+    #region Series Merging
 
-    private Task<(string primaryId, List<string> extraIds)> GetSeriesIdsForSeason(Series series)
+    public async Task<(string primaryId, List<string> extraIds)> GetSeriesIdsForShokoSeries(string seriesId) {
+        if (await ApiClient.GetShokoSeries(seriesId).ConfigureAwait(false) is not { } shokoSeries)
+            return (seriesId, []);
+
+        return await GetSeriesIdsForSeason(shokoSeries).ConfigureAwait(false);
+    }
+
+    private Task<(string primaryId, List<string> extraIds)> GetSeriesIdsForSeason(ShokoSeries series)
         => DataCache.GetOrCreateAsync(
-            $"season-series-ids:{series.IDs.Shoko}",
+            $"season-series-ids:{series.Id}",
             (tuple) => {
                 var config = Plugin.Instance.Configuration;
                 if (!config.EXPERIMENTAL_MergeSeasons)
                     return;
 
-                if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(GetCustomSeriesType(series.IDs.Shoko.ToString()).ConfigureAwait(false).GetAwaiter().GetResult() ?? series.AniDBEntity.Type))
-                    return;
-
-                if (series.AniDBEntity.AirDate is null)
-                    return;
-
                 Logger.LogTrace("Reusing existing series-to-season mapping for series. (Series={SeriesId},ExtraSeries={ExtraIds})", tuple.primaryId, tuple.extraIds);
             },
             async () => {
-                var primaryId = series.IDs.Shoko.ToString();
+                var primaryId = series.Id;
                 var extraIds = new List<string>();
                 var config = Plugin.Instance.Configuration;
                 if (!config.EXPERIMENTAL_MergeSeasons)
                     return (primaryId, extraIds);
 
-                if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(await GetCustomSeriesType(series.IDs.Shoko.ToString()) ?? series.AniDBEntity.Type))
-                    return (primaryId, extraIds);
-
-                if (series.AniDBEntity.AirDate is null)
-                    return (primaryId, extraIds);
-
-                var customTags = await GetNamespacedTagsForSeries(primaryId).ConfigureAwait(false);
-                if (customTags.ContainsKey("/custom user tags/shokofin/no merge"))
-                    return (primaryId, extraIds);
-
                 Logger.LogTrace("Creating new series-to-season mapping for series. (Series={SeriesId})", primaryId);
 
+                var seriesConfig = await GetSeriesConfiguration(series.Id).ConfigureAwait(false);
+                if (seriesConfig.StructureType is not SeriesStructureType.Shoko_Groups)
+                    return (primaryId, extraIds);
+
+                if (seriesConfig.MergeOverride is SeriesMergingOverride.NoMerge)
+                    return (primaryId, extraIds);
+
+                if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(seriesConfig.TypeOverride ?? series.AniDB.Type))
+                    return (primaryId, extraIds);
+
+                if (series.AniDB.AirDate is null)
+                    return (primaryId, extraIds);
+
                 // We potentially have a "follow-up" season candidate, so look for the "primary" season candidate, then jump into that.
-                var relations = await APIClient.GetSeriesRelations(primaryId).ConfigureAwait(false);
-                var mainTitle = series.AniDBEntity.Titles.First(title => title.Type == TitleType.Main).Value;
-                var result = YearRegex.Match(mainTitle);
+                var relations = await ApiClient.GetRelationsForShokoSeries(primaryId).ConfigureAwait(false);
+                var mainTitle = series.AniDB.Titles.First(title => title.Type == TitleType.Main).Value;
                 var maxDaysThreshold = config.EXPERIMENTAL_MergeSeasonsMergeWindowInDays;
-                if (result.Success)
-                {
-                    Series? lastPrequelSeries = null;
-                    var adjustedMainTitle = mainTitle[..^result.Length];
-                    var currentDate = series.AniDBEntity.AirDate.Value;
-                    var currentRelations = relations;
-                    while (currentRelations.Count > 0) {
-                        foreach (var prequelRelation in currentRelations.Where(relation => relation.Type is RelationType.Prequel && relation.RelatedIDs.Shoko.HasValue)) {
-                            var prequelSeries = await APIClient.GetSeries(prequelRelation.RelatedIDs.Shoko!.Value.ToString());
-                            if (prequelSeries.IDs.ParentGroup != series.IDs.ParentGroup)
-                                continue;
+                var adjustedMainTitle = AdjustMainTitle(mainTitle) ?? mainTitle;
+                var currentSeries = series;
+                var currentDate = currentSeries.AniDB.AirDate.Value;
+                var currentRelations = relations;
+                var currentConfig = seriesConfig;
+                while (currentRelations.Count > 0) {
+                    foreach (var prequelRelation in currentRelations.Where(relation => relation.Type is RelationType.Prequel && relation.RelatedIDs.Shoko.HasValue)) {
+                        if (await ApiClient.GetShokoSeries(prequelRelation.RelatedIDs.Shoko!.Value.ToString()).ConfigureAwait(false) is not { } prequelSeries)
+                            continue;
 
-                            if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(await GetCustomSeriesType(prequelSeries.IDs.Shoko.ToString()) ?? prequelSeries.AniDBEntity.Type))
-                                continue;
+                        if (prequelSeries.IDs.ParentGroup != currentSeries.IDs.ParentGroup)
+                            continue;
 
-                            if (prequelSeries.AniDBEntity.AirDate is null)
-                                continue;
+                        var prequelConfig = await GetSeriesConfiguration(prequelSeries.Id).ConfigureAwait(false);
+                        if (prequelConfig.MergeOverride is SeriesMergingOverride.NoMerge)
+                            continue;
 
-                            var prequelDate = prequelSeries.AniDBEntity.AirDate.Value;
-                            if (prequelDate > currentDate)
+                        if (prequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
+                            continue;
+
+                        if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(prequelConfig.TypeOverride ?? prequelSeries.AniDB.Type))
+                            continue;
+
+                        if (prequelSeries.AniDB.AirDate is not { } prequelDate || prequelDate > currentDate)
+                            continue;
+
+                        var mergeOverride = currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward) || prequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward);
+                        if (!mergeOverride) {
+                            if (maxDaysThreshold is -1)
                                 continue;
 
                             if (maxDaysThreshold > 0) {
@@ -955,103 +1302,77 @@ public class ShokoAPIManager : IDisposable
                                 if (deltaDays > maxDaysThreshold)
                                     continue;
                             }
+                        }
 
-                            var prequelCustomTags = await GetNamespacedTagsForSeries(prequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
-                            if (prequelCustomTags.ContainsKey("/custom user tags/shokofin/no merge"))
-                                continue;
+                        var prequelMainTitle = prequelSeries.AniDB.Titles.First(title => title.Type == TitleType.Main).Value;
+                        var adjustedPrequelMainTitle = AdjustMainTitle(prequelMainTitle);
+                        if (mergeOverride) {
+                            adjustedMainTitle = adjustedPrequelMainTitle ?? prequelMainTitle;
+                            currentSeries = prequelSeries;
+                            currentDate = prequelDate;
+                            currentRelations = await ApiClient.GetRelationsForShokoSeries(prequelSeries.Id).ConfigureAwait(false);
+                            currentConfig = prequelConfig;
+                            goto continuePrequelWhileLoop;
+                        }
 
-                            var prequelMainTitle = prequelSeries.AniDBEntity.Titles.First(title => title.Type == TitleType.Main).Value;
-                            var prequelResult = YearRegex.Match(prequelMainTitle);
-                            if (!prequelResult.Success) {
-                                if (string.Equals(adjustedMainTitle, prequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
-                                    (primaryId, extraIds) = await GetSeriesIdsForSeason(prequelSeries);
-                                    goto breakPrequelWhileLoop;
-                                }
-                                continue;
-                            }
-
-                            var adjustedPrequelMainTitle = prequelMainTitle[..^prequelResult.Length];
-                            if (string.Equals(adjustedMainTitle, adjustedPrequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
-                                lastPrequelSeries = prequelSeries;
+                        if (string.IsNullOrEmpty(adjustedPrequelMainTitle)) {
+                            if (string.Equals(adjustedMainTitle, prequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
+                                currentSeries = prequelSeries;
                                 currentDate = prequelDate;
-                                currentRelations = await APIClient.GetSeriesRelations(prequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
-                                goto continuePrequelWhileLoop;
+                                currentRelations = await ApiClient.GetRelationsForShokoSeries(prequelSeries.Id).ConfigureAwait(false);
+                                currentConfig = prequelConfig;
+                                goto breakPrequelWhileLoop;
                             }
+                            continue;
                         }
-                        breakPrequelWhileLoop: break;
-                        continuePrequelWhileLoop: continue;
-                    }
-                    // Although we didn't find a _pure_ "primary" season candidate, we found a series with a matching year regex pattern, so get the series ids for that.
-                    if (lastPrequelSeries is not null) {
-                        (primaryId, extraIds) = await GetSeriesIdsForSeason(lastPrequelSeries);
-                    }
-                    // We potentially have an _unpure_ "primary" season candidate, so look for any "follow-up" season candidates.
-                    else if (extraIds.Count is 0) {
-                        currentDate = series.AniDBEntity.AirDate.Value;
-                        currentRelations = relations;
-                        while (currentRelations.Count > 0) {
-                            foreach (var sequelRelation in currentRelations.Where(relation => relation.Type == RelationType.Sequel && relation.RelatedIDs.Shoko.HasValue)) {
-                                var sequelSeries = await APIClient.GetSeries(sequelRelation.RelatedIDs.Shoko!.Value.ToString());
-                                if (sequelSeries.IDs.ParentGroup != series.IDs.ParentGroup)
-                                    continue;
 
-                                if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(await GetCustomSeriesType(sequelSeries.IDs.Shoko.ToString()) ?? sequelSeries.AniDBEntity.Type))
-                                    continue;
-
-                                if (sequelSeries.AniDBEntity.AirDate is null)
-                                    continue;
-
-                                var sequelDate = sequelSeries.AniDBEntity.AirDate.Value;
-                                if (sequelDate < currentDate)
-                                    continue;
-
-                                if (maxDaysThreshold > 0) {
-                                    var deltaDays = (int)Math.Floor((sequelDate - currentDate).TotalDays);
-                                    if (deltaDays > maxDaysThreshold)
-                                        continue;
-                                }
-
-                                var sequelCustomTags = await GetNamespacedTagsForSeries(sequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
-                                if (sequelCustomTags.ContainsKey("/custom user tags/shokofin/no merge"))
-                                    continue;
-
-                                var sequelMainTitle = sequelSeries.AniDBEntity.Titles.First(title => title.Type == TitleType.Main).Value;
-                                var sequelResult = YearRegex.Match(sequelMainTitle);
-                                if (!sequelResult.Success)
-                                    continue;
-
-                                var adjustedSequelMainTitle = sequelMainTitle[..^sequelResult.Length];
-                                if (string.Equals(adjustedMainTitle, adjustedSequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
-                                    extraIds.Add(sequelSeries.IDs.Shoko.ToString());
-                                    currentDate = sequelDate;
-                                    currentRelations = await APIClient.GetSeriesRelations(sequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
-                                    goto continueSequelWhileLoop;
-                                }
-                            }
-                            break;
-                            continueSequelWhileLoop: continue;
+                        if (string.Equals(adjustedMainTitle, adjustedPrequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
+                            currentSeries = prequelSeries;
+                            currentDate = prequelDate;
+                            currentRelations = await ApiClient.GetRelationsForShokoSeries(prequelSeries.Id).ConfigureAwait(false);
+                            currentConfig = prequelConfig;
+                            goto continuePrequelWhileLoop;
                         }
                     }
+                    breakPrequelWhileLoop: break;
+                    continuePrequelWhileLoop: continue;
                 }
-                // We potentially have a _pure_ "primary" season candidate, so look for any "follow-up" season candidates.
-                else {
-                    var currentDate = series.AniDBEntity.AirDate.Value;
-                    var adjustedMainTitle = mainTitle;
-                    var currentRelations = relations;
-                    while (currentRelations.Count > 0) {
-                        foreach (var sequelRelation in currentRelations.Where(relation => relation.Type == RelationType.Sequel && relation.RelatedIDs.Shoko.HasValue)) {
-                            var sequelSeries = await APIClient.GetSeries(sequelRelation.RelatedIDs.Shoko!.Value.ToString());
-                            if (sequelSeries.IDs.ParentGroup != series.IDs.ParentGroup)
-                                continue;
 
-                            if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(await GetCustomSeriesType(sequelSeries.IDs.Shoko.ToString()) ?? sequelSeries.AniDBEntity.Type))
-                                continue;
+                // If an earlier candidate was found, use its IDs instead. We re-run the method to
+                // allow it to cache the IDs once for the forward search and re-use them across all
+                // other seasons that perform a backward search.
+                if (currentSeries != series) {
+                    (primaryId, extraIds) = await GetSeriesIdsForSeason(currentSeries).ConfigureAwait(false);
 
-                            if (sequelSeries.AniDBEntity.AirDate is null)
-                                continue;
+                    // I don't want to duplicate the logging here and to use an else branch with
+                    // more indention for the while loop, so using goto instead.
+                    goto logAndReturn;
+                }
 
-                            var sequelDate = sequelSeries.AniDBEntity.AirDate.Value;
-                            if (sequelDate < currentDate)
+                while (currentRelations.Count > 0) {
+                    foreach (var sequelRelation in currentRelations.Where(relation => relation.Type == RelationType.Sequel && relation.RelatedIDs.Shoko.HasValue)) {
+                        if (await ApiClient.GetShokoSeries(sequelRelation.RelatedIDs.Shoko!.Value.ToString()).ConfigureAwait(false) is not { } sequelSeries)
+                            continue;
+
+                        if (sequelSeries.IDs.ParentGroup != currentSeries.IDs.ParentGroup)
+                            continue;
+
+                        var sequelConfig = await GetSeriesConfiguration(sequelSeries.Id).ConfigureAwait(false);
+                        if (sequelConfig.MergeOverride is SeriesMergingOverride.NoMerge)
+                            continue;
+
+                        if (sequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
+                            continue;
+
+                        if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(sequelConfig.TypeOverride ?? sequelSeries.AniDB.Type))
+                            continue;
+
+                        if (sequelSeries.AniDB.AirDate is not { } sequelDate || sequelDate < currentDate)
+                            continue;
+
+                        var mergeOverride = currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward) || sequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward);
+                        if (!mergeOverride) {
+                            if (maxDaysThreshold < 0)
                                 continue;
 
                             if (maxDaysThreshold > 0) {
@@ -1059,267 +1380,431 @@ public class ShokoAPIManager : IDisposable
                                 if (deltaDays > maxDaysThreshold)
                                     continue;
                             }
-
-                            var sequelMainTitle = sequelSeries.AniDBEntity.Titles.First(title => title.Type == TitleType.Main).Value;
-                            var sequelResult = YearRegex.Match(sequelMainTitle);
-                            if (!sequelResult.Success)
-                                continue;
-
-                            var adjustedSequelMainTitle = sequelMainTitle[..^sequelResult.Length];
-                            if (string.Equals(adjustedMainTitle, adjustedSequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
-                                extraIds.Add(sequelSeries.IDs.Shoko.ToString());
-                                currentDate = sequelDate;
-                                currentRelations = await APIClient.GetSeriesRelations(sequelSeries.IDs.Shoko.ToString()).ConfigureAwait(false);
-                                goto continueSequelWhileLoop;
-                            }
                         }
-                        break;
-                        continueSequelWhileLoop: continue;
+
+                        var sequelMainTitle = sequelSeries.AniDB.Titles.First(title => title.Type == TitleType.Main).Value;
+                        var adjustedSequelMainTitle = AdjustMainTitle(sequelMainTitle);
+                        if (mergeOverride) {
+                            adjustedMainTitle = adjustedSequelMainTitle ?? sequelMainTitle;
+                            extraIds.Add(sequelSeries.Id);
+                            currentSeries = sequelSeries;
+                            currentDate = sequelDate;
+                            currentRelations = await ApiClient.GetRelationsForShokoSeries(sequelSeries.Id).ConfigureAwait(false);
+                            currentConfig = sequelConfig;
+                            goto continueSequelWhileLoop;
+                        }
+
+                        if (string.IsNullOrEmpty(adjustedSequelMainTitle))
+                            continue;
+
+                        if (string.Equals(adjustedMainTitle, adjustedSequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
+                            extraIds.Add(sequelSeries.Id);
+                            currentDate = sequelDate;
+                            currentRelations = await ApiClient.GetRelationsForShokoSeries(sequelSeries.Id).ConfigureAwait(false);
+                            goto continueSequelWhileLoop;
+                        }
                     }
+                    break;
+                    continueSequelWhileLoop: continue;
                 }
 
-                Logger.LogTrace("Created new series-to-season mapping for series. (Series={SeriesId},ExtraSeries={ExtraIds})", primaryId, extraIds);
+                logAndReturn:
+                Logger.LogTrace("Created new series-to-season mapping for series. (Series={SeriesId},Primary={PrimaryId},ExtraSeries={ExtraIds})", series.Id, primaryId, extraIds);
 
                 return (primaryId, extraIds);
             }
         );
 
-    #endregion
-    #region Series Helpers
+    private string? AdjustMainTitle(string title)
+        => YearRegex().Match(title) is { Success: true } result
+            ? title[..^result.Length]
+            : null;
 
-    public bool TryGetSeriesIdForPath(string path, [NotNullWhen(true)] out string? seriesId)
-    {
+    #endregion
+
+    #region Season Id Helpers
+
+    public bool TryGetSeasonIdForPath(string path, [NotNullWhen(true)] out string? seasonId) {
         if (string.IsNullOrEmpty(path)) {
-            seriesId = null;
+            seasonId = null;
             return false;
         }
 
         // Fast path; using the lookup.
-        if (PathToSeriesIdDictionary.TryGetValue(path, out seriesId))
+        if (PathToSeasonIdDictionary.TryGetValue(path, out seasonId))
             return true;
 
         // Slow path; getting the show from cache or remote and finding the season's series id.
         Logger.LogDebug("Trying to find the season's series id for {Path} using the slow path.", path);
         if (GetSeasonInfoByPath(path).ConfigureAwait(false).GetAwaiter().GetResult() is { } seasonInfo) {
-            seriesId = seasonInfo.Id;
+            seasonId = seasonInfo.Id;
             return true;
         }
 
-        seriesId = null;
+        seasonId = null;
         return false;
     }
 
-    public bool TryGetDefaultSeriesIdForSeriesId(string seriesId, [NotNullWhen(true)] out string? defaultSeriesId)
-    {
-        if (string.IsNullOrEmpty(seriesId)) {
-            defaultSeriesId = null;
+    public bool TryGetSeasonIdForEpisodeId(string episodeId, [NotNullWhen(true)] out string? seasonId) {
+        if (string.IsNullOrEmpty(episodeId)) {
+            seasonId = null;
             return false;
         }
 
         // Fast path; using the lookup.
-        if (SeriesIdToDefaultSeriesIdDictionary.TryGetValue(seriesId, out defaultSeriesId))
+        if (EpisodeIdToSeasonIdDictionary.TryGetValue(episodeId, out seasonId))
             return true;
 
-        // Slow path; getting the show from cache or remote and finding the default season's id.
-        Logger.LogDebug("Trying to find the default series id for series using the slow path. (Series={SeriesId})", seriesId);
-        if (GetShowInfoForSeries(seriesId).ConfigureAwait(false).GetAwaiter().GetResult() is { } showInfo) {
-            defaultSeriesId = showInfo.Id;
-            return true;
+        // Slow path; asking the http client to get the series from remote to look up it's id.
+        Logger.LogDebug("Trying to find episode ids using the slow path. (Episode={EpisodeId})", episodeId);
+        switch (episodeId[0]) {
+            case IdPrefix.TmdbShow:
+                if (ApiClient.GetTmdbSeasonForTmdbEpisode(episodeId[1..]).ConfigureAwait(false).GetAwaiter().GetResult() is not { } tmdbSeason) {
+                    seasonId = null;
+                    return false;
+                }
+
+                seasonId = IdPrefix.TmdbShow + tmdbSeason.Id;
+                return true;
+
+            case IdPrefix.TmdbMovie:
+                seasonId = episodeId;
+                return true;
+
+            default:
+                if (ApiClient.GetShokoSeriesForShokoEpisode(episodeId).ConfigureAwait(false).GetAwaiter().GetResult() is not { } series) {
+                    seasonId = null;
+                    return false;
+                }
+
+                seasonId = series.Id;
+                return true;
         }
-
-        defaultSeriesId = null;
-        return false;
     }
 
-    private async Task<string?> GetSeriesIdForPath(string path)
-    {
+    [System.Text.RegularExpressions.GeneratedRegex(@"Season (\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+    private static partial Regex SeasonNameRegex();
+
+    private async Task<string?> GetSeasonIdForPath(string path) {
         // Reuse cached value.
-        if (PathToSeriesIdDictionary.TryGetValue(path, out var seriesId))
-            return seriesId;
+        if (PathToSeasonIdDictionary.TryGetValue(path, out var seasonId))
+            return seasonId;
 
         // Fast-path for VFS.
         if (path.StartsWith(Plugin.Instance.VirtualRoot + Path.DirectorySeparatorChar)) {
-            if (!Path.GetFileName(path).TryGetAttributeValue(ShokoSeriesId.Name, out seriesId) || !int.TryParse(seriesId, out _))
+            var fileName = Path.GetFileName(path);
+            if (SeasonNameRegex().IsMatch(fileName))
+                fileName = Path.GetFileName(Path.GetDirectoryName(path)!);
+
+            if (!fileName.TryGetAttributeValue(ShokoSeriesId.Name, out seasonId))
                 return null;
 
-            PathToSeriesIdDictionary[path] = seriesId;
-            return seriesId;
+            PathToSeasonIdDictionary[path] = seasonId;
+            return seasonId;
         }
 
         var partialPath = StripMediaFolder(path);
         Logger.LogDebug("Looking for shoko series matching path {Path}", partialPath);
-        var result = await APIClient.GetSeriesPathEndsWith(partialPath).ConfigureAwait(false);
+        var result = await ApiClient.GetShokoSeriesForDirectory(partialPath).ConfigureAwait(false);
         Logger.LogTrace("Found {Count} matches for path {Path}", result.Count, partialPath);
 
         // Return the first match where the series unique paths partially match
         // the input path.
         foreach (var series in result) {
-            seriesId  = series.IDs.Shoko.ToString();
-            var (primaryId, extraIds) = await GetSeriesIdsForSeason(seriesId);
-            var pathSet = await GetPathSetForSeries(primaryId, extraIds).ConfigureAwait(false);
+            if (await GetSeasonInfosForShokoSeries(series.Id).ConfigureAwait(false) is not { Count: > 0 } seasonInfoList)
+                continue;
+
+            var seasonInfo = seasonInfoList[0];
+            var pathSet = await GetPathSetForSeries(series.Id).ConfigureAwait(false);
             foreach (var uniquePath in pathSet) {
                 // Remove the trailing slash before matching.
                 if (!uniquePath[..^1].EndsWith(partialPath))
-                    continue;
+                    goto continueForeach;
 
-                PathToSeriesIdDictionary[path] = primaryId;
+                PathToSeasonIdDictionary[path] = seasonInfo.Id;
             }
 
-            return primaryId;
+            return seasonInfo.Id;
+            continueForeach: continue;
         }
 
         // In the edge case for series with only files with multiple
         // cross-references we just return the first match.
-        return result.FirstOrDefault()?.IDs.Shoko.ToString();
+        if (result.Count > 0) {
+            if (await GetSeasonInfosForShokoSeries(result[0].Id).ConfigureAwait(false) is not { Count: > 0 } seasonInfoList)
+                return null;
+
+            return seasonInfoList[0].Id;
+        }
+
+        return null;
     }
 
     #endregion
+
     #region Show Info
 
-    public async Task<ShowInfo?> GetShowInfoByPath(string path)
-    {
-        if (!PathToSeriesIdDictionary.TryGetValue(path, out var seriesId)) {
-            seriesId = await GetSeriesIdForPath(path).ConfigureAwait(false);
-            if (string.IsNullOrEmpty(seriesId))
+    public async Task<ShowInfo?> GetShowInfoByPath(string path) {
+        if (!PathToSeasonIdDictionary.TryGetValue(path, out var seasonId)) {
+            seasonId = await GetSeasonIdForPath(path).ConfigureAwait(false);
+            if (string.IsNullOrEmpty(seasonId))
                 return null;
         }
 
-        return await GetShowInfoForSeries(seriesId).ConfigureAwait(false);
+        return await GetShowInfoBySeasonId(seasonId).ConfigureAwait(false);
     }
 
-    public async Task<ShowInfo?> GetShowInfoForEpisode(string episodeId)
-    {
-        if (string.IsNullOrEmpty(episodeId))
-            return null;
+    public async Task<IReadOnlyList<ShowInfo>> GetShowInfosForShokoSeries(string seriesId) {
+        if (await GetSeasonInfosForShokoSeries(seriesId).ConfigureAwait(false) is not { Count: > 0 } seasonInfoList)
+            return [];
 
-        if (EpisodeIdToSeriesIdDictionary.TryGetValue(episodeId, out var seriesId))
-            return await GetShowInfoForSeries(seriesId).ConfigureAwait(false);
-
-        var series = await APIClient.GetSeriesFromEpisode(episodeId).ConfigureAwait(false);
-        if (series == null)
-            return null;
-
-        seriesId = series.IDs.Shoko.ToString();
-        return await GetShowInfoForSeries(seriesId).ConfigureAwait(false);
+        var showInfoList = await Task.WhenAll(seasonInfoList.Select(seasonInfo => GetShowInfoBySeasonId(seasonInfo.Id))).ConfigureAwait(false);
+        return showInfoList
+            .OfType<ShowInfo>()
+            .DistinctBy(showInfo => showInfo.Id)
+            .ToList();
     }
 
-    public async Task<ShowInfo?> GetShowInfoForSeries(string seriesId)
-    {
-        if (string.IsNullOrEmpty(seriesId))
+    public async Task<ShowInfo?> GetShowInfoBySeasonId(string seasonId) {
+        if (string.IsNullOrEmpty(seasonId))
             return null;
 
-        var group = await APIClient.GetGroupFromSeries(seriesId).ConfigureAwait(false);
-        if (group == null)
-            return null;
+        if (seasonId[0] is IdPrefix.TmdbShow) {
+            if (await ApiClient.GetTmdbShowForSeason(seasonId[1..]).ConfigureAwait(false) is not { } tmdbShow)
+                return null;
 
-        var seasonInfo = await GetSeasonInfoForSeries(seriesId).ConfigureAwait(false);
+            return await CreateShowInfo(tmdbShow).ConfigureAwait(false);
+        }
+        else if (seasonId[0] is IdPrefix.TmdbMovie) {
+            if (await ApiClient.GetTmdbMovie(seasonId[1..]).ConfigureAwait(false) is not { } tmdbMovie)
+                return null;
+
+            if (!tmdbMovie.CollectionId.HasValue)
+                return await CreateShowInfoForTmdbMovie(tmdbMovie).ConfigureAwait(false);
+
+            if (await ApiClient.GetTmdbMovieCollection(tmdbMovie.CollectionId.Value.ToString()).ConfigureAwait(false) is not { } tmdbMovieCollection)
+                return null;
+
+            return await CreateShowInfoForTmdbMovieCollection(tmdbMovieCollection).ConfigureAwait(false);
+        }
+        else if (seasonId[0] is IdPrefix.TmdbMovieCollection) {
+            if (await ApiClient.GetTmdbMovieCollection(seasonId[1..]).ConfigureAwait(false) is not { } tmdbMovieCollection)
+                return null;
+
+            return await CreateShowInfoForTmdbMovieCollection(tmdbMovieCollection, true).ConfigureAwait(false);
+        }
+
+        var seasonInfo = await GetSeasonInfo(seasonId).ConfigureAwait(false);
         if (seasonInfo == null)
             return null;
 
         // Create a standalone group if grouping is disabled and/or for each series in a group with sub-groups.
-        if (!Plugin.Instance.Configuration.UseGroupsForShows || group.Sizes.SubGroups > 0)
-            return GetOrCreateShowInfoForSeasonInfo(seasonInfo);
+        var seriesConfig = await GetSeriesConfiguration(seasonId).ConfigureAwait(false);
+        if (seriesConfig.StructureType is not SeriesStructureType.Shoko_Groups)
+            return CreateShowInfoForShokoSeries(seasonInfo);
+
+        var group = await ApiClient.GetShokoGroupForShokoSeries(seasonId).ConfigureAwait(false);
+        if (group == null)
+            return null;
+
+        // Create a standalone group if grouping is disabled and/or for each series in a group with sub-groups.
+        if (group.Sizes.SubGroups > 0)
+            return CreateShowInfoForShokoSeries(seasonInfo);
 
         // If we found a movie, and we're assigning movies as stand-alone shows, and we didn't create a stand-alone show
-        // above, then attach the stand-alone show to the parent group of the group that might other
+        // above, then attach the stand-alone show to the parent group of the group that might otherwise
+        // contain the movie.
         if (seasonInfo.Type == SeriesType.Movie && Plugin.Instance.Configuration.SeparateMovies)
-            return GetOrCreateShowInfoForSeasonInfo(seasonInfo, group.Size > 0 ? group.IDs.ParentGroup?.ToString() : null);
+            return CreateShowInfoForShokoSeries(seasonInfo, group.Size > 0 ? group.IDs.ParentGroup?.ToString() : null);
 
-        return await CreateShowInfoForGroup(group, group.IDs.Shoko.ToString()).ConfigureAwait(false);
+        return await CreateShowInfoForShokoGroup(group, group.Id).ConfigureAwait(false);
     }
 
-    private Task<ShowInfo?> CreateShowInfoForGroup(Group group, string groupId)
+    private Task<ShowInfo> CreateShowInfo(TmdbShow tmdbShow)
+        => DataCache.GetOrCreateAsync(
+            $"show:by-tmdb-show-id:{tmdbShow.Id}",
+            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,Show={ShowId})", showInfo?.DefaultTitle, tmdbShow.Id),
+            async () => {
+                Logger.LogTrace("Creating info object for show {ShowName}. (Source=TMDB,Show={ShowId})", tmdbShow.Title, tmdbShow.Id);
+                var seasonsInShow = await ApiClient.GetTmdbSeasonsInTmdbShow(tmdbShow.Id.ToString()).ConfigureAwait(false);
+                var seasonList = (await Task.WhenAll(seasonsInShow.Select(season => CreateSeasonInfo(season, tmdbShow))).ConfigureAwait(false))
+                    .ToList();
+                var showInfo = new ShowInfo(ApiClient, tmdbShow, seasonList);
+
+                foreach (var seasonInfo in seasonList)
+                    SeasonIdToShowIdDictionary[seasonInfo.Id] = showInfo.Id;
+
+                return showInfo;
+            }
+    );
+
+    private Task<ShowInfo> CreateShowInfoForTmdbMovieCollection(TmdbMovieCollection tmdbMovieCollection, bool singleSeasonMode = false)
+        => DataCache.GetOrCreateAsync(
+            $"show:by-tmdb-movie-collection-id:{tmdbMovieCollection.Id}:{singleSeasonMode}",
+            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,MovieCollection={MovieCollectionId},SingleSeasonMode={SingleSeasonMode})", showInfo?.DefaultTitle, tmdbMovieCollection.Id, singleSeasonMode),
+            async () => {
+                Logger.LogTrace("Creating info object for show {ShowName}. (Source=TMDB,MovieCollection={MovieCollectionId},SingleSeasonMode={SingleSeasonMode})", tmdbMovieCollection.Title, tmdbMovieCollection.Id, singleSeasonMode);
+
+                var moviesInCollection = await ApiClient.GetTmdbMoviesInMovieCollection(tmdbMovieCollection.Id.ToString()).ConfigureAwait(false);
+                var seasonList = singleSeasonMode
+                    ? [await CreateSeasonInfo(tmdbMovieCollection).ConfigureAwait(false)]
+                    : await Task.WhenAll(moviesInCollection.Select(CreateSeasonInfo)).ConfigureAwait(false);
+                var showInfo = new ShowInfo(ApiClient, tmdbMovieCollection, seasonList);
+
+                foreach (var seasonInfo in seasonList)
+                    SeasonIdToShowIdDictionary[seasonInfo.Id] = showInfo.Id;
+
+                return showInfo;
+            }
+    );
+
+    private Task<ShowInfo> CreateShowInfoForTmdbMovie(TmdbMovie tmdbMovie)
+        => DataCache.GetOrCreateAsync(
+            $"show:by-tmdb-movie-id:{tmdbMovie.Id}",
+            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,Movie={MovieId})", showInfo?.DefaultTitle, tmdbMovie.Id),
+            async () => {
+                Logger.LogTrace("Creating info object for show {ShowName}. (Source=TMDB,Movie={MovieId})", tmdbMovie.Title, tmdbMovie.Id);
+
+                var seasonInfo = await CreateSeasonInfo(tmdbMovie).ConfigureAwait(false);
+                var showInfo = new ShowInfo(ApiClient, tmdbMovie, seasonInfo);
+
+                SeasonIdToShowIdDictionary[seasonInfo.Id] = showInfo.Id;
+
+                return showInfo;
+            }
+    );
+
+    private Task<ShowInfo?> CreateShowInfoForShokoGroup(ShokoGroup group, string groupId)
         => DataCache.GetOrCreateAsync(
             $"show:by-group-id:{groupId}",
-            (showInfo) => Logger.LogTrace("Reusing info object for show {GroupName}. (Group={GroupId})", showInfo?.Name, groupId),
+            (showInfo) => Logger.LogTrace("Reusing info object for show {GroupName}. (Source=Shoko,Group={GroupId})", showInfo?.DefaultTitle, groupId),
             async () => {
-                Logger.LogTrace("Creating info object for show {GroupName}. (Group={GroupId})", group.Name, groupId);
+                Logger.LogTrace("Creating info object for show {GroupName}. (Source=Shoko,Group={GroupId})", group.Name, groupId);
 
-                var seriesInGroup = await APIClient.GetSeriesInGroup(groupId).ConfigureAwait(false);
+                var seriesInGroup = await ApiClient.GetShokoSeriesInGroup(groupId).ConfigureAwait(false);
                 var seasonList = (await Task.WhenAll(seriesInGroup.Select(CreateSeasonInfo)).ConfigureAwait(false))
                     .DistinctBy(seasonInfo => seasonInfo.Id)
                     .ToList();
-
                 var length = seasonList.Count;
-                if (Plugin.Instance.Configuration.SeparateMovies) {
-                    seasonList = seasonList.Where(s => s.Type != SeriesType.Movie).ToList();
 
-                    // Return early if no series matched the filter or if the list was empty.
-                    if (seasonList.Count == 0) {
-                        Logger.LogWarning("Creating an empty show info for filter! (Group={GroupId})", groupId);
+                seasonList = seasonList
+                    .Where(s => s.StructureType is SeriesStructureType.Shoko_Groups)
+                    .ToList();
 
-                        return null;
+                if (Plugin.Instance.Configuration.SeparateMovies)
+                    seasonList = seasonList.Where(s => s.Type is not SeriesType.Movie).ToList();
+
+                // Return early if no series matched the filter or if the list was empty.
+                if (seasonList.Count == 0) {
+                    Logger.LogWarning("Creating an empty show info for filter! (Source=Shoko,Group={GroupId})", groupId);
+
+                    return null;
+                }
+
+                var tmdbEntities = new List<ITmdbEntity>();
+                foreach (var seasonInfo in seasonList) {
+                    if (!string.IsNullOrEmpty(seasonInfo.TmdbSeasonId)) {
+                        Logger.LogTrace("Fetching TMDB show for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.DefaultTitle, seasonInfo.Id, seasonInfo.TmdbSeasonId);
+
+                        if (await ApiClient.GetTmdbShowForSeason(seasonInfo.TmdbSeasonId).ConfigureAwait(false) is not { } tmdbShow) {
+                            Logger.LogTrace("Failed to fetch TMDB show for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.DefaultTitle, seasonInfo.Id, seasonInfo.TmdbSeasonId);
+                            continue;
+                        }
+
+                        tmdbEntities.Add(tmdbShow);
+                    }
+
+                    if (!string.IsNullOrEmpty(seasonInfo.TmdbMovieCollectionId)) {
+                        Logger.LogTrace("Fetching TMDB movie collection for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.DefaultTitle, seasonInfo.Id, seasonInfo.TmdbMovieCollectionId);
+
+                        if (await ApiClient.GetTmdbMovieCollection(seasonInfo.TmdbMovieCollectionId).ConfigureAwait(false) is not { } tmdbMovieCollection) {
+                            Logger.LogTrace("Failed to fetch TMDB movie collection for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.DefaultTitle, seasonInfo.Id, seasonInfo.TmdbMovieCollectionId);
+                            continue;
+                        }
+
+                        tmdbEntities.Add(tmdbMovieCollection);
                     }
                 }
+                var tmdbEntity = tmdbEntities
+                    .GroupBy(x => (x.Kind, x.Id))
+                    .OrderByDescending(x => x.Count())
+                    .Select(x => x.First())
+                    .FirstOrDefault();
+                if (tmdbEntity is not null)
+                    Logger.LogTrace("Found TMDB show for group {GroupName}. (Group={GroupId},Show={ShowId})", group.Name, groupId, tmdbEntity.Id);
 
-                var showInfo = new ShowInfo(group, seasonList, Logger, length != seasonList.Count);
+                var showInfo = new ShowInfo(ApiClient, Logger, group, seasonList, tmdbEntity, length != seasonList.Count);
 
-                foreach (var seasonInfo in seasonList) {
-                    SeriesIdToDefaultSeriesIdDictionary[seasonInfo.Id] = showInfo.Id;
-                    if (!string.IsNullOrEmpty(showInfo.CollectionId))
-                        SeriesIdToCollectionIdDictionary[seasonInfo.Id] = showInfo.CollectionId;
-                }
+                foreach (var seasonInfo in seasonList)
+                    SeasonIdToShowIdDictionary[seasonInfo.Id] = showInfo.Id;
 
                 return showInfo;
             }
         );
 
-
-    private ShowInfo GetOrCreateShowInfoForSeasonInfo(SeasonInfo seasonInfo, string? collectionId = null)
+    private ShowInfo CreateShowInfoForShokoSeries(SeasonInfo seasonInfo, string? collectionId = null)
         => DataCache.GetOrCreate(
             $"show:by-series-id:{seasonInfo.Id}",
-            (showInfo) => Logger.LogTrace("Reusing info object for show {GroupName}. (Series={SeriesId})", showInfo.Name, seasonInfo.Id),
+            (showInfo) => Logger.LogTrace("Reusing info object for show {GroupName}. (Source=Shoko,Series={SeriesId})", showInfo.DefaultTitle, seasonInfo.Id),
             () => {
-                Logger.LogTrace("Creating info object for show {SeriesName}. (Series={SeriesId})", seasonInfo.Shoko.Name, seasonInfo.Id);
+                Logger.LogTrace("Creating info object for show {SeriesName}. (Source=Shoko,Series={SeriesId})", seasonInfo.DefaultTitle, seasonInfo.Id);
 
-                var showInfo = new ShowInfo(seasonInfo, collectionId);
-                SeriesIdToDefaultSeriesIdDictionary[seasonInfo.Id] = showInfo.Id;
-                if (!string.IsNullOrEmpty(showInfo.CollectionId))
-                    SeriesIdToCollectionIdDictionary[seasonInfo.Id] = showInfo.CollectionId;
+                var showInfo = new ShowInfo(ApiClient, seasonInfo, collectionId);
+
+                SeasonIdToShowIdDictionary[seasonInfo.Id] = showInfo.Id;
+
                 return showInfo;
             }
         );
 
     #endregion
+
+    #region Show Id Helper
+
+    public bool TryGetShowIdForSeasonId(string seasonId, [NotNullWhen(true)] out string? showId) {
+        if (string.IsNullOrEmpty(seasonId)) {
+            showId = null;
+            return false;
+        }
+
+        // Fast path; using the lookup.
+        if (SeasonIdToShowIdDictionary.TryGetValue(seasonId, out showId))
+            return true;
+
+        // Slow path; getting the show from cache or remote and finding the show id.
+        Logger.LogDebug("Trying to find the show id for season using the slow path. (Season={SeasonId})", seasonId);
+        if (GetShowInfoBySeasonId(seasonId).ConfigureAwait(false).GetAwaiter().GetResult() is { } showInfo) {
+            showId = showInfo.Id;
+            return true;
+        }
+
+        showId = null;
+        return false;
+    }
+
+    #endregion
+
     #region Collection Info
 
-    public async Task<CollectionInfo?> GetCollectionInfoForGroup(string groupId)
-    {
-        if (string.IsNullOrEmpty(groupId))
+    public async Task<CollectionInfo?> GetCollectionInfo(string collectionId) {
+        if (string.IsNullOrEmpty(collectionId))
             return null;
 
-        if (DataCache.TryGetValue<CollectionInfo>($"collection:by-group-id:{groupId}", out var collectionInfo)) {
-            Logger.LogTrace("Reusing info object for collection {GroupName}. (Group={GroupId})", collectionInfo.Name, groupId);
+        if (DataCache.TryGetValue<CollectionInfo>($"collection:{collectionId}", out var collectionInfo)) {
+            Logger.LogTrace("Reusing info object for collection {GroupName}. (Group={GroupId})", collectionInfo.DefaultTitle, collectionId);
             return collectionInfo;
         }
 
-        var group = await APIClient.GetGroup(groupId).ConfigureAwait(false);
-        return await CreateCollectionInfo(group, groupId).ConfigureAwait(false);
-    }
-
-    public async Task<CollectionInfo?> GetCollectionInfoForSeries(string seriesId)
-    {
-        if (string.IsNullOrEmpty(seriesId))
+        if (await ApiClient.GetShokoGroup(collectionId).ConfigureAwait(false) is not { } group)
             return null;
 
-        if (SeriesIdToCollectionIdDictionary.TryGetValue(seriesId, out var groupId)) {
-            if (string.IsNullOrEmpty(groupId))
-                return null;
-
-            return await GetCollectionInfoForGroup(groupId).ConfigureAwait(false);
-        }
-
-        var group = await APIClient.GetGroupFromSeries(seriesId).ConfigureAwait(false);
-        if (group == null)
-            return null;
-
-        return await CreateCollectionInfo(group, group.IDs.Shoko.ToString()).ConfigureAwait(false);
+        return await CreateCollectionInfo(group, collectionId).ConfigureAwait(false);
     }
 
-    private Task<CollectionInfo> CreateCollectionInfo(Group group, string groupId)
+    private Task<CollectionInfo> CreateCollectionInfo(ShokoGroup group, string groupId)
         => DataCache.GetOrCreateAsync(
-            $"collection:by-group-id:{groupId}",
-            (collectionInfo) => Logger.LogTrace("Reusing info object for collection {GroupName}. (Group={GroupId})", collectionInfo.Name, groupId),
+            $"collection:{groupId}",
+            (collectionInfo) => Logger.LogTrace("Reusing info object for collection {GroupName}. (Group={GroupId})", collectionInfo.DefaultTitle, groupId),
             async () => {
                 Logger.LogTrace("Creating info object for collection {GroupName}. (Group={GroupId})", group.Name, groupId);
                 Logger.LogTrace("Fetching show info objects for collection {GroupName}. (Group={GroupId})", group.Name, groupId);
@@ -1327,38 +1812,50 @@ public class ShokoAPIManager : IDisposable
                 var showGroupIds = new HashSet<string>();
                 var collectionIds = new HashSet<string>();
                 var showDict = new Dictionary<string, ShowInfo>();
-                foreach (var series in await APIClient.GetSeriesInGroup(groupId, recursive: true).ConfigureAwait(false)) {
-                    var showInfo = await GetShowInfoForSeries(series.IDs.Shoko.ToString()).ConfigureAwait(false);
-                    if (showInfo == null)
-                        continue;
+                foreach (var series in await ApiClient.GetShokoSeriesInGroup(groupId, recursive: true).ConfigureAwait(false)) {
+                    foreach (var showInfo in await GetShowInfosForShokoSeries(series.Id).ConfigureAwait(false)) {
+                        if (showInfo == null)
+                            continue;
 
-                    if (!string.IsNullOrEmpty(showInfo.GroupId))
-                        showGroupIds.Add(showInfo.GroupId);
+                        if (!string.IsNullOrEmpty(showInfo.ShokoGroupId))
+                            showGroupIds.Add(showInfo.ShokoGroupId);
 
-                    if (string.IsNullOrEmpty(showInfo.CollectionId))
-                        continue;
+                        if (string.IsNullOrEmpty(showInfo.CollectionId))
+                            continue;
 
-                    collectionIds.Add(showInfo.CollectionId);
-                    if (showInfo.CollectionId == groupId)
-                        showDict.TryAdd(showInfo.Id, showInfo);
+                        collectionIds.Add(showInfo.CollectionId);
+                        if (showInfo.CollectionId == groupId)
+                            showDict.TryAdd(showInfo.Id, showInfo);
+                    }
                 }
 
                 var groupList = new List<CollectionInfo>();
                 if (group.Sizes.SubGroups > 0) {
                     Logger.LogTrace("Fetching sub-collection info objects for collection {GroupName}. (Group={GroupId})", group.Name, groupId);
-                    foreach (var subGroup in await APIClient.GetGroupsInGroup(groupId).ConfigureAwait(false)) {
-                        if (showGroupIds.Contains(subGroup.IDs.Shoko.ToString()) && !collectionIds.Contains(subGroup.IDs.Shoko.ToString()))
+                    foreach (var subGroup in await ApiClient.GetShokoGroupsInShokoGroup(groupId).ConfigureAwait(false)) {
+                        if (showGroupIds.Contains(subGroup.Id) && !collectionIds.Contains(subGroup.Id))
                             continue;
-                        var subCollectionInfo = await CreateCollectionInfo(subGroup, subGroup.IDs.Shoko.ToString()).ConfigureAwait(false);
-                        if (subCollectionInfo.Shoko.Sizes.Files > 0)
+
+                        var subCollectionInfo = await CreateCollectionInfo(subGroup, subGroup.Id).ConfigureAwait(false);
+                        if (subCollectionInfo.FileCount > 0)
                             groupList.Add(subCollectionInfo);
                     }
                 }
 
-                Logger.LogTrace("Finalizing info object for collection {GroupName}. (Group={GroupId})", group.Name, groupId);
+                var showInfoList = await GetShowInfosForShokoSeries(group.IDs.MainSeries.ToString()).ConfigureAwait(false);
+                var mainShowId = showInfoList is { Count: > 0 } ? showInfoList[0].Id : null;
                 var showList = showDict.Values.ToList();
-                var collectionInfo = new CollectionInfo(group, showList, groupList);
-                return collectionInfo;
+                if (
+                    await ApiClient.GetShokoSeries(group.IDs.MainSeries.ToString()).ConfigureAwait(false) is { } mainSeries &&
+                    group.Name == mainSeries.Name &&
+                    group.Description == mainSeries.AniDB.Description
+                ) {
+                    Logger.LogTrace("Finalizing info object for collection {GroupName}. (MainSeries={MainSeriesId},Group={GroupId})", group.Name, mainSeries.IDs.Shoko.ToString(), groupId);
+                    return new CollectionInfo(group, mainSeries, mainShowId, showList, groupList);
+                }
+
+                Logger.LogTrace("Finalizing info object for collection {GroupName}. (Group={GroupId})", group.Name, groupId);
+                return new CollectionInfo(group, mainShowId, showList, groupList);
             }
         );
 

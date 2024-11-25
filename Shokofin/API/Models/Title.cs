@@ -2,8 +2,7 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models;
 
-public class Title
-{
+public class Title {
     /// <summary>
     /// The title.
     /// </summary>
@@ -41,8 +40,7 @@ public class Title
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum TitleType
-{
+public enum TitleType {
     None = 0,
     Main = 1,
     Official = 2,

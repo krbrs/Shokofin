@@ -11,12 +11,7 @@ namespace Shokofin.Tasks;
 /// <summary>
 /// Reconstruct all Shoko collections outside a Library Scan. For debugging and troubleshooting. DO NOT RUN THIS TASK WHILE A LIBRARY SCAN IS RUNNING.
 /// </summary>
-public class ReconstructCollectionsTask(CollectionManager collectionManager, LibraryScanWatcher libraryScanWatcher) : IScheduledTask, IConfigurableScheduledTask
-{
-    private readonly CollectionManager _collectionManager = collectionManager;
-
-    private readonly LibraryScanWatcher _libraryScanWatcher = libraryScanWatcher;
-
+public class ReconstructCollectionsTask(CollectionManager _collectionManager, LibraryScanWatcher _libraryScanWatcher) : IScheduledTask, IConfigurableScheduledTask {
     /// <inheritdoc />
     public string Name => "Reconstruct Collections";
 
@@ -43,13 +38,12 @@ public class ReconstructCollectionsTask(CollectionManager collectionManager, Lib
         => [];
 
     /// <inheritdoc />
-    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
-    {
+    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken) {
         if (_libraryScanWatcher.IsScanRunning)
             return;
 
         using (Plugin.Instance.Tracker.Enter("Reconstruct Collections Task")) {
-            await _collectionManager.ReconstructCollections(progress, cancellationToken);
+            await _collectionManager.ReconstructCollections(progress, cancellationToken).ConfigureAwait(false);
         }
     }
 }

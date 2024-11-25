@@ -20,22 +20,10 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomMovieProvider : IHasItemChangeMonitor, ICustomMetadataProvider<Movie>
-{
+public class CustomMovieProvider(ILibraryManager _libraryManager, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Movie> {
     public string Name => Plugin.MetadataProviderName;
 
-    private readonly ILibraryManager _libraryManager;
-
-    private readonly MergeVersionsManager _mergeVersionsManager;
-
-    public CustomMovieProvider(ILibraryManager libraryManager, MergeVersionsManager mergeVersionsManager)
-    {
-        _libraryManager = libraryManager;
-        _mergeVersionsManager = mergeVersionsManager;
-    }
-
-    public bool HasChanged(BaseItem item, IDirectoryService directoryService)
-    {
+    public bool HasChanged(BaseItem item, IDirectoryService directoryService) {
         // We're only interested in movies.
         if (item is not Movie movie)
             return false;
@@ -47,11 +35,10 @@ public class CustomMovieProvider : IHasItemChangeMonitor, ICustomMetadataProvide
         return true;
     }
 
-    public async Task<ItemUpdateType> FetchAsync(Movie movie, MetadataRefreshOptions options, CancellationToken cancellationToken)
-    {
+    public async Task<ItemUpdateType> FetchAsync(Movie movie, MetadataRefreshOptions options, CancellationToken cancellationToken) {
         var itemUpdated = ItemUpdateType.None;
         if (movie.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId) && Plugin.Instance.Configuration.AutoMergeVersions && !_libraryManager.IsScanRunning && options.MetadataRefreshMode != MetadataRefreshMode.ValidationOnly) {
-            await _mergeVersionsManager.SplitAndMergeMoviesByEpisodeId(episodeId);
+            await _mergeVersionsManager.SplitAndMergeMoviesByEpisodeId(episodeId).ConfigureAwait(false);
             itemUpdated |= ItemUpdateType.MetadataEdit;
         }
 

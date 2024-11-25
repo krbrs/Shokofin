@@ -5,8 +5,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Shokofin.Resolvers.Models;
 
-public class LinkGenerationResult
-{
+public class LinkGenerationResult {
     private DateTime CreatedAt { get; init; } = DateTime.Now;
 
     public ConcurrentBag<string> Paths { get; init; } = [];
@@ -63,8 +62,7 @@ public class LinkGenerationResult
 
     public int RemovedNfos { get; set; }
 
-    public void Print(ILogger logger, string path)
-    {
+    public void Print(ILogger logger, string path) {
         var timeSpent = DateTime.Now - CreatedAt;
         logger.LogInformation(
             "Created {CreatedTotal} ({CreatedMedia},{CreatedSubtitles},{CreatedTrickplay}), fixed {FixedTotal} ({FixedMedia},{FixedSubtitles},{FixedTrickplay}), skipped {SkippedTotal} ({SkippedMedia},{SkippedSubtitles},{SkippedTrickplay}), and removed {RemovedTotal} ({RemovedMedia},{RemovedSubtitles},{RemovedTrickplay},{RemovedNFO}) entries in folder at {Path} in {TimeSpan} (Total={Total})",
@@ -91,8 +89,7 @@ public class LinkGenerationResult
         );
     }
 
-    public static LinkGenerationResult operator +(LinkGenerationResult a, LinkGenerationResult b)
-    {
+    public static LinkGenerationResult operator +(LinkGenerationResult a, LinkGenerationResult b) {
         // Re-use the same instance so the parallel execution will share the same bag.
         var paths = a.Paths;
         foreach (var path in b.Paths)
@@ -102,8 +99,7 @@ public class LinkGenerationResult
         foreach (var path in b.RemovedPaths)
             removedPaths.Add(path);
 
-        return new()
-        {
+        return new() {
             CreatedAt = a.CreatedAt,
             Paths = paths,
             RemovedPaths = removedPaths,

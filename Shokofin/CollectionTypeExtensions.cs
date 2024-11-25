@@ -4,11 +4,9 @@ using MediaBrowser.Model.Entities;
 
 namespace Shokofin;
 
-public static class CollectionTypeExtensions
-{
+public static class CollectionTypeExtensions {
     public static CollectionType? ConvertToCollectionType(this CollectionTypeOptions? collectionType)
-        => collectionType switch
-        {
+        => collectionType switch {
             CollectionTypeOptions.movies => CollectionType.movies,
             CollectionTypeOptions.tvshows => CollectionType.tvshows,
             CollectionTypeOptions.music => CollectionType.music,

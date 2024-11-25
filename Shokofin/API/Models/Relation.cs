@@ -5,8 +5,7 @@ namespace Shokofin.API.Models;
 /// <summary>
 /// Describes relations between two series entries.
 /// </summary>
-public class Relation
-{
+public class Relation {
     /// <summary>
     /// The IDs of the series.
     /// </summary>
@@ -30,15 +29,14 @@ public class Relation
     /// <summary>
     /// Relation IDs.
     /// </summary>
-    public class RelationIDs
-    {
+    public class RelationIDs {
         /// <summary>
-        /// The ID of the <see cref="Series"/> entry.
+        /// The ID of the <see cref="Shoko.ShokoSeries"/> entry.
         /// </summary>
         public int? Shoko { get; set; }
 
         /// <summary>
-        /// The ID of the <see cref="Series.AniDB"/> entry.
+        /// The ID of the <see cref="AniDB.AnidbAnime"/> entry.
         /// </summary>
         public int? AniDB { get; set; }
     }
@@ -48,8 +46,7 @@ public class Relation
 /// Explains how the main entry relates to the related entry.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum RelationType
-{
+public enum RelationType {
     /// <summary>
     /// The relation between the entries cannot be explained in simple terms.
     /// </summary>
@@ -109,17 +106,14 @@ public enum RelationType
 /// <summary>
 /// Extensions related to relations
 /// </summary>
-public static class RelationExtensions
-{
+public static class RelationExtensions {
     /// <summary>
     /// Reverse the relation.
     /// </summary>
     /// <param name="type">The relation to reverse.</param>
     /// <returns>The reversed relation.</returns>
     public static RelationType Reverse(this RelationType type)
-    {
-        return type switch
-        {
+        => type switch {
             RelationType.Prequel => RelationType.Sequel,
             RelationType.Sequel => RelationType.Prequel,
             RelationType.MainStory => RelationType.SideStory,
@@ -128,5 +122,4 @@ public static class RelationExtensions
             RelationType.Summary => RelationType.FullStory,
             _ => type
         };
-    }
 }

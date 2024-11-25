@@ -6,21 +6,12 @@ using Shokofin.Configuration;
 
 namespace Shokofin.Resolvers.Models;
 
-public class ShokoWatcher
-{
-    public Folder MediaFolder;
+public class ShokoWatcher(Folder mediaFolder, MediaFolderConfiguration configuration, FileSystemWatcher watcher, IDisposable lease) {
+    public Folder MediaFolder = mediaFolder;
 
-    public MediaFolderConfiguration Configuration;
+    public MediaFolderConfiguration Configuration = configuration;
 
-    public FileSystemWatcher Watcher;
+    public FileSystemWatcher Watcher = watcher;
 
-    public IDisposable SubmitterLease;
-
-    public ShokoWatcher(Folder mediaFolder, MediaFolderConfiguration configuration, FileSystemWatcher watcher, IDisposable lease)
-    {
-        MediaFolder = mediaFolder;
-        Configuration = configuration;
-        Watcher = watcher;
-        SubmitterLease = lease;
-    }
+    public IDisposable SubmitterLease = lease;
 }

@@ -4,9 +4,10 @@ using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using Jellyfin.Data.Enums;
 using MediaBrowser.Controller.Entities;
-using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Entities.Movies;
+using MediaBrowser.Controller.Entities.TV;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Providers;
@@ -16,33 +17,12 @@ using Shokofin.ExternalIds;
 
 namespace Shokofin.Providers;
 
-public class ImageProvider : IRemoteImageProvider, IHasOrder
-{
+public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageProvider> _logger, ShokoApiManager _apiManager, IIdLookup _lookup) : IRemoteImageProvider, IHasOrder {
     public string Name => Plugin.MetadataProviderName;
 
     public int Order => 0;
 
-    private readonly IHttpClientFactory HttpClientFactory;
-
-    private readonly ILogger<ImageProvider> Logger;
-
-    private readonly ShokoAPIClient ApiClient;
-
-    private readonly ShokoAPIManager ApiManager;
-
-    private readonly IIdLookup Lookup;
-
-    public ImageProvider(IHttpClientFactory httpClientFactory, ILogger<ImageProvider> logger, ShokoAPIClient apiClient, ShokoAPIManager apiManager, IIdLookup lookup)
-    {
-        HttpClientFactory = httpClientFactory;
-        Logger = logger;
-        ApiClient = apiClient;
-        ApiManager = apiManager;
-        Lookup = lookup;
-    }
-
-    public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken)
-    {
+    public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken) {
         var list = new List<RemoteImageInfo>();
         var metadataLanguage = item.GetPreferredMetadataLanguage();
         var baseKind = item.GetBaseItemKind();
@@ -51,99 +31,86 @@ public class ImageProvider : IRemoteImageProvider, IHasOrder
         try {
             switch (item) {
                 case Episode episode: {
-                    if (Lookup.TryGetEpisodeIdFor(episode, out var episodeId)) {
-                        var episodeImages = await ApiClient.GetEpisodeImages(episodeId);
-                        if (episodeImages is not null)
-                            AddImagesForEpisode(ref list, episodeImages, metadataLanguage, sortPreferred);
-                        Logger.LogInformation("Getting {Count} images for episode {EpisodeName} (Episode={EpisodeId},Language={MetadataLanguage})", list.Count, episode.Name, episodeId, metadataLanguage);
-                    }
+                    var (fileInfo, _, _) = await _apiManager.GetFileInfoByPath(episode.Path).ConfigureAwait(false);
+                    if (fileInfo is not { EpisodeList.Count: > 0 })
+                        break;
+
+                    var episodeInfo = fileInfo.EpisodeList[0].Episode;
+                    if (await episodeInfo.GetImages(cancellationToken).ConfigureAwait(false) is { } episodeImages)
+                        AddImagesForEpisode(ref list, episodeImages, metadataLanguage, sortPreferred);
+
+                    _logger.LogInformation("Getting {Count} images for episode {EpisodeName} (Episode={EpisodeId},Language={MetadataLanguage})", list.Count, episode.Name, episodeInfo.Id, metadataLanguage);
                     break;
                 }
                 case Series series: {
-                    if (Lookup.TryGetSeriesIdFor(series, out var seriesId)) {
-                        var seriesImages = await ApiClient.GetSeriesImages(seriesId);
-                        if (seriesImages is not null) {
-                            AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
+                    if (_lookup.TryGetSeasonIdFor(series, out var seasonId)) {
+                        if (await _apiManager.GetShowInfoBySeasonId(seasonId).ConfigureAwait(false) is { } showInfo) {
+                            var images = await showInfo.GetImages(cancellationToken).ConfigureAwait(false);
+                            AddImagesForSeries(ref list, images, metadataLanguage, sortPreferred);
                             sortPreferred = false;
-                        }
-                        // Also attach any images linked to the "seasons" (AKA series within the group).
-                        var showInfo = await ApiManager.GetShowInfoForSeries(seriesId);
-                        if (showInfo is not null && !showInfo.IsStandalone) {
-                            foreach (var seasonInfo in showInfo.SeasonList) {
-                                seriesImages = await ApiClient.GetSeriesImages(seasonInfo.Id);
-                                if (seriesImages is not null) {
-                                    AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
-                                    sortPreferred = false;
-                                }
-                                if (seasonInfo?.ExtraIds is not null) {
-                                    foreach (var extraId in seasonInfo.ExtraIds) {
-                                        seriesImages = await ApiClient.GetSeriesImages(extraId);
-                                        if (seriesImages is not null) {
-                                            AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
-                                            sortPreferred = false;
-                                        }
+
+                            // Also attach any images linked to the "seasons" if it's not a standalone series.
+                            if (!showInfo.IsStandalone) {
+                                foreach (var seasonInfo in showInfo.SeasonList) {
+                                    var seriesImages = await seasonInfo.GetImages(cancellationToken).ConfigureAwait(false);
+                                    if (seriesImages is not null) {
+                                        AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
+                                        sortPreferred = false;
                                     }
                                 }
                             }
-                            list =  list
-                                .DistinctBy(image => image.Url)
-                                .ToList();
                         }
-                        Logger.LogInformation("Getting {Count} images for series {SeriesName} (Series={SeriesId},Language={MetadataLanguage})", list.Count, series.Name, seriesId, metadataLanguage);
+
+                        _logger.LogInformation("Getting {Count} images for series {SeriesName} (MainSeason={MainSeasonId},Language={MetadataLanguage})", list.Count, series.Name, seasonId, metadataLanguage);
                     }
                     break;
                 }
                 case Season season: {
-                    if (Lookup.TryGetSeriesIdFor(season, out var seriesId)) {
-                        var seasonInfo = await ApiManager.GetSeasonInfoForSeries(seriesId);
-                        var seriesImages = await ApiClient.GetSeriesImages(seriesId);
-                        if (seriesImages is not null) {
-                            AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
-                            sortPreferred = false;
-                        }
-                        if (seasonInfo?.ExtraIds is not null) {
-                            foreach (var extraId in seasonInfo.ExtraIds) {
-                                seriesImages = await ApiClient.GetSeriesImages(extraId);
-                                if (seriesImages is not null) {
-                                    AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
-                                    sortPreferred = false;
-                                }
-                            }
-                            list =  list
-                                .DistinctBy(image => image.Url)
-                                .ToList();
-                        }
-                        Logger.LogInformation("Getting {Count} images for season {SeasonNumber} in {SeriesName} (Series={SeriesId},Language={MetadataLanguage})", list.Count, season.IndexNumber, season.SeriesName, seriesId, metadataLanguage);
+                    if (_lookup.TryGetSeasonIdFor(season, out var seasonId)) {
+                        if (await _apiManager.GetSeasonInfo(seasonId).ConfigureAwait(false) is not { } seasonInfo)
+                            break;
+
+                        var seriesImages = await seasonInfo.GetImages(cancellationToken).ConfigureAwait(false);
+                        AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
+                        _logger.LogInformation("Getting {Count} images for season {SeasonNumber} in {SeriesName} (Season={SeasonId},Language={MetadataLanguage})", list.Count, season.IndexNumber, season.SeriesName, seasonId, metadataLanguage);
                     }
                     break;
                 }
                 case Movie movie: {
-                    if (Lookup.TryGetEpisodeIdFor(movie, out var episodeId)) {
-                        var episodeImages = await ApiClient.GetEpisodeImages(episodeId);
-                        if (episodeImages is not null)
-                            AddImagesForSeries(ref list, episodeImages, metadataLanguage, sortPreferred);
-                        Logger.LogInformation("Getting {Count} images for movie {MovieName} (Episode={EpisodeId},Language={MetadataLanguage})", list.Count, movie.Name, episodeId, metadataLanguage);
-                    }
+                    var (fileInfo, _, _) = await _apiManager.GetFileInfoByPath(movie.Path).ConfigureAwait(false);
+                    if (fileInfo is not { EpisodeList.Count: > 0 })
+                        break;
+
+                    var episodeInfo = fileInfo.EpisodeList[0].Episode;
+                    if (await episodeInfo.GetImages(cancellationToken).ConfigureAwait(false) is { } episodeImages)
+                        AddImagesForSeries(ref list, episodeImages, metadataLanguage, sortPreferred, BaseItemKind.Movie);
+
+                    _logger.LogInformation("Getting {Count} images for movie {MovieName} (Episode={EpisodeId},Language={MetadataLanguage})", list.Count, movie.Name, episodeInfo.Id, metadataLanguage);
                     break;
                 }
                 case BoxSet collection: {
-                    string? groupId = null;
-                    if (!collection.TryGetProviderId(ShokoCollectionSeriesId.Name, out var seriesId) &&
-                        collection.TryGetProviderId(ShokoCollectionGroupId.Name, out groupId))
-                            seriesId = (await ApiManager.GetCollectionInfoForGroup(groupId))?.Shoko.IDs.MainSeries.ToString();
-                    if (!string.IsNullOrEmpty(seriesId)) {
-                        var seriesImages = await ApiClient.GetSeriesImages(seriesId);
-                        if (seriesImages is not null)
-                            AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
-                        Logger.LogInformation("Getting {Count} images for collection {CollectionName} (Group={GroupId},Series={SeriesId},Language={MetadataLanguage})", list.Count, collection.Name, groupId, groupId == null ? seriesId : null, metadataLanguage);
+                    string? collectionId = null;
+                    if (!collection.TryGetProviderId(ShokoCollectionSeriesId.Name, out var seasonId) &&
+                        collection.TryGetProviderId(ShokoCollectionGroupId.Name, out collectionId) &&
+                        await _apiManager.GetCollectionInfo(collectionId).ConfigureAwait(false) is { } collectionInfo)
+                        seasonId = collectionInfo.MainSeasonId;
+
+                    if (!string.IsNullOrEmpty(seasonId) && await _apiManager.GetShowInfoBySeasonId(seasonId).ConfigureAwait(false) is { } showInfo) {
+                        var showImages = await showInfo.GetImages(cancellationToken).ConfigureAwait(false);
+                        AddImagesForSeries(ref list, showImages, metadataLanguage, sortPreferred);
                     }
+
+                    _logger.LogInformation("Getting {Count} images for collection {CollectionName} (Collection={CollectionId},Season={SeasonId},Language={MetadataLanguage})", list.Count, collection.Name, collectionId, collectionId is null ? seasonId : null, metadataLanguage);
                     break;
                 }
             }
+            list =  list
+                .DistinctBy(image => image.Url)
+                .ToList();
             return list;
         }
         catch (Exception ex) {
-            Logger.LogError(ex, "Threw unexpectedly for {BaseKind} {Name}; {Message}", baseKind, item.Name, ex.Message);
+            _logger.LogError(ex, "Threw unexpectedly for {BaseKind} {Name}; {Message}", baseKind, item.Name, ex.Message);
             return list;
         }
         finally {
@@ -151,8 +118,7 @@ public class ImageProvider : IRemoteImageProvider, IHasOrder
         }
     }
 
-    public static void AddImagesForEpisode(ref List<RemoteImageInfo> list, API.Models.EpisodeImages images, string metadataLanguage, bool sortList)
-    {
+    public static void AddImagesForEpisode(ref List<RemoteImageInfo> list, API.Models.EpisodeImages images, string metadataLanguage, bool sortList) {
         IEnumerable<API.Models.Image> imagesList = sortList
             ? images.Thumbnails.Concat(images.Backdrops).OrderByDescending(image => image.IsPreferred).ThenByDescending(image => image.Type is API.Models.ImageType.Thumbnail)
             : images.Thumbnails.Concat(images.Backdrops).OrderByDescending(image => image.Type is API.Models.ImageType.Thumbnail);
@@ -160,36 +126,34 @@ public class ImageProvider : IRemoteImageProvider, IHasOrder
             AddImage(ref list, ImageType.Primary, image, metadataLanguage);
     }
 
-    private static void AddImagesForSeries(ref List<RemoteImageInfo> list, API.Models.Images images, string metadataLanguage, bool sortList)
-    {
+    private static void AddImagesForSeries(ref List<RemoteImageInfo> list, API.Models.Images images, string metadataLanguage, bool sortList, BaseItemKind baseKind = BaseItemKind.Series) {
         IEnumerable<API.Models.Image> imagesList = sortList
             ? images.Posters.OrderByDescending(image => image.IsPreferred)
             : images.Posters;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Primary, image, sortList ? metadataLanguage : null);
+            AddImage(ref list, ImageType.Primary, image, sortList ? metadataLanguage : null, baseKind);
 
         imagesList = sortList
             ? images.Backdrops.OrderByDescending(image => image.IsPreferred)
             : images.Backdrops;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Backdrop, image, sortList ? metadataLanguage : null);
+            AddImage(ref list, ImageType.Backdrop, image, sortList ? metadataLanguage : null, baseKind);
 
         imagesList = sortList
             ? images.Banners.OrderByDescending(image => image.IsPreferred)
             : images.Banners;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Banner, image, sortList ? metadataLanguage : null);
+            AddImage(ref list, ImageType.Banner, image, sortList ? metadataLanguage : null, baseKind);
 
         imagesList = sortList
             ? images.Logos.OrderByDescending(image => image.IsPreferred)
             : images.Logos;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Logo, image, sortList ? metadataLanguage : null);
+            AddImage(ref list, ImageType.Logo, image, sortList ? metadataLanguage : null, baseKind);
     }
 
-    private static void AddImage(ref List<RemoteImageInfo> list, ImageType imageType, API.Models.Image? image, string? metadataLanguage)
-    {
-        if (image == null || !image.IsAvailable)
+    private static void AddImage(ref List<RemoteImageInfo> list, ImageType imageType, API.Models.Image? image, string? metadataLanguage, BaseItemKind baseKind = BaseItemKind.Series) {
+        if (image is not { IsAvailable: true })
             return;
 
         list.Add(new RemoteImageInfo {
@@ -198,10 +162,19 @@ public class ImageProvider : IRemoteImageProvider, IHasOrder
             Width = image.Width,
             Height = image.Height,
             Url = image.ToURLString(),
-            Language = Plugin.Instance.Configuration.AddImageLanguageCode
+            Language = UseLanguageCode(imageType, baseKind)
                 ? !string.IsNullOrEmpty(metadataLanguage) && image.IsPreferred ? metadataLanguage : image.LanguageCode
                 : null,
         });
+    }
+
+    private static bool UseLanguageCode(ImageType imageType, BaseItemKind baseKind) {
+        var array = baseKind switch {
+            BaseItemKind.Movie => Plugin.Instance.Configuration.AddImageLanguageCodeForMovies,
+            BaseItemKind.Series => Plugin.Instance.Configuration.AddImageLanguageCodeForShows,
+            _ => [],
+        };
+        return array.Contains(imageType);
     }
 
     public IEnumerable<ImageType> GetSupportedImages(BaseItem item)
@@ -210,13 +183,12 @@ public class ImageProvider : IRemoteImageProvider, IHasOrder
     public bool Supports(BaseItem item)
         => item is Series or Season or Episode or Movie or BoxSet;
 
-    public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken)
-    {
+    public async Task<HttpResponseMessage> GetImageResponse(string url, CancellationToken cancellationToken) {
         var index = url.IndexOf("Plugin/Shokofin/Host");
         if (index is -1)
             return new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
         url = $"{Plugin.Instance.Configuration.Url}/api/v3{url[(index + 20)..]}";
-        return await HttpClientFactory.CreateClient().GetAsync(url, cancellationToken);
+        return await _httpClientFactory.CreateClient().GetAsync(url, cancellationToken).ConfigureAwait(false);
     }
 }
 

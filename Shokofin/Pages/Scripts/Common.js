@@ -240,6 +240,10 @@ export const LibraryMenu = globalThis.LibraryMenu;
  */
 
 /**
+ * @typedef {"Primary" | "Backdrop" | "Banner" | "Logo"} ImageType
+ */
+
+/**
 * @typedef {{
 *   UserId: string;
 *   EnableSynchronization: boolean;
@@ -284,81 +288,78 @@ export const LibraryMenu = globalThis.LibraryMenu;
 */
 
 /**
-* @typedef {{
-*   CanCreateSymbolicLinks: boolean;
-*   Url: string;
-*   PublicUrl: string;
-*   ServerVersion: ServerInformation | null;
-*   Username: string;
-*   ApiKey: string;
-*   ThirdPartyIdProviderList: Except<DescriptionProvider, "Shoko">[];
-*   TitleMainOverride: boolean;
-*   TitleMainList: TitleProvider[];
-*   TitleMainOrder: TitleProvider[];
-*   TitleAlternateOverride: boolean;
-*   TitleAlternateList: TitleProvider[];
-*   TitleAlternateOrder: TitleProvider[];
-*   TitleAllowAny: boolean;
-*   MarkSpecialsWhenGrouped: boolean;
-*   DescriptionSourceOverride: boolean;
-*   DescriptionSourceList: DescriptionProvider[];
-*   DescriptionSourceOrder: DescriptionProvider[];
-*   SynopsisCleanLinks: boolean;
-*   SynopsisCleanMiscLines: boolean;
-*   SynopsisRemoveSummary: boolean;
-*   SynopsisCleanMultiEmptyLines: boolean;
-*   TagOverride: boolean;
-*   TagSources: TagSource[];
-*   TagIncludeFilters: TagIncludeFilter[];
-*   TagMinimumWeight: TagWeight;
-*   TagMaximumDepth: TagDepth;
-*   GenreOverride: boolean;
-*   GenreSources: TagSource[];
-*   GenreIncludeFilters: TagIncludeFilter[];
-*   GenreMinimumWeight: TagWeight;
-*   GenreMaximumDepth: TagDepth;
-*   HideUnverifiedTags: boolean;
-*   ContentRatingOverride: boolean;
-*   ContentRatingList: GenericProvider[];
-*   ContentRatingOrder: GenericProvider[];
-*   ProductionLocationOverride: boolean;
-*   ProductionLocationList: GenericProvider[];
-*   ProductionLocationOrder: GenericProvider[];
-*   UserList: UserConfig[];
-*   AutoMergeVersions: boolean;
-*   MergeVersionSortSelectorList: MergeVersionSortSelector[];
-*   MergeVersionSortSelectorOrder: MergeVersionSortSelector[];
-*   UseGroupsForShows: boolean;
-*   SeparateMovies: boolean;
-*   FilterMovieLibraries: boolean;
-*   MovieSpecialsAsExtraFeaturettes: boolean;
-*   AddTrailers: boolean;
-*   AddCreditsAsThemeVideos: boolean;
-*   AddCreditsAsSpecialFeatures: boolean;
-*   CollectionGrouping: CollectionCreationType;
-*   SeasonOrdering: SeasonOrderType;
-*   SpecialsPlacement: SpecialOrderType;
-*   AddMissingMetadata: boolean;
-*   IgnoredFolders: string[];
-*   VFS_Enabled: boolean;
-*   VFS_Threads: number;
-*   VFS_AddReleaseGroup: boolean;
-*   VFS_AddResolution: boolean;
-*   VFS_AttachRoot: boolean;
-*   VFS_Location: VirtualRootLocation;
-*   VFS_CustomLocation: string;
-*   LibraryFilteringMode: LibraryFilteringMode;
-*   MediaFolders: MediaFolderConfig[];
-*   SignalR_AutoConnectEnabled: boolean;
-*   SignalR_AutoReconnectInSeconds: number[];
-*   SignalR_RefreshEnabled: boolean;
-*   SignalR_FileEvents: boolean;
-*   SignalR_EventSources: GenericProvider[];
-*   Misc_ShowInMenu: boolean;
-*   EXPERIMENTAL_MergeSeasons: boolean;
-*   ExpertMode: boolean;
-* }} PluginConfiguration
-*/
+ * @typedef {{
+ *   CanCreateSymbolicLinks: boolean;
+ *   Url: string;
+ *   PublicUrl: string;
+ *   ServerVersion: ServerInformation | null;
+ *   Username: string;
+ *   ApiKey: string;
+ *   ThirdPartyIdProviderList: Except<DescriptionProvider, "Shoko">[];
+ *   TitleMainList: TitleProvider[];
+ *   TitleMainOrder: TitleProvider[];
+ *   TitleAlternateList: TitleProvider[];
+ *   TitleAlternateOrder: TitleProvider[];
+ *   TitleAllowAny: boolean;
+ *   MarkSpecialsWhenGrouped: boolean;
+ *   DescriptionSourceOverride: boolean;
+ *   DescriptionSourceList: DescriptionProvider[];
+ *   DescriptionSourceOrder: DescriptionProvider[];
+ *   SynopsisCleanLinks: boolean;
+ *   SynopsisCleanMiscLines: boolean;
+ *   SynopsisRemoveSummary: boolean;
+ *   SynopsisCleanMultiEmptyLines: boolean;
+ *   TagSources: TagSource[];
+ *   TagIncludeFilters: TagIncludeFilter[];
+ *   TagMinimumWeight: TagWeight;
+ *   TagMaximumDepth: TagDepth;
+ *   GenreSources: TagSource[];
+ *   GenreIncludeFilters: TagIncludeFilter[];
+ *   GenreMinimumWeight: TagWeight;
+ *   GenreMaximumDepth: TagDepth;
+ *   HideUnverifiedTags: boolean;
+ *   ContentRatingList: GenericProvider[];
+ *   ContentRatingOrder: GenericProvider[];
+ *   ProductionLocationList: GenericProvider[];
+ *   ProductionLocationOrder: GenericProvider[];
+ *   AddImageLanguageCodeForShows: ImageType[];
+ *   AddImageLanguageCodeForMovies: ImageType[];
+ *   RespectPreferredImage: boolean;
+ *   UserList: UserConfig[];
+ *   AutoMergeVersions: boolean;
+ *   MergeVersionSortSelectorList: MergeVersionSortSelector[];
+ *   MergeVersionSortSelectorOrder: MergeVersionSortSelector[];
+ *   UseGroupsForShows: boolean;
+ *   SeparateMovies: boolean;
+ *   FilterMovieLibraries: boolean;
+ *   MovieSpecialsAsExtraFeaturettes: boolean;
+ *   AddTrailers: boolean;
+ *   AddCreditsAsThemeVideos: boolean;
+ *   AddCreditsAsSpecialFeatures: boolean;
+ *   CollectionGrouping: CollectionCreationType;
+ *   SeasonOrdering: SeasonOrderType;
+ *   SpecialsPlacement: SpecialOrderType;
+ *   AddMissingMetadata: boolean;
+ *   IgnoredFolders: string[];
+ *   VFS_Enabled: boolean;
+ *   VFS_Threads: number;
+ *   VFS_AddReleaseGroup: boolean;
+ *   VFS_AddResolution: boolean;
+ *   VFS_AttachRoot: boolean;
+ *   VFS_Location: VirtualRootLocation;
+ *   VFS_CustomLocation: string;
+ *   LibraryFilteringMode: LibraryFilteringMode;
+ *   MediaFolders: MediaFolderConfig[];
+ *   SignalR_AutoConnectEnabled: boolean;
+ *   SignalR_AutoReconnectInSeconds: number[];
+ *   SignalR_RefreshEnabled: boolean;
+ *   SignalR_FileEvents: boolean;
+ *   SignalR_EventSources: GenericProvider[];
+ *   Misc_ShowInMenu: boolean;
+ *   EXPERIMENTAL_MergeSeasons: boolean;
+ *   ExpertMode: boolean;
+ * }} PluginConfiguration
+ */
 
 /**
 * Shoko API client.
@@ -601,11 +602,9 @@ export function updateTabs(view, tabName) {
 
 //#region Constants
 
-
 const Messages = {
     UnableToRender: "There was an error loading the page, please refresh once to see if that will fix it, and if it doesn't, then reach out to support or debug it yourself. Your call.",
 };
-
 
 //#endregion
 

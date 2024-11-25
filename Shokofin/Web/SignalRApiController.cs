@@ -19,8 +19,7 @@ namespace Shokofin.Web;
 [ApiController]
 [Route("Plugin/Shokofin/SignalR")]
 [Produces(MediaTypeNames.Application.Json)]
-public class SignalRApiController(ILogger<SignalRApiController> logger, SignalRConnectionManager connectionManager) : ControllerBase
-{
+public class SignalRApiController(ILogger<SignalRApiController> logger, SignalRConnectionManager connectionManager) : ControllerBase {
     private readonly ILogger<SignalRApiController> Logger = logger;
 
     private readonly SignalRConnectionManager ConnectionManager = connectionManager;
@@ -29,10 +28,8 @@ public class SignalRApiController(ILogger<SignalRApiController> logger, SignalRC
     /// Get the current status of the connection to Shoko Server.
     /// </summary>
     [HttpGet("Status")]
-    public ShokoSignalRStatus GetStatus()
-    {
-        return new()
-        {
+    public ShokoSignalRStatus GetStatus() {
+        return new() {
             IsUsable = ConnectionManager.IsUsable,
             IsActive = ConnectionManager.IsActive,
             State = ConnectionManager.State,
@@ -43,10 +40,9 @@ public class SignalRApiController(ILogger<SignalRApiController> logger, SignalRC
     /// Connect or reconnect to Shoko Server.
     /// </summary>
     [HttpPost("Connect")]
-    public async Task<ActionResult> ConnectAsync()
-    {
+    public async Task<ActionResult> ConnectAsync() {
         try {
-            await ConnectionManager.ResetConnectionAsync();
+            await ConnectionManager.ResetConnectionAsync().ConfigureAwait(false);
             return Ok();
         }
         catch (Exception ex) {
@@ -59,10 +55,9 @@ public class SignalRApiController(ILogger<SignalRApiController> logger, SignalRC
     /// Disconnect from Shoko Server.
     /// </summary>
     [HttpPost("Disconnect")]
-    public async Task<ActionResult> DisconnectAsync()
-    {
+    public async Task<ActionResult> DisconnectAsync() {
         try {
-            await ConnectionManager.DisconnectAsync();
+            await ConnectionManager.DisconnectAsync().ConfigureAwait(false);
             return Ok();
         }
         catch (Exception ex) {
@@ -73,8 +68,7 @@ public class SignalRApiController(ILogger<SignalRApiController> logger, SignalRC
     }
 }
 
-public class ShokoSignalRStatus
-{
+public class ShokoSignalRStatus {
     /// <summary>
     /// Determines if we can establish a connection to the server.
     /// </summary>

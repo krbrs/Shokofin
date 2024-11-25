@@ -8,8 +8,7 @@ using LibraryFilteringMode = Shokofin.Utils.Ordering.LibraryFilteringMode;
 
 namespace Shokofin.Configuration;
 
-public class MediaFolderConfiguration
-{
+public class MediaFolderConfiguration {
     /// <summary>
     /// The jellyfin library id.
     /// </summary>

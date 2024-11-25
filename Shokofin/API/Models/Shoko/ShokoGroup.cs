@@ -1,26 +1,26 @@
-namespace Shokofin.API.Models;
 
-public class Group
-{
-    public string Name { get; set; } = string.Empty;
+namespace Shokofin.API.Models.Shoko;
 
-    public int Size { get; set; }
+public class ShokoGroup {
+    public string Id => IDs.Shoko.ToString();
 
     public GroupIDs IDs { get; set; } = new();
 
+    public string Name { get; set; } = string.Empty;
+
+#if DEBUG
     public string SortName { get; set; } = string.Empty;
+
+    public bool HasCustomName { get; set; }
+#endif
 
     public string Description { get; set; } = string.Empty;
 
-    public bool HasCustomName { get; set; }
+    public int Size { get; set; }
 
-    /// <summary>
-    /// Sizes object, has totals
-    /// </summary>
     public GroupSizes Sizes { get; set; } = new();
 
-    public class GroupIDs : IDs
-    {
+    public class GroupIDs : IDs {
         public int MainSeries { get; set; }
 
         public int? ParentGroup { get; set; }
@@ -31,28 +31,28 @@ public class Group
     /// <summary>
     /// Downloaded, Watched, Total, etc
     /// </summary>
-    public class GroupSizes : Series.SeriesSizes
-    {
+    public class GroupSizes : ShokoSeries.SeriesSizes {
         /// <summary>
         /// Number of direct sub-groups within the group.
         /// /// </summary>
         /// <value></value>
         public int SubGroups { get; set; }
 
+#if DEBUG
         /// <summary>
         /// Count of the different series types within the group.
         /// </summary>
         public SeriesTypeCounts SeriesTypes { get; set; } = new();
 
-        public class SeriesTypeCounts
-        {
-            public int Unknown;
-            public int Other;
-            public int TV;
-            public int TVSpecial;
-            public int Web;
-            public int Movie;
-            public int OVA;
+        public class SeriesTypeCounts {
+            public int Unknown { get; set; }
+            public int Other { get; set; }
+            public int TV { get; set; }
+            public int TVSpecial { get; set; }
+            public int Web { get; set; }
+            public int Movie { get; set; }
+            public int OVA { get; set; }
         }
+#endif
     }
 }

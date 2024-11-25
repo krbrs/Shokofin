@@ -5,15 +5,13 @@ using Microsoft.Extensions.DependencyInjection;
 namespace Shokofin;
 
 /// <inheritdoc />
-public class PluginServiceRegistrator : IPluginServiceRegistrator
-{
+public class PluginServiceRegistrator : IPluginServiceRegistrator {
     /// <inheritdoc />
-    public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost)
-    {
+    public void RegisterServices(IServiceCollection serviceCollection, IServerApplicationHost applicationHost) {
         serviceCollection.AddSingleton<Utils.UsageTracker>();
         serviceCollection.AddSingleton<Utils.LibraryScanWatcher>();
-        serviceCollection.AddSingleton<API.ShokoAPIClient>();
-        serviceCollection.AddSingleton<API.ShokoAPIManager>();
+        serviceCollection.AddSingleton<API.ShokoApiClient>();
+        serviceCollection.AddSingleton<API.ShokoApiManager>();
         serviceCollection.AddSingleton<Configuration.MediaFolderConfigurationService>();
         serviceCollection.AddSingleton<IIdLookup, IdLookup>();
         serviceCollection.AddSingleton<Sync.UserDataSyncManager>();

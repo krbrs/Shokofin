@@ -14,16 +14,7 @@ using Shokofin.Utils;
 
 namespace Shokofin.SignalR;
 
-public class SignalRConnectionManager
-{
-    private static ComponentVersion? ServerVersion =>
-        Plugin.Instance.Configuration.ServerVersion;
-
-    private static readonly DateTime EventChangedDate = DateTime.Parse("2024-04-01T04:04:00.000Z");
-
-    private static bool UseOlderEvents =>
-        ServerVersion != null && ((ServerVersion.ReleaseChannel == ReleaseChannel.Stable && ServerVersion.Version == new Version("4.2.2.0")) || (ServerVersion.ReleaseDate.HasValue && ServerVersion.ReleaseDate.Value < EventChangedDate));
-
+public class SignalRConnectionManager {
     private const string HubUrl = "/signalr/aggregate?feeds=shoko";
 
     private readonly ILogger<SignalRConnectionManager> Logger;
@@ -50,8 +41,7 @@ public class SignalRConnectionManager
         ILogger<SignalRConnectionManager> logger,
         EventDispatchService events,
         LibraryScanWatcher libraryScanWatcher
-    )
-    {
+    ) {
         Logger = logger;
         Events = events;
         LibraryScanWatcher = libraryScanWatcher;
@@ -59,8 +49,7 @@ public class SignalRConnectionManager
 
     #region Connection
 
-    private async Task ConnectAsync(PluginConfiguration config)
-    {
+    private async Task ConnectAsync(PluginConfiguration config) {
         if (Connection != null || !CanConnect(config))
             return;
 
@@ -82,18 +71,13 @@ public class SignalRConnectionManager
         // Attach refresh events.
         connection.On<EpisodeInfoUpdatedEventArgs>("ShokoEvent:EpisodeUpdated", OnInfoUpdated);
         connection.On<SeriesInfoUpdatedEventArgs>("ShokoEvent:SeriesUpdated", OnInfoUpdated);
+        connection.On<MovieInfoUpdatedEventArgs>("ShokoEvent:MovieUpdated", OnInfoUpdated);
 
         // Attach file events.
         connection.On<FileEventArgs>("ShokoEvent:FileMatched", OnFileMatched);
         connection.On<FileEventArgs>("ShokoEvent:FileDeleted", OnFileDeleted);
-        if (UseOlderEvents) {
-            connection.On<FileMovedEventArgs.V0>("ShokoEvent:FileMoved", OnFileRelocated);
-            connection.On<FileRenamedEventArgs.V0>("ShokoEvent:FileRenamed", OnFileRelocated);
-        }
-        else {
-            connection.On<FileMovedEventArgs>("ShokoEvent:FileMoved", OnFileRelocated);
-            connection.On<FileRenamedEventArgs>("ShokoEvent:FileRenamed", OnFileRelocated);
-        }
+        connection.On<FileMovedEventArgs>("ShokoEvent:FileMoved", OnFileRelocated);
+        connection.On<FileRenamedEventArgs>("ShokoEvent:FileRenamed", OnFileRelocated);
 
         EventSubmitterLease = Events.RegisterEventSubmitter();
         try {
@@ -107,20 +91,17 @@ public class SignalRConnectionManager
         }
     }
 
-    private Task OnReconnected(string? connectionId)
-    {
+    private Task OnReconnected(string? connectionId) {
         Logger.LogInformation("Reconnected to Shoko Server. (Connection={ConnectionId})", connectionId);
         return Task.CompletedTask;
     }
 
-    private Task OnReconnecting(Exception? exception)
-    {
+    private Task OnReconnecting(Exception? exception) {
         Logger.LogWarning(exception, "Disconnected from Shoko Server. Attempting to reconnect…");
         return Task.CompletedTask;
     }
 
-    private Task OnDisconnected(Exception? exception)
-    {
+    private Task OnDisconnected(Exception? exception) {
         // Graceful disconnection.
         if (exception == null)
             Logger.LogInformation("Gracefully disconnected from Shoko Server.");
@@ -129,8 +110,7 @@ public class SignalRConnectionManager
         return Task.CompletedTask;
     }
 
-    public async Task DisconnectAsync()
-    {
+    public async Task DisconnectAsync() {
         if (Connection == null)
             return;
 
@@ -138,9 +118,9 @@ public class SignalRConnectionManager
         Connection = null;
 
         if (connection.State != HubConnectionState.Disconnected)
-            await connection.StopAsync();
+            await connection.StopAsync().ConfigureAwait(false);
 
-        await connection.DisposeAsync();
+        await connection.DisposeAsync().ConfigureAwait(false);
 
         if (EventSubmitterLease is not null) {
             EventSubmitterLease.Dispose();
@@ -154,33 +134,28 @@ public class SignalRConnectionManager
     private void ResetConnection(PluginConfiguration config, bool shouldConnect)
         => ResetConnectionAsync(config, shouldConnect).ConfigureAwait(false).GetAwaiter().GetResult();
 
-    private async Task ResetConnectionAsync(PluginConfiguration config, bool shouldConnect)
-    {
-        await DisconnectAsync();
+    private async Task ResetConnectionAsync(PluginConfiguration config, bool shouldConnect) {
+        await DisconnectAsync().ConfigureAwait(false);
         if (shouldConnect)
-            await ConnectAsync(config);
+            await ConnectAsync(config).ConfigureAwait(false);
     }
 
-    public async Task RunAsync()
-    {
+    public async Task RunAsync() {
         var config = Plugin.Instance.Configuration;
         CachedKey = ConstructKey(config);
         Plugin.Instance.ConfigurationChanged += OnConfigurationChanged;
 
-        await ResetConnectionAsync(config, config.SignalR_AutoConnectEnabled);
+        await ResetConnectionAsync(config, config.SignalR_AutoConnectEnabled).ConfigureAwait(false);
     }
 
-    public async Task StopAsync()
-    {
+    public async Task StopAsync() {
         Plugin.Instance.ConfigurationChanged -= OnConfigurationChanged;
-        await DisconnectAsync();
+        await DisconnectAsync().ConfigureAwait(false);
     }
 
-    private void OnConfigurationChanged(object? sender, PluginConfiguration config)
-    {
+    private void OnConfigurationChanged(object? sender, PluginConfiguration config) {
         var currentKey = ConstructKey(config);
-        if (!string.Equals(currentKey, CachedKey))
-        {
+        if (!string.Equals(currentKey, CachedKey)) {
             Logger.LogDebug("Detected change in SignalR configuration! (Config={Config})", currentKey);
             CachedKey = currentKey;
             ResetConnection(config, Connection != null);
@@ -199,8 +174,7 @@ public class SignalRConnectionManager
 
     #region File Events
 
-    private void OnFileMatched(IFileEventArgs eventArgs)
-    {
+    private void OnFileMatched(IFileEventArgs eventArgs) {
         Logger.LogDebug(
             "File matched; {ImportFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
             eventArgs.ImportFolderId,
@@ -222,8 +196,7 @@ public class SignalRConnectionManager
         Events.AddFileEvent(eventArgs.FileId, UpdateReason.Updated, eventArgs.ImportFolderId, eventArgs.RelativePath, eventArgs);
     }
 
-    private void OnFileRelocated(IFileRelocationEventArgs eventArgs)
-    {
+    private void OnFileRelocated(IFileRelocationEventArgs eventArgs) {
         Logger.LogDebug(
             "File relocated; {ImportFolderIdA} {PathA} → {ImportFolderIdB} {PathB} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
             eventArgs.PreviousImportFolderId,
@@ -248,8 +221,7 @@ public class SignalRConnectionManager
         Events.AddFileEvent(eventArgs.FileId, UpdateReason.Added, eventArgs.ImportFolderId, eventArgs.RelativePath, eventArgs);
     }
 
-    private void OnFileDeleted(IFileEventArgs eventArgs)
-    {
+    private void OnFileDeleted(IFileEventArgs eventArgs) {
         Logger.LogDebug(
             "File deleted; {ImportFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
             eventArgs.ImportFolderId,
@@ -275,46 +247,42 @@ public class SignalRConnectionManager
 
     #region Refresh Events
 
-    private void OnInfoUpdated(IMetadataUpdatedEventArgs eventArgs)
-    {
+    private void OnInfoUpdated(IMetadataUpdatedEventArgs eventArgs) {
         if (!Plugin.Instance.Configuration.SignalR_EventSources.Contains(eventArgs.ProviderName)) {
             Logger.LogTrace(
-                "{ProviderName} {MetadataType} {ProviderId} ({ProviderParentId}) skipped event with {UpdateReason}; provider is not enabled in the plugin settings. (Episode={EpisodeId},Series={SeriesId},Group={GroupId})",
+                "{ProviderName} {MetadataType} {ProviderId} ({ProviderParentId}) skipped event with {UpdateReason}; provider is not enabled in the plugin settings. (Episode={EpisodeId},Series={SeriesId})",
                 eventArgs.ProviderName,
                 eventArgs.Kind,
                 eventArgs.ProviderId,
                 eventArgs.ProviderParentId,
                 eventArgs.Reason,
                 eventArgs.EpisodeIds,
-                eventArgs.SeriesIds,
-                eventArgs.GroupIds
+                eventArgs.SeriesIds
             );
             return;
         }
 
         Logger.LogDebug(
-            "{ProviderName} {MetadataType} {ProviderId} ({ProviderParentId}) dispatched event with {UpdateReason}. (Episode={EpisodeId},Series={SeriesId},Group={GroupId})",
+            "{ProviderName} {MetadataType} {ProviderId} ({ProviderParentId}) dispatched event with {UpdateReason}. (Episode={EpisodeId},Series={SeriesId})",
             eventArgs.ProviderName,
             eventArgs.Kind,
             eventArgs.ProviderId,
             eventArgs.ProviderParentId,
             eventArgs.Reason,
             eventArgs.EpisodeIds,
-            eventArgs.SeriesIds,
-            eventArgs.GroupIds
+            eventArgs.SeriesIds
         );
 
         if (LibraryScanWatcher.IsScanRunning) {
             Logger.LogTrace(
-                "Library scan is running. Skipping emit of refresh event. (Episode={EpisodeId},Series={SeriesId},Group={GroupId})",
+                "Library scan is running. Skipping emit of refresh event. (Episode={EpisodeId},Series={SeriesId})",
                 eventArgs.EpisodeIds,
-                eventArgs.SeriesIds,
-                eventArgs.GroupIds
+                eventArgs.SeriesIds
             );
             return;
         }
 
-        if (eventArgs.Kind is BaseItemKind.Episode or BaseItemKind.Series)
+        if (eventArgs.Kind is BaseItemKind.Episode or BaseItemKind.Series or BaseItemKind.Movie)
             Events.AddSeriesEvent(eventArgs.ProviderParentUId ?? eventArgs.ProviderUId, eventArgs);
     }
 

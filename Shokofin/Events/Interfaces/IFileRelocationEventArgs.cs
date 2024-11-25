@@ -1,8 +1,7 @@
 
 namespace Shokofin.Events.Interfaces;
 
-public interface IFileRelocationEventArgs : IFileEventArgs
-{
+public interface IFileRelocationEventArgs : IFileEventArgs {
 
     /// <summary>
     /// The ID of the old import folder the event was detected in.

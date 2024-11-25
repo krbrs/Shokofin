@@ -2,9 +2,11 @@ using System;
 using System.Collections.Generic;
 using Shokofin.API.Models.AniDB;
 
-namespace Shokofin.API.Models;
+namespace Shokofin.API.Models.Shoko;
 
-public class Episode {
+public class ShokoEpisode {
+    public string Id => IDs.Shoko.ToString();
+
     /// <summary>
     /// All identifiers related to the episode entry, e.g. the Shoko, AniDB,
     /// TMDB, etc.

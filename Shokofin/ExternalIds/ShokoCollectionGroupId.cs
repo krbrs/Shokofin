@@ -5,8 +5,7 @@ using MediaBrowser.Model.Providers;
 
 namespace Shokofin.ExternalIds;
 
-public class ShokoCollectionGroupId : IExternalId
-{
+public class ShokoCollectionGroupId : IExternalId {
     public const string Name = "ShokoCollectionGroup";
 
     public bool Supports(IHasProviderIds item)

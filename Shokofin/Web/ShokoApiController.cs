@@ -22,19 +22,17 @@ namespace Shokofin.Web;
 [ApiController]
 [Route("Plugin/Shokofin/Host")]
 [Produces(MediaTypeNames.Application.Json)]
-public class ShokoApiController(ILogger<ShokoApiController> logger, ShokoAPIClient apiClient) : ControllerBase
-{
+public class ShokoApiController(ILogger<ShokoApiController> logger, ShokoApiClient apiClient) : ControllerBase {
     private readonly ILogger<ShokoApiController> Logger = logger;
 
-    private readonly ShokoAPIClient APIClient = apiClient;
+    private readonly ShokoApiClient APIClient = apiClient;
 
     /// <summary>
     /// Try to get the version of the server.
     /// </summary>
     /// <returns></returns>
     [HttpGet("Version")]
-    public async Task<ActionResult<ComponentVersion>> GetVersionAsync()
-    {
+    public async Task<ActionResult<ComponentVersion>> GetVersionAsync() {
         try {
             Logger.LogDebug("Trying to get version from the remote Shoko server.");
             var version = await APIClient.GetVersion().ConfigureAwait(false);
@@ -53,8 +51,7 @@ public class ShokoApiController(ILogger<ShokoApiController> logger, ShokoAPIClie
     }
 
     [HttpPost("GetApiKey")]
-    public async Task<ActionResult<ApiKey>> GetApiKeyAsync([FromBody] ApiLoginRequest body)
-    {
+    public async Task<ActionResult<ApiKey>> GetApiKeyAsync([FromBody] ApiLoginRequest body) {
         try {
             Logger.LogDebug("Trying to create an API-key for user {Username}.", body.Username);
             var apiKey = await APIClient.GetApiKey(body.Username, body.Password, body.UserKey).ConfigureAwait(false);
@@ -81,21 +78,19 @@ public class ShokoApiController(ILogger<ShokoApiController> logger, ShokoAPIClie
     [HttpGet("Image/{ImageSource}/{ImageType}/{ImageId}")]
     [HttpHead("Image/{ImageSource}/{ImageType}/{ImageId}")]
     public async Task<ActionResult> GetImageAsync([FromRoute] ImageSource imageSource, [FromRoute] ImageType imageType, [FromRoute, Range(1, int.MaxValue)] int imageId
-    )
-    {
-        var response = await APIClient.GetImageAsync(imageSource, imageType, imageId);
+    ) {
+        var response = await APIClient.GetImageAsync(imageSource, imageType, imageId).ConfigureAwait(false);
         if (response.StatusCode is System.Net.HttpStatusCode.NotFound)
             return NotFound();
         if (response.StatusCode is not System.Net.HttpStatusCode.OK)
             return StatusCode((int)response.StatusCode);
-        var stream = await response.Content.ReadAsStreamAsync();
+        var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
         var contentType = response.Content.Headers.ContentType?.ToString() ?? "application/ocelot-stream";
         return File(stream, contentType);
     }
 }
 
-public class ApiLoginRequest
-{
+public class ApiLoginRequest {
     /// <summary>
     /// The username to submit to shoko.
     /// </summary>

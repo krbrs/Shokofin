@@ -16,14 +16,7 @@ namespace Shokofin.Tasks;
 /// Responsible for updating the known version of the remote Shoko Server
 /// instance at startup and set intervals.
 /// </summary>
-public class VersionCheckTask(ILogger<VersionCheckTask> logger, ILibraryManager libraryManager, ShokoAPIClient apiClient) : IScheduledTask, IConfigurableScheduledTask
-{
-    private readonly ILogger<VersionCheckTask> _logger = logger;
-
-    private readonly ILibraryManager _libraryManager = libraryManager;
-
-    private readonly ShokoAPIClient _apiClient = apiClient;
-
+public class VersionCheckTask(ILogger<VersionCheckTask> _logger, ILibraryManager _libraryManager, ShokoApiClient _apiClient) : IScheduledTask, IConfigurableScheduledTask {
     /// <inheritdoc />
     public string Name => "Check Server Version";
 
@@ -53,10 +46,9 @@ public class VersionCheckTask(ILogger<VersionCheckTask> logger, ILibraryManager 
         ];
 
     /// <inheritdoc />
-    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
-    {
+    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken) {
         var updated = false;
-        var version = await _apiClient.GetVersion();
+        var version = await _apiClient.GetVersion().ConfigureAwait(false);
         if (version != null && (
             Plugin.Instance.Configuration.ServerVersion == null ||
             !string.Equals(version.ToString(), Plugin.Instance.Configuration.ServerVersion.ToString())

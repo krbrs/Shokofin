@@ -25,25 +25,10 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomEpisodeProvider : IHasItemChangeMonitor, ICustomMetadataProvider<Episode>
-{
+public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibraryManager _libraryManager, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Episode> {
     public string Name => Plugin.MetadataProviderName;
 
-    private readonly ILogger<CustomEpisodeProvider> _logger;
-
-    private readonly ILibraryManager _libraryManager;
-
-    private readonly MergeVersionsManager _mergeVersionsManager;
-
-    public CustomEpisodeProvider(ILogger<CustomEpisodeProvider> logger, ILibraryManager libraryManager, MergeVersionsManager mergeVersionsManager)
-    {
-        _logger = logger;
-        _libraryManager = libraryManager;
-        _mergeVersionsManager = mergeVersionsManager;
-    }
-
-    public bool HasChanged(BaseItem item, IDirectoryService directoryService)
-    {
+    public bool HasChanged(BaseItem item, IDirectoryService directoryService) {
         // We're only interested in episodes.
         if (item is not Episode episode)
             return false;
@@ -55,8 +40,7 @@ public class CustomEpisodeProvider : IHasItemChangeMonitor, ICustomMetadataProvi
         return true;
     }
 
-    public async Task<ItemUpdateType> FetchAsync(Episode episode, MetadataRefreshOptions options, CancellationToken cancellationToken)
-    {
+    public async Task<ItemUpdateType> FetchAsync(Episode episode, MetadataRefreshOptions options, CancellationToken cancellationToken) {
         var series = episode.Series;
         if (series is null)
             return ItemUpdateType.None;
@@ -68,7 +52,7 @@ public class CustomEpisodeProvider : IHasItemChangeMonitor, ICustomMetadataProvi
                     itemUpdated |= ItemUpdateType.MetadataEdit;
 
             if (Plugin.Instance.Configuration.AutoMergeVersions && !_libraryManager.IsScanRunning && options.MetadataRefreshMode != MetadataRefreshMode.ValidationOnly) {
-                await _mergeVersionsManager.SplitAndMergeEpisodesByEpisodeId(episodeId);
+                await _mergeVersionsManager.SplitAndMergeEpisodesByEpisodeId(episodeId).ConfigureAwait(false);
                 itemUpdated |= ItemUpdateType.MetadataEdit;
             }
         }
@@ -76,8 +60,7 @@ public class CustomEpisodeProvider : IHasItemChangeMonitor, ICustomMetadataProvi
         return itemUpdated;
     }
 
-    public static bool RemoveDuplicates(ILibraryManager libraryManager, ILogger logger, string episodeId, Episode episode, string seriesPresentationUniqueKey)
-    {
+    public static bool RemoveDuplicates(ILibraryManager libraryManager, ILogger logger, string episodeId, Episode episode, string seriesPresentationUniqueKey) {
         // Remove any extra virtual episodes that matches the newly refreshed episode.
         var searchList = libraryManager.GetItemList(
             new() {
@@ -106,8 +89,7 @@ public class CustomEpisodeProvider : IHasItemChangeMonitor, ICustomMetadataProvi
         return false;
     }
 
-    private static bool EpisodeExists(ILibraryManager libraryManager, ILogger logger, string seriesPresentationUniqueKey, string episodeId, string seriesId, string? groupId)
-    {
+    private static bool EpisodeExists(ILibraryManager libraryManager, ILogger logger, string seriesPresentationUniqueKey, string episodeId, string seasonId, string? groupId) {
         var searchList = libraryManager.GetItemList(
             new() {
                 IncludeItemTypes = [Jellyfin.Data.Enums.BaseItemKind.Episode],
@@ -120,21 +102,20 @@ public class CustomEpisodeProvider : IHasItemChangeMonitor, ICustomMetadataProvi
             true
         );
         if (searchList.Count > 0) {
-            logger.LogTrace("A virtual or physical episode entry already exists for Episode {EpisodeName}. Ignoring. (Episode={EpisodeId},Series={SeriesId},Group={GroupId})", searchList[0].Name, episodeId, seriesId, groupId);
+            logger.LogTrace("A virtual or physical episode entry already exists for Episode {EpisodeName}. Ignoring. (Episode={EpisodeId},Season={SeasonId},Group={GroupId})", searchList[0].Name, episodeId, seasonId, groupId);
             return true;
         }
         return false;
     }
 
-    public static bool AddVirtualEpisode(ILibraryManager libraryManager, ILogger logger, Info.ShowInfo showInfo, Info.SeasonInfo seasonInfo, Info.EpisodeInfo episodeInfo, Season season, Series series)
-    {
-        if (EpisodeExists(libraryManager, logger, series.GetPresentationUniqueKey(), episodeInfo.Id, seasonInfo.Id, showInfo.GroupId))
+    public static bool AddVirtualEpisode(ILibraryManager libraryManager, ILogger logger, Info.ShowInfo showInfo, Info.SeasonInfo seasonInfo, Info.EpisodeInfo episodeInfo, Season season, Series series) {
+        if (EpisodeExists(libraryManager, logger, series.GetPresentationUniqueKey(), episodeInfo.Id, seasonInfo.Id, showInfo.ShokoGroupId))
             return false;
 
         var episodeId = libraryManager.GetNewItemId(season.Series.Id + " Season " + seasonInfo.Id + " Episode " + episodeInfo.Id, typeof(Episode));
         var episode = EpisodeProvider.CreateMetadata(showInfo, seasonInfo, episodeInfo, season, episodeId);
 
-        logger.LogInformation("Adding virtual Episode {EpisodeNumber} in Season {SeasonNumber} for Series {SeriesName}. (Episode={EpisodeId},Series={SeriesId},ExtraSeries={ExtraIds},Group={GroupId})", episode.IndexNumber, season.IndexNumber, showInfo.Name, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds, showInfo.GroupId);
+        logger.LogInformation("Adding virtual Episode {EpisodeNumber} in Season {SeasonNumber} for Series {SeriesName}. (Episode={EpisodeId},Season={SeasonId},ExtraSeasons={ExtraIds},Group={GroupId})", episode.IndexNumber, season.IndexNumber, showInfo.DefaultTitle, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds, showInfo.ShokoGroupId);
 
         season.AddChild(episode);
 

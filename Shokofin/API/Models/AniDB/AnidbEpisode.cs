@@ -4,8 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models.AniDB;
 
-public class AnidbEpisode
-{
+public class AnidbEpisode {
     [JsonPropertyName("ID")]
     public int Id { get; set; }
 

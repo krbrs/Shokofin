@@ -8,7 +8,9 @@ using Shokofin.API.Models;
 
 using CollectionCreationType = Shokofin.Utils.Ordering.CollectionCreationType;
 using DescriptionProvider = Shokofin.Utils.Text.DescriptionProvider;
+using ImageType = MediaBrowser.Model.Entities.ImageType;
 using LibraryFilteringMode = Shokofin.Utils.Ordering.LibraryFilteringMode;
+using MergeVersionSortSelector = Shokofin.MergeVersions.MergeVersionSortSelector;
 using OrderType = Shokofin.Utils.Ordering.OrderType;
 using ProviderName = Shokofin.Events.Interfaces.ProviderName;
 using SpecialOrderType = Shokofin.Utils.Ordering.SpecialOrderType;
@@ -16,13 +18,11 @@ using TagIncludeFilter = Shokofin.Utils.TagFilter.TagIncludeFilter;
 using TagSource = Shokofin.Utils.TagFilter.TagSource;
 using TagWeight = Shokofin.Utils.TagFilter.TagWeight;
 using TitleProvider = Shokofin.Utils.Text.TitleProvider;
-using MergeVersionSortSelector = Shokofin.MergeVersions.MergeVersionSortSelector;
 
 namespace Shokofin.Configuration;
 
-// TODO: Split this up in the transition to 5.0 into multiple sub-classes.
-public class PluginConfiguration : BasePluginConfiguration
-{
+// TODO: Split this up in the transition to 6.0 into multiple sub-classes.
+public class PluginConfiguration : BasePluginConfiguration {
     #region Connection
 
 #pragma warning disable CA1822
@@ -81,10 +81,8 @@ public class PluginConfiguration : BasePluginConfiguration
     /// TODO: Break this during the next major version of the plugin.
     [JsonInclude]
     [XmlIgnore]
-    public DescriptionProvider[] ThirdPartyIdProviderList
-    {
-        get
-        {
+    public DescriptionProvider[] ThirdPartyIdProviderList {
+        get {
             var list = new List<DescriptionProvider>();
             if (AddAniDBId)
                 list.Add(DescriptionProvider.AniDB);
@@ -94,8 +92,7 @@ public class PluginConfiguration : BasePluginConfiguration
                 list.Add(DescriptionProvider.TMDB);
             return [.. list];
         }
-        set
-        {
+        set {
             AddAniDBId = value.Contains(DescriptionProvider.AniDB);
             AddTvDBId = value.Contains(DescriptionProvider.TvDB);
             AddTMDBId = value.Contains(DescriptionProvider.TMDB);
@@ -188,17 +185,32 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool SynopsisCleanMultiEmptyLines { get; set; }
 
     /// <summary>
-    /// Add language code to image metadata provided to Jellyfin for it to
-    /// select the correct image to use for the library.
+    /// This isn't used anymore, but is kept for upgrading the config in a
+    /// backwards compatible manner.
+    /// TODO: REMOVE THIS IN 6.0
     /// </summary>
-    public bool AddImageLanguageCode { get; set; }
+    [JsonIgnore]
+    public bool? AddImageLanguageCode { get; set; }
+
+    /// <summary>
+    /// Add language code to image metadata provided to shows in Jellyfin for
+    /// it to select the correct image to use for the library.
+    /// </summary>
+    public ImageType[] AddImageLanguageCodeForShows { get; set; }
+
+    /// <summary>
+    /// Add language code to image metadata provided to movies in Jellyfin for
+    /// it to select the correct image to use for the library.
+    /// </summary>
+    public ImageType[] AddImageLanguageCodeForMovies { get; set; }
 
     /// <summary>
     /// Respect the preferred image flag sent from server when selecting the
     /// correct image to use for the library. Setting this will also set the
     /// language code to the preferred language code for the library if
-    /// <see cref="AddImageLanguageCode"/> is enabled, thus ensuring it is
-    /// always selected for the library.
+    /// <see cref="AddImageLanguageCodeForShows"/> and/or
+    /// <see cref="AddImageLanguageCodeForMovies"/> are enabled, thus ensuring
+    /// it is always selected for the library.
     /// </summary>
     public bool RespectPreferredImage { get; set; }
 
@@ -306,8 +318,9 @@ public class PluginConfiguration : BasePluginConfiguration
     /// </summary>
     public MergeVersionSortSelector[] MergeVersionSortSelectorOrder { get; set; }
 
-    public SeriesStructureType DefaultLibraryStructure
-    {
+    [JsonInclude]
+    [XmlIgnore]
+    public SeriesStructureType DefaultLibraryStructure {
         get {
             if (UseGroupsForShows && !UseTmdbForShows)
                 return SeriesStructureType.Shoko_Groups;
@@ -516,6 +529,12 @@ public class PluginConfiguration : BasePluginConfiguration
     public bool SignalR_FileEvents { get; set; }
 
     /// <summary>
+    /// Indicates whether or not to replace images for entries if related
+    /// metadata is updated in Shoko.
+    /// </summary>
+    public bool SignalR_ReplaceImagesDuringRefresh { get; set; }
+
+    /// <summary>
     /// The different SignalR event sources to 'subscribe' to.
     /// </summary>
     public ProviderName[] SignalR_EventSources { get; set; }
@@ -559,7 +578,11 @@ public class PluginConfiguration : BasePluginConfiguration
     /// <summary>
     /// Number of days to check between the start of each season, inclusive.
     /// </summary>
-    /// <value></value>
+    /// <remarks>
+    /// Use 0 to disable the threshold and allow all merges, or use any negative
+    /// value to disallow all merges without an override set on one or both of
+    /// the series to merge.
+    /// </remarks>
     public int EXPERIMENTAL_MergeSeasonsMergeWindowInDays { get; set; }
 
     #endregion
@@ -574,8 +597,7 @@ public class PluginConfiguration : BasePluginConfiguration
 
     #endregion
 
-    public PluginConfiguration()
-    {
+    public PluginConfiguration() {
         Url = "http://127.0.0.1:8111";
         PublicUrl = string.Empty;
         Username = "Default";
@@ -602,8 +624,6 @@ public class PluginConfiguration : BasePluginConfiguration
         SynopsisCleanMiscLines = true;
         SynopsisRemoveSummary = true;
         SynopsisCleanMultiEmptyLines = true;
-        AddImageLanguageCode = false;
-        RespectPreferredImage = true;
         DescriptionSourceList = [
             DescriptionProvider.Shoko,
         ];
@@ -639,6 +659,11 @@ public class PluginConfiguration : BasePluginConfiguration
         AddAniDBId = true;
         AddTMDBId = false;
         AddTvDBId = false;
+
+        AddImageLanguageCode = null;
+        AddImageLanguageCodeForShows = [];
+        AddImageLanguageCodeForMovies = [];
+        RespectPreferredImage = true;
 
         VFS_Enabled = true;
         VFS_Threads = 4;
@@ -687,6 +712,7 @@ public class PluginConfiguration : BasePluginConfiguration
         SignalR_EventSources = [ProviderName.Shoko, ProviderName.AniDB, ProviderName.TMDB];
         SignalR_RefreshEnabled = false;
         SignalR_FileEvents = true;
+        SignalR_ReplaceImagesDuringRefresh = false;
         UsageTracker_StalledTimeInSeconds = 10;
         Misc_ShowInMenu = false;
         EXPERIMENTAL_MergeSeasons = false;

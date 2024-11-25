@@ -3,8 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.Events.Interfaces;
 
-public interface IFileEventArgs
-{
+public interface IFileEventArgs {
     /// <summary>
     /// Shoko file id.
     /// </summary>
@@ -39,8 +38,7 @@ public interface IFileEventArgs
     /// </summary>
     List<FileCrossReference> CrossReferences { get; }
 
-    public class FileCrossReference
-    {
+    public class FileCrossReference {
         /// <summary>
         /// AniDB episode id.
         /// </summary>

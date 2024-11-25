@@ -6,8 +6,7 @@ using Shokofin.Resolvers.Models;
 
 namespace Shokofin.Web.Models;
 
-public class VfsLibraryPreview(HashSet<string> filesBefore, HashSet<string> filesAfter, VirtualFolderInfo virtualFolder, LinkGenerationResult? result, string vfsPath)
-{
+public class VfsLibraryPreview(HashSet<string> filesBefore, HashSet<string> filesAfter, VirtualFolderInfo virtualFolder, LinkGenerationResult? result, string vfsPath) {
     public string LibraryId = virtualFolder.ItemId;
 
     public string LibraryName { get; } = virtualFolder.Name;
@@ -30,8 +29,7 @@ public class VfsLibraryPreview(HashSet<string> filesBefore, HashSet<string> file
 
     public VfsLibraryPreviewStats Stats { get; } = new(result);
 
-    public class VfsLibraryPreviewStats(LinkGenerationResult? result)
-    {
+    public class VfsLibraryPreviewStats(LinkGenerationResult? result) {
         public int Total { get; } = result?.Total ?? 0;
 
         public int Created { get; } = result?.Created ?? 0;

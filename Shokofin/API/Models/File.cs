@@ -4,8 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models;
 
-public class File
-{
+public class File {
     /// <summary>
     /// The id of the <see cref="File"/>.
     /// </summary>
@@ -73,8 +72,7 @@ public class File
     /// folder it belongs to and the relative path from the base of the import
     /// folder to where it lies.
     /// </summary>
-    public class Location
-    {
+    public class Location {
         /// <summary>
         /// File location ID.
         /// </summary>
@@ -107,10 +105,8 @@ public class File
         /// the start.
         /// </summary>
         [JsonIgnore]
-        public string RelativePath
-        {
-            get
-            {
+        public string RelativePath {
+            get {
                 if (CachedPath != null)
                     return CachedPath;
                 var relativePath = InternalPath
@@ -133,8 +129,7 @@ public class File
     /// <summary>
     /// AniDB_File info
     /// </summary>
-    public class AniDB
-    {
+    public class AniDB {
         /// <summary>
         /// The AniDB File ID.
         /// </summary>
@@ -191,8 +186,7 @@ public class File
         public DateTime LastUpdatedAt { get; set; }
     }
 
-    public class AniDBReleaseGroup
-    {
+    public class AniDBReleaseGroup {
         /// <summary>
         /// The AniDB Release Group ID.
         /// /// </summary>
@@ -214,8 +208,7 @@ public class File
     /// The calculated hashes of the file. Either will all hashes be filled or
     /// none.
     /// </summary>
-    public class HashMap
-    {
+    public class HashMap {
         public string ED2K { get; set; } = string.Empty;
 
         public string SHA1 { get; set; } = string.Empty;
@@ -225,12 +218,10 @@ public class File
         public string MD5 { get; set; } = string.Empty;
     }
 
-
     /// <summary>
     /// User stats for the file.
     /// </summary>
-    public class UserStats
-    {
+    public class UserStats {
         /// <summary>
         /// Where to resume the next playback.
         /// </summary>
@@ -255,16 +246,14 @@ public class File
         /// <summary>
         /// True if the <see cref="UserStats"/> object is considered empty.
         /// </summary>
-        public virtual bool IsEmpty
-        {
+        public virtual bool IsEmpty {
             get => ResumePosition == null && LastWatchedAt == null && WatchedCount == 0;
         }
     }
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum FileSource
-{
+public enum FileSource {
     Unknown = 0,
     Other = 1,
     TV = 2,

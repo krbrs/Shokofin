@@ -1,93 +1,104 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Shokofin.API.Models;
+using Shokofin.API.Models.Shoko;
+using Shokofin.API.Models.TMDB;
 using Shokofin.Configuration;
+using Shokofin.Events.Interfaces;
+using Shokofin.ExternalIds;
+using Shokofin.Utils;
 
+using ContentRating = Shokofin.API.Models.ContentRating;
 using PersonInfo = MediaBrowser.Controller.Entities.PersonInfo;
-using PersonKind = Jellyfin.Data.Enums.PersonKind;
 
 namespace Shokofin.API.Info;
 
-public class SeasonInfo
-{
-    public readonly string Id;
+public class SeasonInfo : IExtendedItemInfo {
+    private readonly ShokoApiClient _client;
 
-    public readonly IReadOnlyList<string> ExtraIds;
+    public string Id { get; init; }
 
-    public readonly Series Shoko;
+    public string InternalId => ShokoInternalId.Namespace + Id;
 
-    public readonly Series.AniDBWithDate AniDB;
+    public IReadOnlyList<string> ExtraIds { get; init; }
 
-    public readonly SeriesType Type;
+    public string? AnidbId { get; init; }
+
+    public string? ShokoSeriesId { get; init; }
+
+    public string? ShokoGroupId { get; init; }
+
+    public string? TopLevelShokoGroupId { get; init; }
+
+    public string? TmdbSeasonId { get; init; }
+
+    public string? TmdbMovieCollectionId { get; init; }
+
+    public SeriesStructureType StructureType { get; init; }
+
+    public SeriesType Type { get; init; }
+
+    public bool IsMultiEntry { get; init; }
+
+    public bool IsRestricted { get; init; }
+
+    public string DefaultTitle { get; init; }
+
+    public IReadOnlyList<Title> Titles { get; init; }
+
+    public string? DefaultOverview { get; init; }
+
+    public IReadOnlyList<TextOverview> Overviews { get; init; }
+
+    public string? OriginalLanguageCode { get; init; }
+
+    public Rating CommunityRating { get; init; }
 
     /// <summary>
-    /// Indicates that the season have been mapped to a different type, either
-    /// manually or automagically.
+    /// First premiere date of the season.
     /// </summary>
-    public bool IsCustomType => Type != AniDB.Type;
+    public DateTime? PremiereDate { get; init; }
 
     /// <summary>
-    /// The date of the earliest imported file, or when the series was created
-    /// in shoko if no files are imported yet.
+    /// Ended date of the season.
     /// </summary>
-    public readonly DateTime? EarliestImportedAt;
+    public DateTime? EndDate { get; init; }
 
-    /// <summary>
-    /// The date of the last imported file, or when the series was created
-    /// in shoko if no files are imported yet.
-    /// </summary>
-    public readonly DateTime? LastImportedAt;
+    public IReadOnlyList<string> Genres { get; init; }
 
-    public readonly string? AssumedContentRating;
+    public IReadOnlyList<string> Tags { get; init; }
 
-    public readonly IReadOnlyList<string> Tags;
+    public IReadOnlyList<string> Studios { get; init; }
 
-    public readonly IReadOnlyList<string> Genres;
+    public IReadOnlyDictionary<ProviderName, IReadOnlyList<string>> ProductionLocations { get; init; }
 
-    public readonly IReadOnlyList<string> ProductionLocations;
+    public IReadOnlyList<ContentRating> ContentRatings { get; init; }
 
-    public readonly IReadOnlyList<string> Studios;
-
-    public readonly IReadOnlyList<PersonInfo> Staff;
-
-    /// <summary>
-    /// All episodes (of all type) that belong to this series.
-    ///
-    /// Unordered.
-    /// </summary>
-    public readonly IReadOnlyList<EpisodeInfo> RawEpisodeList;
+    public IReadOnlyList<PersonInfo> Staff { get; init; }
 
     /// <summary>
     /// A pre-filtered list of normal episodes that belong to this series.
     ///
     /// Ordered by AniDb air-date.
     /// </summary>
-    public readonly List<EpisodeInfo> EpisodeList;
+    public IReadOnlyList<EpisodeInfo> EpisodeList { get; init; }
 
     /// <summary>
     /// A pre-filtered list of "unknown" episodes that belong to this series.
     ///
     /// Ordered by AniDb air-date.
     /// </summary>
-    public readonly List<EpisodeInfo> AlternateEpisodesList;
+    public IReadOnlyList<EpisodeInfo> AlternateEpisodesList { get; init; }
 
     /// <summary>
     /// A pre-filtered list of "extra" videos that belong to this series.
     ///
     /// Ordered by AniDb air-date.
     /// </summary>
-    public readonly List<EpisodeInfo> ExtrasList;
-
-    /// <summary>
-    /// A list of special episodes that come before normal episodes.
-    /// </summary>
-    public readonly IReadOnlySet<string> SpecialsBeforeEpisodes;
-
-    /// <summary>
-    /// A dictionary holding mappings for the previous normal episode for every special episode in a series.
-    /// </summary>
-    public readonly IReadOnlyDictionary<EpisodeInfo, EpisodeInfo> SpecialsAnchors;
+    public IReadOnlyList<EpisodeInfo> ExtrasList { get; init; }
 
     /// <summary>
     /// A pre-filtered list of special episodes without an ExtraType
@@ -95,42 +106,38 @@ public class SeasonInfo
     ///
     /// Ordered by AniDb episode number.
     /// </summary>
-    public readonly List<EpisodeInfo> SpecialsList;
+    public IReadOnlyList<EpisodeInfo> SpecialsList { get; init; }
+
+    /// <summary>
+    /// A list of special episodes that come before normal episodes.
+    /// </summary>
+    public IReadOnlySet<string> SpecialsBeforeEpisodes { get; init; }
+
+    /// <summary>
+    /// A dictionary holding mappings for the previous normal episode for every special episode in a series.
+    /// </summary>
+    public IReadOnlyDictionary<EpisodeInfo, EpisodeInfo> SpecialsAnchors { get; init; }
 
     /// <summary>
     /// Related series data available in Shoko.
     /// </summary>
-    public readonly IReadOnlyList<Relation> Relations;
+    public IReadOnlyList<Relation> Relations { get; init; }
 
     /// <summary>
     /// Map of related series with type.
     /// </summary>
-    public readonly IReadOnlyDictionary<string, RelationType> RelationMap;
+    public IReadOnlyDictionary<string, RelationType> RelationMap { get; init; }
 
     public SeasonInfo(
-        Series series,
-        SeriesType? customType,
+        ShokoApiClient client,
+        ShokoSeries series,
         IEnumerable<string> extraIds,
-        DateTime? earliestImportedAt,
-        DateTime? lastImportedAt,
         List<EpisodeInfo> episodes,
-        List<Role> cast,
-        List<Relation> relations,
-        string[] genres,
-        string[] tags,
-        string[] productionLocations,
-        IReadOnlyDictionary<string, SeriesConfiguration> seriesConfigurationMap,
-        string? contentRating)
-    {
-        var seriesId = series.IDs.Shoko.ToString();
-        var studios = cast
-            .Where(r => r.Type == CreatorRoleType.Studio)
-            .Select(r => r.Staff.Name)
-            .ToArray();
-        var staff = cast
-            .Select(RoleToPersonInfo)
-            .OfType<PersonInfo>()
-            .ToArray();
+        IReadOnlyList<Relation> relations,
+        ITmdbEntity? tmdbEntity,
+        IReadOnlyDictionary<string, SeriesConfiguration> seriesConfigurationMap
+    ) {
+        var seasonId = series.Id;
         var relationMap = relations
             .Where(r => r.RelatedIDs.Shoko.HasValue)
             .DistinctBy(r => r.RelatedIDs.Shoko!.Value)
@@ -141,13 +148,13 @@ public class SeasonInfo
         var episodesList = new List<EpisodeInfo>();
         var extrasList = new List<EpisodeInfo>();
         var altEpisodesList = new List<EpisodeInfo>();
-        var seriesIdOrder = new string[] { seriesId }.Concat(extraIds).ToList();
+        var seasonIdOrder = new string[] { seasonId }.Concat(extraIds).ToList();
 
         // Order the episodes by date.
         episodes = episodes
             .OrderBy(episode => !episode.AiredAt.HasValue)
             .ThenBy(episode => episode.AiredAt)
-            .ThenBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+            .ThenBy(e => seasonIdOrder.IndexOf(e.SeasonId))
             .ThenBy(episode => episode.Type)
             .ThenBy(episode => episode.SeasonNumber)
             .ThenBy(episode => episode.EpisodeNumber)
@@ -159,7 +166,8 @@ public class SeasonInfo
         foreach (var episode in episodes) {
             if (episode.IsHidden)
                 continue;
-            var seriesConfiguration = seriesConfigurationMap[episode.SeriesId];
+
+            var seriesConfiguration = seriesConfigurationMap[episode.SeasonId];
             var episodeType = episode.Type is EpisodeType.Normal && seriesConfiguration.EpisodesAsSpecials ? EpisodeType.Special : episode.Type;
             switch (episodeType) {
                 case EpisodeType.Normal:
@@ -201,21 +209,21 @@ public class SeasonInfo
         // We order the lists after sorting them into buckets because the bucket
         // sort we're doing above have the episodes ordered by air date to get
         // the previous episode anchors right.
-        if (!seriesConfigurationMap[seriesId].OrderByAirdate) {
+        if (!seriesConfigurationMap[seasonId].OrderByAirdate) {
             episodesList = episodesList
-                .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+                .OrderBy(e => seasonIdOrder.IndexOf(e.SeasonId))
                 .ThenBy(e => e.Type)
                 .ThenBy(e => e.SeasonNumber)
                 .ThenBy(e => e.EpisodeNumber)
                 .ToList();
             altEpisodesList = altEpisodesList
-                .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+                .OrderBy(e => seasonIdOrder.IndexOf(e.SeasonId))
                 .ThenBy(e => e.Type)
                 .ThenBy(e => e.SeasonNumber)
                 .ThenBy(e => e.EpisodeNumber)
                 .ToList();
             specialsList = specialsList
-                .OrderBy(e => seriesIdOrder.IndexOf(e.SeriesId))
+                .OrderBy(e => seasonIdOrder.IndexOf(e.SeasonId))
                 .ThenBy(e => e.Type)
                 .ThenBy(e => e.SeasonNumber)
                 .ThenBy(e => e.EpisodeNumber)
@@ -224,7 +232,8 @@ public class SeasonInfo
 
         // Replace the normal episodes if we've hidden all the normal episodes and we have at least one
         // alternate episode locally.
-        var type = customType ?? series.AniDBEntity.Type;
+        var customType = seriesConfigurationMap[seasonId].TypeOverride;
+        var type = customType ?? series.AniDB.Type;
         if (episodesList.Count == 0 && altEpisodesList.Count > 0) {
             // Switch the type from movie to web if we've hidden the main movie, and we have some of the parts.
             if (!customType.HasValue && type == SeriesType.Movie)
@@ -258,7 +267,7 @@ public class SeasonInfo
             }
         }
         // Also switch the type from movie to web if we're hidden the main movies, but the parts are normal episodes.
-        else if (!customType.HasValue && type == SeriesType.Movie && episodes.Any(episodeInfo => episodeInfo.Titles.Any(title => title.Source is "AniDB" && title.LanguageCode is "en" && title.Value is "Complete Movie") && episodeInfo.IsHidden)) {
+        else if (!customType.HasValue && type == SeriesType.Movie && episodes.Any(episodeInfo => episodeInfo.IsMainEntry && episodeInfo.IsHidden)) {
             type = SeriesType.Web;
         }
 
@@ -274,96 +283,297 @@ public class SeasonInfo
             }
         }
 
-        Id = seriesId;
+        _client = client;
+        Id = seasonId;
         ExtraIds = extraIds.ToArray();
-        Shoko = series;
-        AniDB = series.AniDBEntity;
+        if (tmdbEntity is TmdbSeason tmdbSeason) {
+            TmdbSeasonId = tmdbSeason.Id;
+        }
+        if (tmdbEntity is TmdbMovieCollection tmdbMovieCollection) {
+            TmdbMovieCollectionId = tmdbMovieCollection.Id.ToString();
+        }
+        AnidbId = series.AniDB.Id.ToString();
+        ShokoSeriesId = series.IDs.Shoko.ToString();
+        ShokoGroupId = series.IDs.ParentGroup.ToString();
+        TopLevelShokoGroupId = series.IDs.TopLevelGroup.ToString();
+        StructureType = seriesConfigurationMap[seasonId].StructureType;
         Type = type;
-        EarliestImportedAt = earliestImportedAt;
-        LastImportedAt = lastImportedAt;
-        AssumedContentRating = contentRating;
-        Tags = tags;
-        Genres = genres;
-        ProductionLocations = productionLocations;
-        Studios = studios;
-        Staff = staff;
-        RawEpisodeList = episodes;
+        IsMultiEntry = type is SeriesType.Movie && series.Sizes.Total.Episodes > 1;
+        IsRestricted = series.AniDB.Restricted;
+        DefaultTitle = series.Name;
+        Titles = [
+            ..series.AniDB.Titles,
+            ..(tmdbEntity?.Titles ?? []),
+        ];
+        DefaultOverview = series.Description == series.AniDB.Description
+            ? Text.SanitizeAnidbDescription(series.Description)
+            : series.Description;
+        Overviews = [
+            ..(!string.IsNullOrEmpty(series.AniDB.Description) ? [
+                new() {
+                    IsDefault = true,
+                    IsPreferred = string.Equals(series.Description, series.AniDB.Description),
+                    LanguageCode = "en",
+                    Source = "AniDB",
+                    Value = Text.SanitizeAnidbDescription(series.AniDB.Description),
+                },
+            ] : Array.Empty<TextOverview>()),
+            ..(tmdbEntity?.Overviews ?? []),
+        ];
+        OriginalLanguageCode = null;
+        CommunityRating = series.AniDB.Rating;
+        PremiereDate = series.AniDB.AirDate;
+        EndDate = series.AniDB.EndDate;
+        Genres = episodes.SelectMany(s => s.Genres).Distinct().ToArray();
+        Tags = episodes.SelectMany(s => s.Tags).Distinct().ToArray();
+        Studios = episodes.SelectMany(s => s.Studios).Distinct().ToArray();
+        ProductionLocations = episodes
+            .SelectMany(sI => sI.ProductionLocations)
+            .GroupBy(kP => kP.Key, kP => kP.Value)
+            .ToDictionary(gB => gB.Key, gB => gB.SelectMany(l => l).Distinct().ToList() as IReadOnlyList<string>);
+        ContentRatings = episodes
+            .SelectMany(sI => sI.ContentRatings)
+            .Distinct()
+            .ToList();
+        Staff = episodes.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
         EpisodeList = episodesList;
         AlternateEpisodesList = altEpisodesList;
         ExtrasList = extrasList;
+        SpecialsList = specialsList;
         SpecialsBeforeEpisodes = specialsBeforeEpisodes;
         SpecialsAnchors = specialsAnchorDictionary;
-        SpecialsList = specialsList;
         Relations = relations;
         RelationMap = relationMap;
     }
 
+    public SeasonInfo(ShokoApiClient client, TmdbSeason tmdbSeason, TmdbShow tmdbShow, IReadOnlyList<EpisodeInfo> episodes, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
+        var tags = new List<string>();
+        var genres = new List<string>();
+        if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.TmdbKeywords))
+            tags.AddRange(tmdbShow.Keywords);
+        if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.TmdbGenres))
+            tags.AddRange(tmdbShow.Genres);
+        if (Plugin.Instance.Configuration.GenreSources.HasFlag(TagFilter.TagSource.TmdbKeywords))
+            genres.AddRange(tmdbShow.Keywords);
+        if (Plugin.Instance.Configuration.GenreSources.HasFlag(TagFilter.TagSource.TmdbGenres))
+            genres.AddRange(tmdbShow.Genres);
+
+        _client = client;
+        Id = IdPrefix.TmdbShow + tmdbSeason.Id;
+        ExtraIds = [];
+        TmdbSeasonId = tmdbSeason.Id;
+        ShokoSeriesId = shokoSeriesId;
+        ShokoGroupId = shokoGroupId;
+        TopLevelShokoGroupId = topLevelShokoGroupId;
+        StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
+        Type = SeriesType.TV;
+        IsMultiEntry = true;
+        IsRestricted = tmdbShow.IsRestricted;
+        DefaultTitle = tmdbShow.Title;
+        Titles = tmdbSeason.Titles;
+        DefaultOverview = tmdbSeason.Overview;
+        Overviews = tmdbSeason.Overviews;
+        OriginalLanguageCode = tmdbShow.OriginalLanguage;
+        CommunityRating = tmdbShow.UserRating;
+        if (episodes.Count > 0) {
+            PremiereDate = episodes[0].AiredAt;
+            EndDate = (tmdbShow.LastAiredAt.HasValue || tmdbSeason.SeasonNumber < tmdbShow.SeasonCount) && episodes[^1].AiredAt is { } endDate && endDate < DateTime.Now ? endDate : null;
+        }
+        Genres = genres;
+        Tags = tags;
+        Studios = tmdbShow.Studios.Select(s => s.Name).ToArray();
+        ProductionLocations = new Dictionary<ProviderName, IReadOnlyList<string>>() {
+            { ProviderName.TMDB, tmdbShow.ProductionCountries.Values.ToArray() },
+        };
+        ContentRatings = tmdbShow.ContentRatings;
+        Staff = episodes.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
+        EpisodeList = tmdbSeason.SeasonNumber is not 0 ? episodes.ToList() : [];
+        AlternateEpisodesList = [];
+        ExtrasList = [];
+        SpecialsList = tmdbSeason.SeasonNumber is 0 ? episodes.ToList() : [];
+        SpecialsBeforeEpisodes = new HashSet<string>();
+        SpecialsAnchors = new Dictionary<EpisodeInfo, EpisodeInfo>();
+        Relations = [];
+        RelationMap = new Dictionary<string, RelationType>();
+    }
+
+    public SeasonInfo(ShokoApiClient client, TmdbMovie tmdbMovie, EpisodeInfo episodeInfo, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
+        _client = client;
+        Id = IdPrefix.TmdbMovie + tmdbMovie.Id.ToString();
+        ExtraIds = [];
+        TmdbMovieCollectionId = tmdbMovie.CollectionId?.ToString();
+        ShokoSeriesId = shokoSeriesId;
+        ShokoGroupId = shokoGroupId;
+        TopLevelShokoGroupId = topLevelShokoGroupId;
+        StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
+        Type = SeriesType.Movie;
+        IsMultiEntry = false;
+        IsRestricted = tmdbMovie.IsRestricted;
+        DefaultTitle = tmdbMovie.Title;
+        Titles = tmdbMovie.Titles;
+        DefaultOverview = tmdbMovie.Overview;
+        Overviews = tmdbMovie.Overviews;
+        OriginalLanguageCode = tmdbMovie.OriginalLanguage;
+        CommunityRating = episodeInfo.CommunityRating;
+        PremiereDate = episodeInfo.AiredAt;
+        EndDate = episodeInfo.AiredAt is { } endDate && endDate < DateTime.Now ? endDate : null;
+        Genres = episodeInfo.Genres;
+        Tags = episodeInfo.Tags;
+        Studios = episodeInfo.Studios;
+        ProductionLocations = episodeInfo.ProductionLocations;
+        ContentRatings = episodeInfo.ContentRatings;
+        Staff = episodeInfo.Staff;
+        EpisodeList = [episodeInfo];
+        AlternateEpisodesList = [];
+        ExtrasList = [];
+        SpecialsList = [];
+        SpecialsBeforeEpisodes = new HashSet<string>();
+        SpecialsAnchors = new Dictionary<EpisodeInfo, EpisodeInfo>();
+        Relations = [];
+        RelationMap = new Dictionary<string, RelationType>();
+    }
+
+    public SeasonInfo(ShokoApiClient client, TmdbMovieCollection tmdbMovieCollection, IReadOnlyList<TmdbMovie> movies, IReadOnlyList<EpisodeInfo> episodes, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
+        _client = client;
+        Id = IdPrefix.TmdbMovieCollection + tmdbMovieCollection.Id.ToString();
+        ExtraIds = [];
+        TmdbMovieCollectionId = tmdbMovieCollection.Id.ToString();
+        ShokoSeriesId = shokoSeriesId;
+        ShokoGroupId = shokoGroupId;
+        TopLevelShokoGroupId = topLevelShokoGroupId;
+        StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
+        Type = SeriesType.Movie;
+        IsMultiEntry = true;
+        IsRestricted = movies.Any(movie => movie.IsRestricted);
+        DefaultTitle = tmdbMovieCollection.Title;
+        Titles = tmdbMovieCollection.Titles;
+        DefaultOverview = tmdbMovieCollection.Overview;
+        Overviews = tmdbMovieCollection.Overviews;
+        OriginalLanguageCode = movies[0].OriginalLanguage;
+        CommunityRating = episodes[0].CommunityRating;
+        PremiereDate = episodes[0].AiredAt;
+        EndDate = episodes[^1].AiredAt is { } endDate && endDate < DateTime.Now ? endDate : null;
+        Genres = episodes.SelectMany(m => m.Genres).Distinct().ToArray();
+        Tags = episodes.SelectMany(m => m.Tags).Distinct().ToArray();
+        ProductionLocations = episodes
+            .SelectMany(sI => sI.ProductionLocations)
+            .GroupBy(kP => kP.Key, kP => kP.Value)
+            .ToDictionary(gB => gB.Key, gB => gB.SelectMany(l => l).Distinct().ToList() as IReadOnlyList<string>);
+        ContentRatings = episodes
+            .SelectMany(sI => sI.ContentRatings)
+            .Distinct()
+            .ToList();
+        Studios = episodes.SelectMany(m => m.Studios).Distinct().ToArray();
+        Staff = episodes.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
+        EpisodeList = [.. episodes];
+        AlternateEpisodesList = [];
+        ExtrasList = [];
+        SpecialsList = [];
+        SpecialsBeforeEpisodes = new HashSet<string>();
+        SpecialsAnchors = new Dictionary<EpisodeInfo, EpisodeInfo>();
+        Relations = [];
+        RelationMap = new Dictionary<string, RelationType>();
+    }
+
+    private IReadOnlyList<(File file, string seriesId, HashSet<string> episodeIds)>? _cachedFiles = null;
+
+    public async Task<IReadOnlyList<(File file, string seriesId, HashSet<string> episodeIds)>> GetFiles() {
+        if (_cachedFiles != null)
+            return _cachedFiles;
+
+        var list = new List<(File file, string seriesId, HashSet<string> episodeIds)>();
+        if (StructureType is SeriesStructureType.TMDB_SeriesAndMovies) {
+            if (Id[0] is IdPrefix.TmdbShow) {
+                var episodes = (await _client.GetTmdbEpisodesInTmdbSeason(Id[1..]).ConfigureAwait(false))
+                    .Select(e => e.Id)
+                    .ToHashSet();
+                var files = await _client.GetFilesForTmdbSeason(Id[1..]).ConfigureAwait(false);
+                foreach (var file in files) {
+                    if (file.CrossReferences.Where(x => x.Series.Shoko.HasValue && x.Episodes.Any(e => e.Shoko.HasValue && episodes.Overlaps(e.TMDB.Episode))).ToList() is not { Count: > 0 } xrefList)
+                        continue;
+
+                    foreach (var xref in xrefList) {
+                        var episodeIds = xref.Episodes
+                            .Where(e => e.Shoko.HasValue && episodes.Overlaps(e.TMDB.Episode))
+                            .SelectMany(e => episodes.Intersect(e.TMDB.Episode))
+                            .Select(e => IdPrefix.TmdbShow + e.ToString())
+                            .ToHashSet();
+                        list.Add((file, xref.Series.Shoko!.Value.ToString(), episodeIds));
+                    }
+
+                }
+            }
+            else if (Id[0] is IdPrefix.TmdbMovie) {
+                var files = await _client.GetFilesForTmdbMovie(Id[1..]).ConfigureAwait(false);
+                var movieId = int.Parse(Id[1..]);
+                foreach (var file in files) {
+                    if (file.CrossReferences.FirstOrDefault(x => x.Series.Shoko.HasValue && x.Episodes.Any(e => e.Shoko.HasValue && e.TMDB.Movie.Contains(movieId))) is not { } xref)
+                        continue;
+
+                    list.Add((file, xref.Series.Shoko!.Value.ToString(), [IdPrefix.TmdbMovie + movieId.ToString()]));
+                }
+            }
+            else if (Id[0] is IdPrefix.TmdbMovieCollection) {
+                var movies = (await _client.GetTmdbMoviesInMovieCollection(Id[1..]).ConfigureAwait(false))
+                    .Select(m => m.Id)
+                    .ToHashSet();
+                foreach (var episodeInfo in EpisodeList) {
+                    var episodeFiles = await _client.GetFilesForTmdbMovie(episodeInfo.Id[1..]).ConfigureAwait(false);
+                    var movieId = int.Parse(episodeInfo.Id[1..]);
+                    foreach (var file in episodeFiles) {
+                        if (file.CrossReferences.FirstOrDefault(x => x.Series.Shoko.HasValue && x.Episodes.Any(e => e.Shoko.HasValue && e.TMDB.Movie.Contains(movieId))) is not { } xref)
+                            continue;
+
+                        list.Add((file, xref.Series.Shoko!.Value.ToString(), [IdPrefix.TmdbMovie + movieId.ToString()]));
+                    }
+                }
+            }
+        }
+        else {
+            list.AddRange(
+                (await _client.GetFilesForShokoSeries(Id).ConfigureAwait(false))
+                    .Select(file => (
+                        file,
+                        Id,
+                        file.CrossReferences.FirstOrDefault(x => x.Series.Shoko.HasValue && x.Series.Shoko!.Value.ToString() == Id)?.Episodes.Select(e => e.Shoko!.Value.ToString()).ToHashSet() ?? []
+                    ))
+            );
+            foreach (var extraId in ExtraIds)
+                list.AddRange(
+                    (await _client.GetFilesForShokoSeries(extraId).ConfigureAwait(false))
+                        .Select(file => (
+                            file,
+                            extraId,
+                            file.CrossReferences.FirstOrDefault(x => x.Series.Shoko.HasValue && x.Series.Shoko!.Value.ToString() == extraId)?.Episodes.Select(e => e.Shoko!.Value.ToString()).ToHashSet() ?? []
+                        ))
+                );
+        }
+
+        _cachedFiles = list;
+        return list;
+    }
+
+    public async Task<Images> GetImages(CancellationToken cancellationToken)
+        => Id[0] switch {
+                IdPrefix.TmdbShow => await _client.GetImagesForTmdbSeason(Id[1..], cancellationToken).ConfigureAwait(false),
+                IdPrefix.TmdbMovie => await _client.GetImagesForTmdbMovie(Id[1..], cancellationToken).ConfigureAwait(false),
+                IdPrefix.TmdbMovieCollection => await _client.GetImagesForTmdbMovieCollection(Id[1..], cancellationToken).ConfigureAwait(false),
+                _ => await _client.GetImagesForShokoSeries(Id, cancellationToken).ConfigureAwait(false),
+            } ?? new();
+
     public bool IsExtraEpisode(EpisodeInfo? episodeInfo)
         => episodeInfo != null && ExtrasList.Any(eI => eI.Id == episodeInfo.Id);
 
-    public bool IsEmpty(int offset = 0)
-    {
+    public bool IsEmpty(int offset = 0) {
         // The extra "season" for this season info.
         if (offset == 1)
-            return EpisodeList.Count == 0 || !AlternateEpisodesList.Any(eI => eI.FileCount > 0);
+            return EpisodeList.Count == 0 || !AlternateEpisodesList.Any(eI => eI.IsAvailable);
 
         // The default "season" for this season info.
         var episodeList = EpisodeList.Count == 0 ? AlternateEpisodesList : EpisodeList;
-        if (!episodeList.Any(eI => eI.FileCount > 0))
+        if (!episodeList.Any(eI => eI.IsAvailable))
             return false;
 
         return true;
     }
-
-    private static string? GetImagePath(Image image)
-        => image != null && image.IsAvailable ? image.ToURLString(internalUrl: true) : null;
-
-    private static PersonInfo? RoleToPersonInfo(Role role)
-        => role.Type switch
-        {
-            CreatorRoleType.Director => new PersonInfo
-            {
-                Type = PersonKind.Director,
-                Name = role.Staff.Name,
-                Role = role.Name,
-                ImageUrl = GetImagePath(role.Staff.Image),
-            },
-            CreatorRoleType.Producer => new PersonInfo
-            {
-                Type = PersonKind.Producer,
-                Name = role.Staff.Name,
-                Role = role.Name,
-                ImageUrl = GetImagePath(role.Staff.Image),
-            },
-            CreatorRoleType.Music => new PersonInfo
-            {
-                Type = PersonKind.Lyricist,
-                Name = role.Staff.Name,
-                Role = role.Name,
-                ImageUrl = GetImagePath(role.Staff.Image),
-            },
-            CreatorRoleType.SourceWork => new PersonInfo
-            {
-                Type = PersonKind.Writer,
-                Name = role.Staff.Name,
-                Role = role.Name,
-                ImageUrl = GetImagePath(role.Staff.Image),
-            },
-            CreatorRoleType.SeriesComposer => new PersonInfo
-            {
-                Type = PersonKind.Composer,
-                Name = role.Staff.Name,
-                ImageUrl = GetImagePath(role.Staff.Image),
-            },
-            CreatorRoleType.Seiyuu => new PersonInfo
-            {
-                Type = PersonKind.Actor,
-                Name = role.Staff.Name,
-                // The character will always be present if the role is a VA.
-                // We make it a conditional check since otherwise will the compiler complain.
-                Role = role.Character?.Name ?? string.Empty,
-                ImageUrl = GetImagePath(role.Staff.Image),
-            },
-            _ => null,
-        };
 }

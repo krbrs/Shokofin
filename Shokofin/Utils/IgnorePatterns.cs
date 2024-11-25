@@ -11,13 +11,11 @@ namespace Shokofin.Utils;
 /// since it's not exposed through the abstraction used by plugins and I don't
 /// care enough to rise a PR to expose it.
 /// </remarks>
-public static class IgnorePatterns
-{
+public static class IgnorePatterns {
     /// <summary>
     /// Files matching these glob patterns will be ignored.
     /// </summary>
-    private static readonly string[] _patterns =
-    {
+    private static readonly string[] _patterns = {
         "**/small.jpg",
         "**/albumart.jpg",
 
@@ -103,10 +101,8 @@ public static class IgnorePatterns
         "**/.zfs"
     };
 
-    private static readonly GlobOptions _globOptions = new GlobOptions
-    {
-        Evaluation =
-        {
+    private static readonly GlobOptions _globOptions = new GlobOptions {
+        Evaluation = {
             CaseInsensitive = true
         }
     };
@@ -118,13 +114,10 @@ public static class IgnorePatterns
     /// </summary>
     /// <param name="path">The path to test.</param>
     /// <returns>Whether to ignore the path.</returns>
-    public static bool ShouldIgnore(ReadOnlySpan<char> path)
-    {
+    public static bool ShouldIgnore(ReadOnlySpan<char> path) {
         int len = _globs.Length;
-        for (int i = 0; i < len; i++)
-        {
-            if (_globs[i].IsMatch(path))
-            {
+        for (int i = 0; i < len; i++) {
+            if (_globs[i].IsMatch(path)) {
                 return true;
             }
         }

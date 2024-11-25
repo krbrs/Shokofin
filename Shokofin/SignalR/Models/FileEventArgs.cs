@@ -4,8 +4,7 @@ using Shokofin.Events.Interfaces;
 
 namespace Shokofin.SignalR.Models;
 
-public class FileEventArgs : IFileEventArgs
-{
+public class FileEventArgs : IFileEventArgs {
     /// <inheritdoc/>
     [JsonInclude, JsonPropertyName("FileID")]
     public int FileId { get; set; }
@@ -33,10 +32,8 @@ public class FileEventArgs : IFileEventArgs
 
     /// <inheritdoc/>
     [JsonIgnore]
-    public string RelativePath
-    {
-        get
-        {
+    public string RelativePath {
+        get {
             if (CachedPath != null)
                 return CachedPath;
             var relativePath = InternalPath

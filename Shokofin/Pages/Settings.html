@@ -127,7 +127,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Default title</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Default title</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
@@ -139,7 +139,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Follow metadata language in library</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Follow metadata language in library</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
@@ -151,7 +151,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Use the language from the media's country of origin</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Use the language from the media's country of origin</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
@@ -217,7 +217,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Default title</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Default title</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
@@ -229,7 +229,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Follow metadata language in library</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Follow metadata language in library</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
@@ -241,7 +241,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Use the language from the media's country of origin</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Use the language from the media's country of origin</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
@@ -314,7 +314,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Follow metadata language in library</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Follow metadata language in library</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
@@ -564,6 +564,24 @@ form:not(.expert-mode) .expert-only {
                                     </label>
                                     <div class="listItemBody">
                                         <h3 class="listItemBodyText">Custom user tags</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TmdbKeywords">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TheMovieDb | Keywords</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TmdbGenres">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TheMovieDb | Genres</h3>
                                     </div>
                                 </div>
                             </div>
@@ -885,6 +903,24 @@ form:not(.expert-mode) .expert-only {
                                         <h3 class="listItemBodyText">Custom user tags</h3>
                                     </div>
                                 </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TmdbKeywords">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TheMovieDb | Keywords</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TmdbGenres">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TheMovieDb | Genres</h3>
+                                    </div>
+                                </div>
                             </div>
                             <div class="fieldDescription">The tag categories to use as the sources of the displayed genres for entities.</div>
                         </div>
@@ -984,12 +1020,71 @@ form:not(.expert-mode) .expert-only {
                         <legend>
                             <h3>Image Settings</h3>
                         </legend>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="AddImageLanguageCode" />
-                                <span>Add Language Code</span>
-                            </label>
-                            <div class="fieldDescription checkboxFieldDescription">Add the language code to image metadata provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
+                        <div id="AddImageLanguageCodeForShows" is="checkbox-list" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Add Language Code for Shows</h3>
+                            <div class="checkboxList paperList checkboxList-paperList">
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Primary">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Posters</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Backdrop">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Backdrops</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Logo">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Logos</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">Add the language code to image metadata for show libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
+                        </div>
+                        <div id="AddImageLanguageCodeForMovies" is="checkbox-list" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Add Language Code for Movies</h3>
+                            <div class="checkboxList paperList checkboxList-paperList">
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Primary">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Posters</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Backdrop">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Backdrops</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Logo">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Logos</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">Add the language code to image metadata for movie libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
                         </div>
                         <div class="checkboxContainer checkboxContainer-withDescription expert-only">
                             <label class="emby-checkbox-label">
@@ -1015,7 +1110,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Follow country/region set in library</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Follow country/region set in library</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Down" class="btnSortableMoveDown btnSortable">
                                         <span class="material-icons keyboard_arrow_down" aria-hidden="true"></span>
@@ -1057,7 +1152,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb</h3>
                                     </div>
                                     <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
                                         <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
@@ -1083,7 +1178,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">AniDB | Series, Seasons, Episodes</h3>
+                                        <h3 class="listItemBodyText">AniDB | Series, Seasons, Episodes, Movies</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1092,7 +1187,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB | Shows, Seasons, Episodes, Movies</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb | Series, Episodes, Movies</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1101,7 +1196,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TvDB | Shows, Episodes</h3>
+                                        <h3 class="listItemBodyText">TvDB | Series, Episodes</h3>
                                     </div>
                                 </div>
                             </div>
@@ -1120,7 +1215,7 @@ form:not(.expert-mode) .expert-only {
                             <select is="emby-select" id="DefaultLibraryStructure" name="DefaultLibraryStructure" class="emby-select-withcolor emby-select">
                                 <option value="AniDB_Anime" selected>AniDB Anime Structure (Default)</option>
                                 <option value="Shoko_Groups">Shoko Group Structure</option>
-                                <option value="TMDB_SeriesAndMovies">TMDB Shows &amp; Movies Structure</option>
+                                <option value="TMDB_SeriesAndMovies">TheMovieDb Shows &amp; Movies Structure</option>
                             </select>
                             <div class="fieldDescription">
                                 <div>
@@ -1136,9 +1231,9 @@ form:not(.expert-mode) .expert-only {
                                 </details>
                             </div>
                         </div>
-                        <div id="SeasonOrderingContainer" class="selectContainer selectContainer-withDescription expert-only" hidden>
-                            <label class="selectLabel" for="SeasonOrdering">Season Ordering</label>
-                            <select is="emby-select" id="SeasonOrdering" name="SeasonOrdering" class="emby-select-withcolor emby-select" disabled>
+                        <div class="selectContainer selectContainer-withDescription expert-only">
+                            <label class="selectLabel" for="SeasonOrdering">Shoko Group's Season Ordering</label>
+                            <select is="emby-select" id="SeasonOrdering" name="SeasonOrdering" class="emby-select-withcolor emby-select">
                                 <option value="Default" selected>Let Shoko decide (Default)</option>
                                 <option value="ReleaseDate">Order seasons by release date</option>
                                 <option value="Chronological" class="expert-only">Order seasons in chronological order (use indirect relations) (EXPERIMENTAL)</option>
@@ -1151,8 +1246,8 @@ form:not(.expert-mode) .expert-only {
                             <select is="emby-select" id="SpecialsPlacement" name="SpecialsPlacement" class="emby-select-withcolor emby-select">
                                 <option value="AfterSeason">Always place specials after the normal episodes (Default)</option>
                                 <option value="InBetweenSeasonByAirDate">Use release dates to place specials</option>
-                                <option value="InBetweenSeasonByOtherData">Loosely use the TMDB data available in Shoko to place specials</option>
-                                <option value="InBetweenSeasonMixed">Either loosely use the TMDB data available in Shoko or fallback to using release dates to place specials</option>
+                                <option value="InBetweenSeasonByOtherData">Loosely use the TheMovieDb data available in Shoko to place specials</option>
+                                <option value="InBetweenSeasonMixed">Either loosely use the TheMovieDb data available in Shoko or fallback to using release dates to place specials</option>
                                 <option value="Excluded">Exclude specials from the seasons</option>
                             </select>
                             <div class="fieldDescription selectFieldDescription">Determines how specials are placed within seasons. <strong>Warning:</strong> Modifying this setting requires a recreation (read as; delete existing then create a new) of any libraries using this plugin — otherwise you <strong>will</strong> have mixed metadata.</div>
@@ -1197,8 +1292,8 @@ form:not(.expert-mode) .expert-only {
                             <label class="selectLabel" for="CollectionGrouping">Collections</label>
                             <select is="emby-select" id="CollectionGrouping" name="CollectionGrouping" class="emby-select-withcolor emby-select">
                                 <option value="None" selected>Do not create collections</option>
-                                <option value="Movies">Create collections for movies based upon Shoko's series</option>
-                                <option value="Shared">Create collections for movies and shows based upon Shoko's groups and series</option>
+                                <option value="Movies">Create collections for movies</option>
+                                <option value="Shared">Create collections for movies and shows</option>
                             </select>
                             <div class="fieldDescription">
                                 <div>Determines what entities to group into native Jellyfin collections.</div>
@@ -1631,11 +1726,20 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TMDB</h3>
+                                        <h3 class="listItemBodyText">TheMovieDb</h3>
                                     </div>
                                 </div>
                             </div>
                             <div class="fieldDescription">Which event sources should be listened to for metadata events.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="SignalRReplaceImagesDuringRefresh" />
+                                <span>Always Replace Images</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                <div>Whether or not to always replace images when refreshing entities because of metadata events.</div>
+                            </div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>Save</span>

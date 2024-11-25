@@ -29,63 +29,44 @@ namespace Shokofin.MergeVersions;
 ///
 /// Based upon;
 /// https://github.com/danieladov/jellyfin-plugin-mergeversions
-public class MergeVersionsManager
-{
+public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibraryManager libraryManager, IIdLookup lookup, ShokoApiManager apiManager, UsageTracker usageTracker) {
     /// <summary>
     /// Logger.
     /// </summary>
-    private readonly ILogger<MergeVersionsManager> _logger;
+    private readonly ILogger<MergeVersionsManager> _logger = logger;
 
     /// <summary>
     /// Library manager. Used to fetch items from the library.
     /// </summary>
-    private readonly ILibraryManager _libraryManager;
+    private readonly ILibraryManager _libraryManager = libraryManager;
 
     /// <summary>
     /// Shoko ID Lookup. Used to check if the plugin is enabled for the videos.
     /// </summary>
-    private readonly IIdLookup _lookup;
+    private readonly IIdLookup _lookup = lookup;
 
     /// <summary>
     /// Used to lookup the file info for each video.
     /// </summary>
-    private readonly ShokoAPIManager _apiManager;
+    private readonly ShokoApiManager _apiManager = apiManager;
 
     /// <summary>
     /// Used to clear the <see cref="_runGuard"/> when the
     /// <see cref="UsageTracker.Stalled"/> event is ran.
     /// </summary>
-    private readonly UsageTracker _usageTracker;
+    private readonly UsageTracker _usageTracker = usageTracker;
 
     /// <summary>
     /// Used as a lock/guard to prevent multiple runs on the same video until
     /// the <see cref="UsageTracker.Stalled"/> event is ran.
     /// </summary>
-    private readonly GuardedMemoryCache _runGuard;
+    private readonly GuardedMemoryCache _runGuard = new(logger, new() { }, new() { });
 
-    /// <summary>
-    /// Used by the DI IoC to inject the needed interfaces.
-    /// </summary>
-    /// <param name="libraryManager">Library manager.</param>
-    /// <param name="lookup">Shoko ID Lookup.</param>
-    public MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibraryManager libraryManager, IIdLookup lookup, ShokoAPIManager apiManager, UsageTracker usageTracker)
-    {
-        _logger = logger;
-        _libraryManager = libraryManager;
-        _lookup = lookup;
-        _apiManager = apiManager;
-        _usageTracker = usageTracker;
-        _usageTracker.Stalled += OnUsageTrackerStalled;
-        _runGuard = new(logger, new() { }, new() { });
-    }
-
-    ~MergeVersionsManager()
-    {
+    ~MergeVersionsManager() {
         _usageTracker.Stalled -= OnUsageTrackerStalled;
     }
 
-    private void OnUsageTrackerStalled(object? sender, EventArgs e)
-    {
+    private void OnUsageTrackerStalled(object? sender, EventArgs e) {
         _runGuard.Clear();
     }
 
@@ -98,8 +79,7 @@ public class MergeVersionsManager
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async task that will silently complete when the merging is
     /// complete.</returns>
-    public async Task SplitAndMergeAll(IProgress<double>? progress, CancellationToken? cancellationToken = null)
-    {
+    public async Task SplitAndMergeAll(IProgress<double>? progress, CancellationToken? cancellationToken = null) {
         // Shared progress;
         double episodeProgressValue = 0d, movieProgressValue = 0d;
 
@@ -118,7 +98,7 @@ public class MergeVersionsManager
         var episodeTask = SplitAndMergeVideos(GetEpisodesFromLibrary(), episodeProgress, cancellationToken);
 
         // Run them in parallel.
-        await Task.WhenAll(movieTask, episodeTask);
+        await Task.WhenAll(movieTask, episodeTask).ConfigureAwait(false);
 
         progress?.Report(100d);
     }
@@ -130,8 +110,7 @@ public class MergeVersionsManager
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async task that will silently complete when the splitting is
     /// complete.</returns>
-    public async Task SplitAll(IProgress<double> progress, CancellationToken cancellationToken)
-    {
+    public async Task SplitAll(IProgress<double> progress, CancellationToken cancellationToken) {
         // Shared progress;
         double episodeProgressValue = 0d, movieProgressValue = 0d;
 
@@ -151,18 +130,18 @@ public class MergeVersionsManager
         var episodeTask = SplitVideos(GetMoviesFromLibrary(), episodeProgress, cancellationToken);
 
         // Run them in parallel.
-        await Task.WhenAll(movieTask, episodeTask);
+        await Task.WhenAll(movieTask, episodeTask).ConfigureAwait(false);
     }
 
     #endregion
 
     #region Episode Level
 
-    public async Task SplitAndMergeAllEpisodes(IProgress<double>? progress, CancellationToken? cancellationToken)
-        => await SplitAndMergeVideos(GetEpisodesFromLibrary(), progress, cancellationToken);
+    public Task SplitAndMergeAllEpisodes(IProgress<double>? progress, CancellationToken? cancellationToken)
+        => SplitAndMergeVideos(GetEpisodesFromLibrary(), progress, cancellationToken);
 
-    public async Task SplitAllEpisodes(IProgress<double>? progress, CancellationToken? cancellationToken)
-        => await SplitVideos(GetEpisodesFromLibrary(), progress, cancellationToken);
+    public Task SplitAllEpisodes(IProgress<double>? progress, CancellationToken? cancellationToken)
+        => SplitVideos(GetEpisodesFromLibrary(), progress, cancellationToken);
 
     public Task<bool> SplitAndMergeEpisodesByEpisodeId(string episodeId)
         => _runGuard.GetOrCreateAsync($"episode:{episodeId}", () => SplitAndMergeVideos(GetEpisodesFromLibrary(episodeId)));
@@ -171,11 +150,11 @@ public class MergeVersionsManager
 
     #region Movie Level
 
-    public async Task SplitAndMergeAllMovies(IProgress<double>? progress, CancellationToken? cancellationToken)
-        => await SplitAndMergeVideos(GetMoviesFromLibrary(), progress, cancellationToken);
+    public Task SplitAndMergeAllMovies(IProgress<double>? progress, CancellationToken? cancellationToken)
+        => SplitAndMergeVideos(GetMoviesFromLibrary(), progress, cancellationToken);
 
-    public async Task SplitAllMovies(IProgress<double>? progress, CancellationToken? cancellationToken)
-        => await SplitVideos(GetMoviesFromLibrary(), progress, cancellationToken);
+    public Task SplitAllMovies(IProgress<double>? progress, CancellationToken? cancellationToken)
+        => SplitVideos(GetMoviesFromLibrary(), progress, cancellationToken);
 
     public Task<bool> SplitAndMergeMoviesByEpisodeId(string movieId)
         => _runGuard.GetOrCreateAsync($"movie:{movieId}", () => SplitAndMergeVideos(GetMoviesFromLibrary(movieId)));
@@ -229,8 +208,7 @@ public class MergeVersionsManager
         IReadOnlyList<TVideo> videos,
         IProgress<double>? progress = null,
         CancellationToken? cancellationToken = null
-    ) where TVideo : Video
-    {
+    ) where TVideo : Video {
         // Split up any existing merged videos.
         double currentCount = 0d;
         double totalCount = videos.Count;
@@ -242,7 +220,7 @@ public class MergeVersionsManager
             progress?.Report(percent);
 
             // Remove all alternate sources linked to the video.
-            await RemoveAlternateSources(video, visitedVideos);
+            await RemoveAlternateSources(video, visitedVideos).ConfigureAwait(false);
         }
 
         // This will likely tax the CPU a bit… maybe, but we need to make sure the videos we're about to merge are up to date.
@@ -268,7 +246,7 @@ public class MergeVersionsManager
             progress?.Report(percent);
 
             // Link the videos together as alternate sources.
-            await MergeVideos(videoGroup);
+            await MergeVideos(videoGroup).ConfigureAwait(false);
         }
 
         progress?.Report(100);
@@ -283,8 +261,7 @@ public class MergeVersionsManager
     /// <param name="cancellationToken">Cancellation token.</param>
     /// <returns>An async task that will silently complete when the splitting is
     /// complete.</returns>
-    public async Task SplitVideos<TVideo>(IReadOnlyList<TVideo> videos, IProgress<double>? progress, CancellationToken? cancellationToken) where TVideo : Video
-    {
+    public async Task SplitVideos<TVideo>(IReadOnlyList<TVideo> videos, IProgress<double>? progress, CancellationToken? cancellationToken) where TVideo : Video {
         // Split up any existing merged videos.
         double currentCount = 0d;
         double totalMovies = videos.Count;
@@ -296,7 +273,7 @@ public class MergeVersionsManager
             progress?.Report(percent);
 
             // Remove all alternate sources linked to the video.
-            await RemoveAlternateSources(video, visitedVideos);
+            await RemoveAlternateSources(video, visitedVideos).ConfigureAwait(false);
         }
 
         progress?.Report(100);
@@ -308,14 +285,13 @@ public class MergeVersionsManager
     ///
     /// Modified from;
     /// https://github.com/jellyfin/jellyfin/blob/9c97c533eff94d25463fb649c9572234da4af1ea/Jellyfin.Api/Controllers/VideosController.cs#L192
-    private async Task MergeVideos<TVideo>(IEnumerable<TVideo> input) where TVideo : Video
-    {
+    private async Task MergeVideos<TVideo>(IEnumerable<TVideo> input) where TVideo : Video {
         if (input is not IList<TVideo> videos)
             videos = input.ToList();
         if (videos.Count < 2)
             return;
 
-        var orderedVideos = await OrderVideos(videos);
+        var orderedVideos = await OrderVideos(videos).ConfigureAwait(false);
         var (primaryVersion, primarySortName) = orderedVideos.First();
 
         // Add any videos not already linked to the primary version to the list.
@@ -332,15 +308,13 @@ public class MergeVersionsManager
 
             // Save the changes back to the repository.
             video.ForcedSortName = sortName;
-            await video.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None)
-                .ConfigureAwait(false);
+            await video.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None).ConfigureAwait(false);
         }
 
         _logger.LogTrace("Saving {Count} linked alternate versions. (PrimaryVideo={PrimaryVideoId})", alternateVersionsOfPrimary.Count, primaryVersion.Id);
         primaryVersion.ForcedSortName = primarySortName;
         primaryVersion.LinkedAlternateVersions = [.. alternateVersionsOfPrimary.OrderBy(i => i.Path)];
-        await primaryVersion.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None)
-            .ConfigureAwait(false);
+        await primaryVersion.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None).ConfigureAwait(false);
     }
 
     /// <summary>
@@ -353,8 +327,7 @@ public class MergeVersionsManager
     /// <typeparam name="TVideo">The type of the video.</typeparam>
     /// <returns>A task that completes when all alternate video sources have been
     /// removed.</returns>
-    private async Task RemoveAlternateSources<TVideo>(TVideo? video, HashSet<Guid> visited, int depth = 0) where TVideo : Video
-    {
+    private async Task RemoveAlternateSources<TVideo>(TVideo? video, HashSet<Guid> visited, int depth = 0) where TVideo : Video {
         if (video is null)
             return;
 
@@ -370,7 +343,7 @@ public class MergeVersionsManager
             var primaryVideo = _libraryManager.GetItemById(video.PrimaryVersionId) as TVideo;
             if (primaryVideo is not null) {
                 _logger.LogTrace("Found primary video to clean up first. (Video={VideoId},Depth={Depth})", primaryVideo.Id, depth);
-                await RemoveAlternateSources(primaryVideo, visited, depth);
+                await RemoveAlternateSources(primaryVideo, visited, depth + 1).ConfigureAwait(false);
             }
         }
 
@@ -386,7 +359,7 @@ public class MergeVersionsManager
         var linkedAlternateVersions = video.GetLinkedAlternateVersions().ToList();
         _logger.LogTrace("Removing {Count} linked alternate sources for video. (Video={VideoId},Depth={Depth})", linkedAlternateVersions.Count, video.Id, depth);
         foreach (var linkedVideo in linkedAlternateVersions) {
-            await RemoveAlternateSources(linkedVideo, visited, depth);
+            await RemoveAlternateSources(linkedVideo, visited, depth + 1).ConfigureAwait(false);
         }
 
         // Remove the link for every local linked video.
@@ -396,7 +369,7 @@ public class MergeVersionsManager
             .ToList();
         _logger.LogTrace("Removing {Count} local alternate sources for video. (Video={VideoId},Depth={Depth})", localAlternateVersions.Count, video.Id, depth);
         foreach (var linkedVideo in localAlternateVersions) {
-            await RemoveAlternateSources(linkedVideo, visited, depth);
+            await RemoveAlternateSources(linkedVideo, visited, depth + 1).ConfigureAwait(false);
         }
 
         // Remove the link for the primary video.
@@ -405,8 +378,7 @@ public class MergeVersionsManager
             video.SetPrimaryVersionId(null);
             video.LinkedAlternateVersions = [];
             video.LocalAlternateVersions = [];
-            await video.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None)
-                .ConfigureAwait(false);
+            await video.UpdateToRepositoryAsync(ItemUpdateType.MetadataEdit, CancellationToken.None).ConfigureAwait(false);
         }
         else {
             _logger.LogTrace("Video is already clean. (PrimaryVideo={PrimaryVideoId},Video={VideoId},Depth={Depth})", video.PrimaryVersionId, video.Id, depth);
@@ -416,22 +388,20 @@ public class MergeVersionsManager
     private static MergeVersionSortSelector[] GetOrderedSelectors()
         => Plugin.Instance.Configuration.MergeVersionSortSelectorOrder.Where((t) => Plugin.Instance.Configuration.MergeVersionSortSelectorList.Contains(t)).ToArray();
 
-    private async Task<IList<(TVideo video, string? sortName)>> OrderVideos<TVideo>(IList<TVideo> list) where TVideo : Video
-    {
+    private async Task<IList<(TVideo video, string? sortName)>> OrderVideos<TVideo>(IList<TVideo> list) where TVideo : Video {
         var selectors = GetOrderedSelectors();
-        return (await Task.WhenAll(list.Select(async video => (video, sortName: await GetSortName(video, selectors)))))
+        return (await Task.WhenAll(list.Select(async video => (video, sortName: await GetSortName(video, selectors)))).ConfigureAwait(false))
             .OrderBy(tuple => tuple.sortName is null)
             .ThenBy(tuple => tuple.sortName)
             .ThenBy(tuple => tuple.video.Path)
             .ToList();
     }
 
-    private async Task<string?> GetSortName<TVideo>(TVideo video, IList<MergeVersionSortSelector> selectors) where TVideo : Video
-    {
+    private async Task<string?> GetSortName<TVideo>(TVideo video, IList<MergeVersionSortSelector> selectors) where TVideo : Video {
         if (selectors.Count is 0)
             return null;
 
-        var (fileInfo, _, _) = await _apiManager.GetFileInfoByPath(video.Path);
+        var (fileInfo, _, _) = await _apiManager.GetFileInfoByPath(video.Path).ConfigureAwait(false);
         if (fileInfo is null)
             return null;
 
@@ -441,8 +411,7 @@ public class MergeVersionsManager
     }
 
     private string GetSelectedSortValue<TVideo>(TVideo video, FileInfo fileInfo, MergeVersionSortSelector selector) where TVideo : Video
-        => selector switch
-        {
+        => selector switch {
             MergeVersionSortSelector.ImportedAt => (fileInfo.Shoko.ImportedAt ?? fileInfo.Shoko.CreatedAt).ToUniversalTime().ToString("O"),
             MergeVersionSortSelector.CreatedAt => fileInfo.Shoko.CreatedAt.ToString("O"),
             MergeVersionSortSelector.Resolution => video.GetDefaultVideoStream() is { } videoStream

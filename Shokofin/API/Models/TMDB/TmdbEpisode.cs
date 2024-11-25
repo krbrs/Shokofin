@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Text.Json.Serialization;
+using Jellyfin.Data.Enums;
 
 namespace Shokofin.API.Models.TMDB;
 
 /// <summary>
 /// APIv3 The Movie DataBase (TMDB) Episode Data Transfer Object (DTO).
 /// </summary>
-public class TmdbEpisode {
+public class TmdbEpisode : ITmdbEntity {
     /// <summary>
     /// TMDB Episode ID.
     /// </summary>
@@ -73,17 +74,12 @@ public class TmdbEpisode {
     public TimeSpan? Runtime { get; set; }
 
     /// <summary>
-    /// All images stored locally for this episode, if any.
-    /// </summary>
-    public Images Images { get; set; } = new();
-
-    /// <summary>
-    /// The cast that have worked on this episode.
+    /// The cast that have worked on this show across all episodes and all seasons.
     /// </summary>
     public IReadOnlyList<Role> Cast { get; set; } = [];
 
     /// <summary>
-    /// The crew that have worked on this episode.
+    /// The crew that have worked on this show across all episodes and all seasons.
     /// </summary>
     public IReadOnlyList<Role> Crew { get; set; } = [];
 
@@ -107,4 +103,8 @@ public class TmdbEpisode {
     /// remote.
     /// </summary>
     public DateTime LastUpdatedAt { get; set; }
+
+    string ITmdbEntity.Id => Id.ToString();
+
+    BaseItemKind ITmdbEntity.Kind => BaseItemKind.Episode;
 }

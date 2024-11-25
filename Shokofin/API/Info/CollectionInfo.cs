@@ -1,36 +1,92 @@
-
 using System.Collections.Generic;
+using System.Linq;
 using Shokofin.API.Models;
+using Shokofin.API.Models.Shoko;
+using Shokofin.Utils;
 
 namespace Shokofin.API.Info;
 
-public class CollectionInfo
-{
-    public string Id;
+public class CollectionInfo(ShokoGroup group, string? mainSeasonId, List<ShowInfo> shows, List<CollectionInfo> subCollections) : IBaseItemInfo {
+    /// <summary>
+    /// Collection Identifier.
+    /// </summary>
+    public string Id { get; init; } = group.Id;
 
-    public string? ParentId;
+    /// <summary>
+    /// Parent Collection Identifier, if any.
+    /// </summary>
+    public string? ParentId { get; init; } = group.IDs.ParentGroup?.ToString();
 
-    public string TopLevelId;
+    /// <summary>
+    /// Top Level Collection Identifier. Will refer to itself if it's a top level collection.
+    /// </summary>
+    public string TopLevelId { get; init; } = group.IDs.TopLevelGroup.ToString();
 
-    public bool IsTopLevel;
+    /// <summary>
+    /// Main show's main season identifier.
+    /// </summary>
+    public string? MainSeasonId { get; init; } = mainSeasonId;
 
-    public string Name;
+    /// <summary>
+    /// True if the collection is a top level collection.
+    /// </summary>
+    public bool IsTopLevel { get; init; } = group.IDs.TopLevelGroup == group.IDs.Shoko;
 
-    public Group Shoko;
+    /// <summary>
+    /// Collection Name.
+    /// </summary>
+    public string DefaultTitle { get; init; } = group.Name;
 
-    public IReadOnlyList<ShowInfo> Shows;
+    public IReadOnlyList<Title> Titles { get; init; } = [];
 
-    public IReadOnlyList<CollectionInfo> SubCollections;
+    /// <summary>
+    /// Collection Description.
+    /// </summary>
+    public string DefaultOverview { get; init; } = group.Description;
 
-    public CollectionInfo(Group group, List<ShowInfo> shows, List<CollectionInfo> subCollections)
+    public IReadOnlyList<TextOverview> Overviews { get; init; } = [];
+
+    public string? OriginalLanguageCode => null;
+
+    /// <summary>
+    /// Number of files across all shows and movies in the collection and all sub-collections.
+    /// </summary>
+    public int FileCount { get; init; } = group.Sizes.Files;
+
+    /// <summary>
+    /// Shows in the collection and not in any sub-collections.
+    /// </summary>
+    public IReadOnlyList<ShowInfo> Shows { get; init; } = shows
+        .Where(showInfo => !showInfo.IsMovieCollection)
+        .ToList();
+
+    /// <summary>
+    /// Movies in the collection and not in any sub-collections.
+    /// </summary>
+    public IReadOnlyList<ShowInfo> Movies { get; init; } = shows
+        .Where(showInfo => showInfo.IsMovieCollection)
+        .ToList();
+
+    /// <summary>
+    /// Sub-collections of the collection.
+    /// </summary>
+    public IReadOnlyList<CollectionInfo> SubCollections { get; init; } = subCollections;
+
+    public CollectionInfo(ShokoGroup group, ShokoSeries series, string? mainSeasonId, List<ShowInfo> shows, List<CollectionInfo> subCollections) : this(group, mainSeasonId, shows, subCollections)
     {
-        Id = group.IDs.Shoko.ToString();
-        ParentId = group.IDs.ParentGroup?.ToString();
-        TopLevelId = group.IDs.TopLevelGroup.ToString();
-        IsTopLevel = group.IDs.TopLevelGroup == group.IDs.Shoko;
-        Name = group.Name;
-        Shoko = group;
-        Shows = shows;
-        SubCollections = subCollections;
+        DefaultTitle = series.Name;
+        Titles = series.AniDB.Titles;
+        DefaultOverview = series.Description == series.AniDB.Description
+            ? Text.SanitizeAnidbDescription(series.Description)
+            : series.Description;
+        Overviews = [
+            new() {
+                IsDefault = true,
+                IsPreferred = true,
+                LanguageCode = "en",
+                Source = "AniDB",
+                Value = Text.SanitizeAnidbDescription(series.AniDB.Description),
+            },
+        ];
     }
 }

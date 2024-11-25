@@ -3,8 +3,7 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models;
 
-public class Image
-{
+public class Image {
     /// <summary>
     /// AniDB, TMDB, etc.
     /// </summary>
@@ -82,8 +81,7 @@ public class Image
 /// Image source.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum ImageSource
-{
+public enum ImageSource {
     /// <summary>
     ///
     /// </summary>
@@ -110,8 +108,7 @@ public enum ImageSource
 /// Image type.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum ImageType
-{
+public enum ImageType {
     /// <summary>
     ///
     /// </summary>

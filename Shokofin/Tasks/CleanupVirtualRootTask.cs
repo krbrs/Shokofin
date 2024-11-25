@@ -17,8 +17,13 @@ namespace Shokofin.Tasks;
 /// <summary>
 /// Clean up any old VFS roots leftover from an outdated install or failed removal of the roots.
 /// </summary>
-public class CleanupVirtualRootTask(ILogger<CleanupVirtualRootTask> logger, ILibraryManager libraryManager, IFileSystem fileSystem, MediaFolderConfigurationService configurationService, LibraryScanWatcher scanWatcher) : IScheduledTask, IConfigurableScheduledTask
-{
+public class CleanupVirtualRootTask(
+    ILogger<CleanupVirtualRootTask> _logger,
+    ILibraryManager _libraryManager,
+    IFileSystem _fileSystem,
+    MediaFolderConfigurationService _configurationService,
+    LibraryScanWatcher _scanWatcher
+) : IScheduledTask, IConfigurableScheduledTask {
     /// <inheritdoc />
     public string Name => "Clean up Virtual File System Roots";
 
@@ -40,16 +45,6 @@ public class CleanupVirtualRootTask(ILogger<CleanupVirtualRootTask> logger, ILib
     /// <inheritdoc />
     public bool IsLogged => Plugin.Instance.Configuration.ExpertMode;
 
-    private readonly ILogger<CleanupVirtualRootTask> Logger = logger;
-
-    private readonly ILibraryManager LibraryManager = libraryManager;
-
-    private readonly IFileSystem FileSystem = fileSystem;
-
-    private readonly MediaFolderConfigurationService ConfigurationService = configurationService;
-
-    private readonly LibraryScanWatcher ScanWatcher = scanWatcher;
-
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         => [
             new() {
@@ -57,12 +52,11 @@ public class CleanupVirtualRootTask(ILogger<CleanupVirtualRootTask> logger, ILib
             },
         ];
 
-    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
-    {
-        if (ScanWatcher.IsScanRunning)
+    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken) {
+        if (_scanWatcher.IsScanRunning)
             return;
 
-        var mediaFolders = (await ConfigurationService.GetAvailableMediaFoldersForLibraries().ConfigureAwait(false))
+        var mediaFolders = (await _configurationService.GetAvailableMediaFoldersForLibraries().ConfigureAwait(false))
             .SelectMany(x => x.mediaList)
             .ToList();
         var start = DateTime.Now;
@@ -70,33 +64,33 @@ public class CleanupVirtualRootTask(ILogger<CleanupVirtualRootTask> logger, ILib
             .Except([Plugin.Instance.VirtualRoot])
             .Where(Directory.Exists)
             .ToList();
-        Logger.LogDebug("Found {RemoveCount} VFS roots to remove.", virtualRoots.Count);
+        _logger.LogDebug("Found {RemoveCount} VFS roots to remove.", virtualRoots.Count);
         foreach (var virtualRoot in virtualRoots) {
             var folderStart = DateTime.Now;
-            Logger.LogTrace("Removing VFS root {Path}.", virtualRoot);
+            _logger.LogTrace("Removing VFS root {Path}.", virtualRoot);
             Directory.Delete(virtualRoot, true);
             var perFolderDeltaTime = DateTime.Now - folderStart;
-            Logger.LogTrace("Removed VFS root {Path} in {TimeSpan}.", virtualRoot, perFolderDeltaTime);
+            _logger.LogTrace("Removed VFS root {Path} in {TimeSpan}.", virtualRoot, perFolderDeltaTime);
         }
 
         var libraryIds = mediaFolders.ToList()
             .Select(config => config.LibraryId.ToString())
             .Distinct()
             .ToList();
-        var vfsRoots = FileSystem.GetDirectories(Plugin.Instance.VirtualRoot, false)
+        var vfsRoots = _fileSystem.GetDirectories(Plugin.Instance.VirtualRoot, false)
             .ExceptBy(libraryIds, directoryInfo => directoryInfo.Name)
             .ToList();
-        Logger.LogDebug("Found {RemoveCount} VFS library roots to remove.", vfsRoots.Count);
+        _logger.LogDebug("Found {RemoveCount} VFS library roots to remove.", vfsRoots.Count);
         foreach (var vfsRoot in vfsRoots) {
             var folderStart = DateTime.Now;
-            Logger.LogTrace("Removing VFS library root for {Id}.", vfsRoot.Name);
+            _logger.LogTrace("Removing VFS library root for {Id}.", vfsRoot.Name);
             Directory.Delete(vfsRoot.FullName, true);
             var perFolderDeltaTime = DateTime.Now - folderStart;
-            Logger.LogTrace("Removed VFS library root for {Id} in {TimeSpan}.", vfsRoot.Name, perFolderDeltaTime);
+            _logger.LogTrace("Removed VFS library root for {Id} in {TimeSpan}.", vfsRoot.Name, perFolderDeltaTime);
         }
 
         var deltaTime = DateTime.Now - start;
-        Logger.LogDebug("Removed {RemoveCount} VFS roots in {TimeSpan}.", vfsRoots.Count, deltaTime);
+        _logger.LogDebug("Removed {RemoveCount} VFS roots in {TimeSpan}.", vfsRoots.Count, deltaTime);
 
         if (Plugin.Instance.Configuration.VFS_AttachRoot) {
             start = DateTime.Now;
@@ -104,11 +98,11 @@ public class CleanupVirtualRootTask(ILogger<CleanupVirtualRootTask> logger, ILib
             var fixedCount = 0;
             var vfsPaths = mediaFolders
                 .DistinctBy(config => config.LibraryId)
-                .Select(config => LibraryManager.GetItemById(config.LibraryId) as Folder)
+                .Select(config => _libraryManager.GetItemById(config.LibraryId) as Folder)
                 .Where(folder => folder is not null)
                 .Select(folder => folder!.GetVirtualRoot())
                 .ToList();
-            Logger.LogDebug("Ensuring {TotalCount} VFS roots exist.", vfsPaths.Count);
+            _logger.LogDebug("Ensuring {TotalCount} VFS roots exist.", vfsPaths.Count);
             foreach (var vfsPath in vfsPaths) {
                 // For Jellyfin to successfully scan the library we need to
                 //   a) make sure it exists so we can add it without Jellyfin throwing a fit, and
@@ -117,17 +111,17 @@ public class CleanupVirtualRootTask(ILogger<CleanupVirtualRootTask> logger, ILib
                     addedCount++;
                     Directory.CreateDirectory(vfsPath);
                     File.WriteAllText(Path.Join(vfsPath, ".keep"), string.Empty);
-                    Logger.LogTrace("Added VFS root: {Path}", vfsPath);
+                    _logger.LogTrace("Added VFS root: {Path}", vfsPath);
                 }
-                else if (!FileSystem.GetFileSystemEntryPaths(vfsPath).Any()) {
+                else if (!_fileSystem.GetFileSystemEntryPaths(vfsPath).Any()) {
                     fixedCount++;
                     File.WriteAllText(Path.Join(vfsPath, ".keep"), string.Empty);
-                    Logger.LogTrace("Fixed VFS root: {Path}", vfsPath);
+                    _logger.LogTrace("Fixed VFS root: {Path}", vfsPath);
                 }
             }
 
             deltaTime = DateTime.Now - start;
-            Logger.LogDebug("Added {AddedCount} missing and fixed {FixedCount} broken VFS roots in {TimeSpan}.", addedCount, fixedCount, deltaTime);
+            _logger.LogDebug("Added {AddedCount} missing and fixed {FixedCount} broken VFS roots in {TimeSpan}.", addedCount, fixedCount, deltaTime);
         }
     }
 }

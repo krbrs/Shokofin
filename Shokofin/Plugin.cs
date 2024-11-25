@@ -8,6 +8,7 @@ using MediaBrowser.Common.Configuration;
 using MediaBrowser.Common.Net;
 using MediaBrowser.Common.Plugins;
 using MediaBrowser.Controller.Configuration;
+using MediaBrowser.Model.Entities;
 using MediaBrowser.Model.Plugins;
 using MediaBrowser.Model.Serialization;
 using Microsoft.Extensions.Logging;
@@ -16,8 +17,7 @@ using Shokofin.Utils;
 
 namespace Shokofin;
 
-public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
-{
+public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
     private static TimeSpan BaseUrlUpdateDelay => TimeSpan.FromMinutes(15);
 
     private readonly IServerConfigurationManager _configurationManager;
@@ -38,17 +38,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// <summary>
     /// Base URL where the Jellyfin server is running.
     /// </summary>
-    public string BaseUrl
-    {
-        get
-        {
+    public string BaseUrl {
+        get {
             if (CachedBaseUrl is not null && LastBaseUrlUpdate is not null && DateTime.Now - LastBaseUrlUpdate < BaseUrlUpdateDelay)
                 return CachedBaseUrl;
 
             lock(this) {
                 LastBaseUrlUpdate = DateTime.Now;
-                if (_configurationManager.GetNetworkConfiguration() is not { } networkOptions)
-                {
+                if (_configurationManager.GetNetworkConfiguration() is not { } networkOptions) {
                     CachedBaseUrl = "http://localhost:8096/";
                     CachedBasePath = string.Empty;
                     return CachedBaseUrl;
@@ -76,17 +73,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// <summary>
     /// Base path where the Jellyfin server is running on the domain.
     /// </summary>
-    public string BasePath
-    {
-        get
-        {
+    public string BasePath {
+        get {
             if (CachedBasePath is not null && LastBaseUrlUpdate is not null && DateTime.Now - LastBaseUrlUpdate < BaseUrlUpdateDelay)
                 return CachedBasePath;
 
             lock(this) {
                 LastBaseUrlUpdate = DateTime.Now;
-                if (_configurationManager.GetNetworkConfiguration() is not { } networkOptions)
-                {
+                if (_configurationManager.GetNetworkConfiguration() is not { } networkOptions) {
                     CachedBaseUrl = "http://localhost:8096/";
                     CachedBasePath = string.Empty;
                     return CachedBaseUrl;
@@ -129,10 +123,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// <summary>
     /// "Virtual" File System Root Directory.
     /// </summary>
-    public string VirtualRoot
-    {
-        get
-        {
+    public string VirtualRoot {
+        get {
             var virtualRoot = _virtualRoot ??= Configuration.VFS_Location switch {
                 VirtualRootLocation.Custom => VirtualRoot_Custom ?? VirtualRoot_Default,
                 VirtualRootLocation.Cache => VirtualRoot_Cache,
@@ -170,8 +162,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     /// </summary>
     public new event EventHandler<PluginConfiguration>? ConfigurationChanged;
 
-    public Plugin(UsageTracker usageTracker, IServerConfigurationManager configurationManager, IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILogger<Plugin> logger) : base(applicationPaths, xmlSerializer)
-    {
+    public Plugin(UsageTracker usageTracker, IServerConfigurationManager configurationManager, IApplicationPaths applicationPaths, IXmlSerializer xmlSerializer, ILogger<Plugin> logger) : base(applicationPaths, xmlSerializer) {
         var configExists = File.Exists(ConfigurationFilePath);
         _configurationManager = configurationManager;
         Tracker = usageTracker;
@@ -229,13 +220,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         }
     }
 
-    public void UpdateConfiguration()
-    {
+    public void UpdateConfiguration() {
         UpdateConfiguration(this.Configuration);
     }
 
-    public void OnConfigChanged(object? sender, BasePluginConfiguration e)
-    {
+    public void OnConfigChanged(object? sender, BasePluginConfiguration e) {
         if (e is not PluginConfiguration config)
             return;
 
@@ -251,8 +240,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
         ConfigurationChanged?.Invoke(sender, config);
     }
 
-    public void FixupConfiguration(PluginConfiguration config)
-    {
+    public void FixupConfiguration(PluginConfiguration config) {
         // Fix-up faulty configuration.
         var changed = false;
         if (string.IsNullOrWhiteSpace(config.VFS_CustomLocation) && config.VFS_CustomLocation is not null) {
@@ -266,6 +254,19 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
                 .ToArray();
             changed = true;
         }
+
+        // Upgrade deprecated configuration options.
+        if (config.AddImageLanguageCode.HasValue) {
+            config.AddImageLanguageCodeForShows = config.AddImageLanguageCode.Value
+                ? [ImageType.Primary, ImageType.Backdrop, ImageType.Banner, ImageType.Logo]
+                : [];
+            config.AddImageLanguageCodeForMovies = config.AddImageLanguageCode.Value
+                ? [ImageType.Primary, ImageType.Backdrop, ImageType.Banner, ImageType.Logo]
+                : [];
+            config.AddImageLanguageCode = null;
+            changed = true;
+        }
+
         if (changed)
             SaveConfiguration(config);
     }
@@ -276,21 +277,18 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
     public static Plugin Instance { get; private set; }
 #pragma warning restore 8618
 
-    public IEnumerable<PluginPageInfo> GetPages()
-    {
+    public IEnumerable<PluginPageInfo> GetPages() {
         return
         [
             // HTML
-            new PluginPageInfo
-            {
+            new() {
                 Name = "Shoko.Settings",
                 EmbeddedResourcePath = $"{GetType().Namespace}.Pages.Settings.html",
                 EnableInMainMenu = Configuration.Misc_ShowInMenu,
                 DisplayName = "Shoko - Settings",
                 MenuSection = "Shoko",
             },
-            new PluginPageInfo
-            {
+            new() {
                 Name = "Shoko.Utilities.Dummy",
                 EmbeddedResourcePath = $"{GetType().Namespace}.Pages.Dummy.html",
                 DisplayName = "Shoko - Dummy",
@@ -298,18 +296,15 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages
             },
 
             // JS
-            new PluginPageInfo
-            {
+            new() {
                 Name = "Shoko.Common.js",
                 EmbeddedResourcePath = $"{GetType().Namespace}.Pages.Scripts.Common.js",
             },
-            new PluginPageInfo
-            {
+            new() {
                 Name = "Shoko.Settings.js",
                 EmbeddedResourcePath = $"{GetType().Namespace}.Pages.Scripts.Settings.js",
             },
-            new PluginPageInfo
-            {
+            new() {
                 Name = "Shoko.Utilities.Dummy.js",
                 EmbeddedResourcePath = $"{GetType().Namespace}.Pages.Scripts.Dummy.js",
             },

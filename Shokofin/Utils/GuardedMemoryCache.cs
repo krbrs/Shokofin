@@ -8,8 +8,7 @@ using Microsoft.Extensions.Logging;
 
 namespace Shokofin.Utils;
 
-sealed class GuardedMemoryCache : IDisposable, IMemoryCache
-{
+sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
     private readonly MemoryCacheOptions CacheOptions;
 
     private readonly MemoryCacheEntryOptions? CacheEntryOptions;
@@ -22,16 +21,14 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache
 
     private AsyncKeyedLocker<object> Semaphores = new(AsyncKeyedLockOptions);
 
-    public GuardedMemoryCache(ILogger logger, MemoryCacheOptions options, MemoryCacheEntryOptions? cacheEntryOptions = null)
-    {
+    public GuardedMemoryCache(ILogger logger, MemoryCacheOptions options, MemoryCacheEntryOptions? cacheEntryOptions = null) {
         Logger = logger;
         CacheOptions = options;
         CacheEntryOptions = cacheEntryOptions;
         Cache = new MemoryCache(CacheOptions);
     }
 
-    public void Clear()
-    {
+    public void Clear() {
         Logger.LogDebug("Clearing cache…");
         var cache = Cache;
         Cache = new MemoryCache(CacheOptions);
@@ -40,8 +37,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache
         cache.Dispose();
     }
 
-    public TItem GetOrCreate<TItem>(object key, Action<TItem> foundAction, Func<TItem> createFactory, MemoryCacheEntryOptions? createOptions = null)
-    {
+    public TItem GetOrCreate<TItem>(object key, Action<TItem> foundAction, Func<TItem> createFactory, MemoryCacheEntryOptions? createOptions = null) {
         if (TryGetValue<TItem>(key, out var value)) {
             foundAction(value);
             return value;
@@ -86,8 +82,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache
         }
     }
 
-    public async Task<TItem> GetOrCreateAsync<TItem>(object key, Action<TItem> foundAction, Func<Task<TItem>> createFactory, MemoryCacheEntryOptions? createOptions = null)
-    {
+    public async Task<TItem> GetOrCreateAsync<TItem>(object key, Action<TItem> foundAction, Func<Task<TItem>> createFactory, MemoryCacheEntryOptions? createOptions = null) {
         if (TryGetValue<TItem>(key, out var value)) {
             foundAction(value);
             return value;
@@ -132,8 +127,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache
         }
     }
 
-    public TItem GetOrCreate<TItem>(object key, Func<TItem> createFactory, MemoryCacheEntryOptions? createOptions = null)
-    {
+    public TItem GetOrCreate<TItem>(object key, Func<TItem> createFactory, MemoryCacheEntryOptions? createOptions = null) {
         if (TryGetValue<TItem>(key, out var value))
             return value;
 
@@ -173,8 +167,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache
         }
     }
 
-    public async Task<TItem> GetOrCreateAsync<TItem>(object key, Func<Task<TItem>> createFactory, MemoryCacheEntryOptions? createOptions = null)
-    {
+    public async Task<TItem> GetOrCreateAsync<TItem>(object key, Func<Task<TItem>> createFactory, MemoryCacheEntryOptions? createOptions = null) {
         if (TryGetValue<TItem>(key, out var value))
             return value;
 
@@ -214,8 +207,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache
         }
     }
 
-    public void Dispose()
-    {
+    public void Dispose() {
         Semaphores.Dispose();
         Cache.Dispose();
     }

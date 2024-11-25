@@ -3,8 +3,7 @@ using System.Text.Json.Serialization;
 namespace Shokofin.API.Models;
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum EpisodeType
-{
+public enum EpisodeType {
     /// <summary>
     /// A catch-all type for future extensions when a provider can't use a current episode type, but knows what the future type should be.
     /// </summary>

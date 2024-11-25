@@ -11,12 +11,7 @@ namespace Shokofin.Tasks;
 /// <summary>
 /// Split all movie entries with a Shoko Episode ID set. For debugging and troubleshooting. DO NOT RUN THIS TASK WHILE A LIBRARY SCAN IS RUNNING.
 /// </summary>
-public class SplitMoviesTask(MergeVersionsManager userSyncManager, LibraryScanWatcher libraryScanWatcher) : IScheduledTask, IConfigurableScheduledTask
-{
-    private readonly MergeVersionsManager _mergeVersionsManager = userSyncManager;
-
-    private readonly LibraryScanWatcher _libraryScanWatcher = libraryScanWatcher;
-
+public class SplitMoviesTask(MergeVersionsManager _mergeVersionsManager, LibraryScanWatcher _libraryScanWatcher) : IScheduledTask, IConfigurableScheduledTask {
     /// <inheritdoc />
     public string Name => "Split Movies";
 
@@ -43,13 +38,12 @@ public class SplitMoviesTask(MergeVersionsManager userSyncManager, LibraryScanWa
         => [];
 
     /// <inheritdoc />
-    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken)
-    {
+    public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken) {
         if (_libraryScanWatcher.IsScanRunning)
             return;
 
         using (Plugin.Instance.Tracker.Enter("Merge Movies Task")) {
-            await _mergeVersionsManager.SplitAllMovies(progress, cancellationToken);
+            await _mergeVersionsManager.SplitAllMovies(progress, cancellationToken).ConfigureAwait(false);
         }
     }
 }

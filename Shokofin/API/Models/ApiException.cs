@@ -9,11 +9,9 @@ using System.Text.Json;
 namespace Shokofin.API.Models;
 
 [Serializable]
-public class ApiException : Exception
-{
+public class ApiException : Exception {
 
-    private record ValidationResponse
-    {
+    private record ValidationResponse {
         public Dictionary<string, string[]> errors = [];
 
         public string title = string.Empty;
@@ -29,30 +27,26 @@ public class ApiException : Exception
 
     public readonly Dictionary<string, string[]> ValidationErrors;
 
-    public ApiException(HttpStatusCode statusCode, string source, string? message) : base(string.IsNullOrEmpty(message) ? source : $"{source}: {message}")
-    {
+    public ApiException(HttpStatusCode statusCode, string source, string? message) : base(string.IsNullOrEmpty(message) ? source : $"{source}: {message}") {
         StatusCode = statusCode;
         Type = ApiExceptionType.Simple;
         ValidationErrors = [];
     }
 
-    protected ApiException(HttpStatusCode statusCode, RemoteApiException inner) : base(inner.Message, inner)
-    {
+    protected ApiException(HttpStatusCode statusCode, RemoteApiException inner) : base(inner.Message, inner) {
         StatusCode = statusCode;
         Type = ApiExceptionType.RemoteException;
         Inner = inner;
         ValidationErrors = [];
     }
 
-    protected ApiException(HttpStatusCode statusCode, string source, string? message, Dictionary<string, string[]>? validationErrors = null): base(string.IsNullOrEmpty(message) ? source : $"{source}: {message}")
-    {
+    protected ApiException(HttpStatusCode statusCode, string source, string? message, Dictionary<string, string[]>? validationErrors = null): base(string.IsNullOrEmpty(message) ? source : $"{source}: {message}") {
         StatusCode = statusCode;
         Type = ApiExceptionType.ValidationErrors;
         ValidationErrors = validationErrors ?? [];
     }
 
-    public static ApiException FromResponse(HttpResponseMessage response)
-    {
+    public static ApiException FromResponse(HttpResponseMessage response) {
         var text = response.Content.ReadAsStringAsync().GetAwaiter().GetResult();
         if (text.Length > 0 && text[0] == '{') {
             var full = JsonSerializer.Deserialize<ValidationResponse>(text);
@@ -71,10 +65,8 @@ public class ApiException : Exception
         return new ApiException(response.StatusCode, response.StatusCode.ToString() + "Exception", text.Split('\n').FirstOrDefault() ?? string.Empty);
     }
 
-    public class RemoteApiException : Exception
-    {
-        public RemoteApiException(string source, string message, string stack) : base($"{source}: {message}")
-        {
+    public class RemoteApiException : Exception {
+        public RemoteApiException(string source, string message, string stack) : base($"{source}: {message}") {
             Source = source;
             StackTrace = stack;
         }
@@ -83,8 +75,7 @@ public class ApiException : Exception
         public override string StackTrace { get; }
     }
 
-    public enum ApiExceptionType
-    {
+    public enum ApiExceptionType {
         Simple = 0,
         ValidationErrors = 1,
         RemoteException = 2,

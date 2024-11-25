@@ -5,16 +5,14 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models;
 
-public class ComponentVersionSet
-{
+public class ComponentVersionSet {
     /// <summary>
     /// Shoko.Server version.
     /// </summary>
     public ComponentVersion Server { get; set; } = new();
 }
 
-public class ComponentVersion
-{
+public class ComponentVersion {
     /// <summary>
     /// Version number.
     /// </summary>
@@ -36,8 +34,7 @@ public class ComponentVersion
     /// </summary>
     public DateTime? ReleaseDate { get; set; } = null;
 
-    public override string ToString()
-    {
+    public override string ToString() {
         var extraDetails = new string?[3] {
             ReleaseChannel?.ToString(),
             Commit?[0..7],
@@ -51,8 +48,7 @@ public class ComponentVersion
 }
 
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum ReleaseChannel
-{
+public enum ReleaseChannel {
     Stable = 1,
     Dev = 2,
     Debug = 3,
