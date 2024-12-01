@@ -157,7 +157,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
             return;
 
         list.Add(new RemoteImageInfo {
-            ProviderName = Plugin.MetadataProviderName,
+            ProviderName = $"{image.Source.ToString().Replace("TMDB", "TheMovieDb")} ({Plugin.MetadataProviderName})",
             Type = imageType,
             Width = image.Width,
             Height = image.Height,
