@@ -155,8 +155,15 @@ public class MediaFolderConfigurationService {
         if (e.Item != null && root != null && e.Item != root && e.Item is Folder folder && folder.ParentId == Guid.Empty  && !string.IsNullOrEmpty(folder.Path) && !folder.Path.StartsWith(root.Path)) {
             await LockObj.WaitAsync().ConfigureAwait(false);
             try {
-                var mediaFolderConfig = Plugin.Instance.Configuration.MediaFolders.FirstOrDefault(c => c.MediaFolderId == folder.Id);
-                if (mediaFolderConfig != null) {
+                var virtualFolders = LibraryManager.GetVirtualFolders();
+                var virtualFolderIds = virtualFolders
+                    .Select(virtualFolder => string.IsNullOrEmpty(virtualFolder.ItemId) ? Guid.Empty : Guid.Parse(virtualFolder.ItemId))
+                    .Except([Guid.Empty])
+                    .ToList();
+                var mediaFolderConfigs = Plugin.Instance.Configuration.MediaFolders
+                    .Where(c => c.MediaFolderId == folder.Id && !virtualFolderIds.Contains(c.LibraryId))
+                    .ToList();
+                foreach (var mediaFolderConfig in mediaFolderConfigs) {
                     Logger.LogDebug(
                         "Removing stored configuration for folder at {Path} (ImportFolder={ImportFolderId},RelativePath={RelativePath})",
                         folder.Path,
