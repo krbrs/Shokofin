@@ -185,6 +185,13 @@ public class VirtualFileSystemService {
             ? $"should-skip-vfs-path:{vfsPath}"
             : $"should-skip-vfs-path:{path}";
         shouldReturnPath = await DataCache.GetOrCreateAsync<bool>(key, async () => {
+            Logger.LogInformation(
+                "Generating VFS structure for library {LibraryName} at sub-path {Path}. This might take some time depending on your collection size. (Library={LibraryId})",
+                mediaConfigs[0].LibraryName,
+                path.StartsWith(vfsPath + Path.DirectorySeparatorChar) ? path[vfsPath.Length..] : Path.DirectorySeparatorChar,
+                mediaConfigs[0].LibraryId
+            );
+
             // Iterate the files already in the VFS.
             string? pathToClean = null;
             IEnumerable<(string sourceLocation, string fileId, string seriesId)>? allFiles = null;
