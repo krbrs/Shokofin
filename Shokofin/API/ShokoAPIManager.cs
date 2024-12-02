@@ -310,15 +310,15 @@ public partial class ShokoApiManager : IDisposable {
                 var allResolvedTags = rootTags
                     .Select(tag => new ResolvedTag(tag, null, getChildren))
                     .SelectMany(tag => tag.RecursiveNamespacedChildren.Values.Prepend(tag))
-                    .ToDictionary(tag => tag.FullName);
+                    .ToDictionary(tag => tag.FullName, StringComparer.InvariantCultureIgnoreCase);
                 // We reassign the children because they may have been moved to a different namespace.
                 foreach (var groupBy in allResolvedTags.Values.GroupBy(tag => tag.Namespace).OrderByDescending(pair => pair.Key)) {
                     if (!allResolvedTags.TryGetValue(groupBy.Key[..^1], out var nsTag))
                         continue;
-                    nsTag.Children = groupBy.ToDictionary(childTag => childTag.Name);
+                    nsTag.Children = groupBy.ToDictionary(childTag => childTag.Name, StringComparer.InvariantCultureIgnoreCase);
                     nsTag.RecursiveNamespacedChildren = nsTag.Children.Values
                         .SelectMany(childTag => childTag.RecursiveNamespacedChildren.Values.Prepend(childTag))
-                        .ToDictionary(childTag => childTag.FullName[nsTag.FullName.Length..]);
+                        .ToDictionary(childTag => childTag.FullName[nsTag.FullName.Length..], StringComparer.InvariantCultureIgnoreCase);
                 }
                 return allResolvedTags as IReadOnlyDictionary<string, ResolvedTag>;
             }

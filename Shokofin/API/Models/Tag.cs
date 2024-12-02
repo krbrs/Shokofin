@@ -204,9 +204,9 @@ public class ResolvedTag : Tag {
         Children = (getChildren(Source, Id) ?? [])
             .DistinctBy(childTag => childTag.Name)
             .Select(childTag => new ResolvedTag(childTag, this, getChildren, FullName + "/"))
-            .ToDictionary(childTag => childTag.Name);
+            .ToDictionary(childTag => childTag.Name, StringComparer.InvariantCultureIgnoreCase);
         RecursiveNamespacedChildren = Children.Values
             .SelectMany(childTag => childTag.RecursiveNamespacedChildren.Values.Prepend(childTag))
-            .ToDictionary(childTag => childTag.FullName[FullName.Length..]);
+            .ToDictionary(childTag => childTag.FullName[FullName.Length..], StringComparer.InvariantCultureIgnoreCase);
     }
 }
