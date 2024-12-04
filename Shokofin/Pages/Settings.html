@@ -21,6 +21,24 @@ form:not(.expert-mode) .expert-only {
   border-radius: 1rem;
   display: "inline";
 }
+.expert-only.experimental-setting.inputContainer .inputLabel::after,
+.expert-only.experimental-setting.selectContainer .selectLabel::after,
+.expert-only.experimental-setting.checkboxContainer .checkboxLabel::after,
+.expert-only.experimental-setting[is="checkbox-list"] .checkboxListLabel::after,
+.expert-only.experimental-setting[is="sortable-checkbox-list"] .checkboxListLabel::after {
+  color: green;
+  content: "EXPERIMENTAL";
+  border-color: green;
+}
+.expert-only.debug-setting.inputContainer .inputLabel::after,
+.expert-only.debug-setting.selectContainer .selectLabel::after,
+.expert-only.debug-setting.checkboxContainer .checkboxLabel::after,
+.expert-only.debug-setting[is="checkbox-list"] .checkboxListLabel::after,
+.expert-only.debug-setting[is="sortable-checkbox-list"] .checkboxListLabel::after {
+  color: orange;
+  content: "DEBUG";
+  border-color: orange;
+}
 
 </style>
             <form>
@@ -272,7 +290,7 @@ form:not(.expert-mode) .expert-only {
                         <legend>
                             <h3>Description Settings</h3>
                         </legend>
-                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only debug-setting">
                             <label class="emby-checkbox-label">
                                 <input is="emby-checkbox" type="checkbox" id="CleanupAniDBDescriptions" />
                                 <span>Cleanup AniDB Descriptions</span>
@@ -1231,13 +1249,13 @@ form:not(.expert-mode) .expert-only {
                                 </details>
                             </div>
                         </div>
-                        <div class="selectContainer selectContainer-withDescription expert-only">
+                        <div class="selectContainer selectContainer-withDescription expert-only experimental-setting">
                             <label class="selectLabel" for="SeasonOrdering">Shoko Group's Season Ordering</label>
                             <select is="emby-select" id="SeasonOrdering" name="SeasonOrdering" class="emby-select-withcolor emby-select">
                                 <option value="Default" selected>Let Shoko decide (Default)</option>
                                 <option value="ReleaseDate">Order seasons by release date</option>
                                 <option value="Chronological" class="expert-only">Order seasons in chronological order (use indirect relations) (EXPERIMENTAL)</option>
-                                <option value="ChronologicalIgnoreIndirect">Order seasons in chronological order (ignore indirect relations) (EXPERIMENTAL)</option>
+                                <option value="ChronologicalIgnoreIndirect"  class="expert-only">Order seasons in chronological order (ignore indirect relations) (EXPERIMENTAL)</option>
                             </select>
                             <div class="fieldDescription">Determines how to order seasons within shows when using groups for shows.</div>
                         </div>
@@ -1266,7 +1284,7 @@ form:not(.expert-mode) .expert-only {
                             </label>
                             <div class="fieldDescription checkboxFieldDescription">Add the metadata for missing episodes/seasons not currently present in your local collection. Display settings for each Jellyfin user will have to be adjusted to show missing episode information to make use of this feature.</div>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only debug-setting">
                             <label class="emby-checkbox-label">
                                 <input is="emby-checkbox" type="checkbox" id="DisableFilterMovieLibraries" />
                                 <span>Disable Movie Library Filtering</span>
@@ -1569,7 +1587,7 @@ form:not(.expert-mode) .expert-only {
                             <h3>Experimental Settings</h3>
                         </legend>
                         <div class="fieldDescription verticalSection-extrabottompadding">Any features/settings in this section is still considered to be in an experimental state. <strong>You can enable them, but at the risk if them messing up your library.</strong></div>
-                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only experimental-setting">
                             <label class="emby-checkbox-label">
                                 <input is="emby-checkbox" type="checkbox" id="EXPERIMENTAL_MergeSeasons" />
                                 <span>Automatically Merge Seasons</span>
