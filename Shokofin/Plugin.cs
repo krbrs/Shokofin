@@ -271,6 +271,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
                 ? [SeriesStructureType.AniDB_Anime, SeriesStructureType.Shoko_Groups]
                 : [];
             config.RespectPreferredImage = null;
+            config.TagSources |= TagFilter.TagSource.TmdbKeywords;
+            config.GenreSources |= TagFilter.TagSource.TmdbGenres;
             changed = true;
         }
 
