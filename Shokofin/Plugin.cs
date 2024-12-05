@@ -266,6 +266,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             config.AddImageLanguageCode = null;
             changed = true;
         }
+        if (config.RespectPreferredImage.HasValue) {
+            config.RespectPreferredImagePerStructureType = config.RespectPreferredImage.Value
+                ? [SeriesStructureType.AniDB_Anime, SeriesStructureType.Shoko_Groups]
+                : [];
+            config.RespectPreferredImage = null;
+            changed = true;
+        }
 
         if (changed)
             SaveConfiguration(config);

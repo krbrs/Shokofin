@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
@@ -205,6 +206,14 @@ public class PluginConfiguration : BasePluginConfiguration {
     public ImageType[] AddImageLanguageCodeForMovies { get; set; }
 
     /// <summary>
+    /// This isn't used anymore, but is kept for upgrading the config in a
+    /// backwards compatible manner.
+    /// TODO: REMOVE THIS IN 6.0
+    /// </summary>
+    [JsonIgnore]
+    public bool? RespectPreferredImage { get; set; }
+
+    /// <summary>
     /// Respect the preferred image flag sent from server when selecting the
     /// correct image to use for the library. Setting this will also set the
     /// language code to the preferred language code for the library if
@@ -212,7 +221,7 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// <see cref="AddImageLanguageCodeForMovies"/> are enabled, thus ensuring
     /// it is always selected for the library.
     /// </summary>
-    public bool RespectPreferredImage { get; set; }
+    public SeriesStructureType[] RespectPreferredImagePerStructureType { get; set; }
 
     #endregion
 
@@ -663,7 +672,11 @@ public class PluginConfiguration : BasePluginConfiguration {
         AddImageLanguageCode = null;
         AddImageLanguageCodeForShows = [];
         AddImageLanguageCodeForMovies = [];
-        RespectPreferredImage = true;
+        RespectPreferredImage = null;
+        RespectPreferredImagePerStructureType = [
+            SeriesStructureType.AniDB_Anime,
+            SeriesStructureType.Shoko_Groups,
+        ];
 
         VFS_Enabled = true;
         VFS_Threads = 4;

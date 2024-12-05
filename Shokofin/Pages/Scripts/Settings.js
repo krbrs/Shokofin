@@ -378,7 +378,7 @@ function applyFormToConfig(form, config) {
             config.SynopsisRemoveSummary = form.querySelector("#CleanupAniDBDescriptions").checked;
             config.AddImageLanguageCodeForShows = retrieveCheckboxList(form, "AddImageLanguageCodeForShows");
             config.AddImageLanguageCodeForMovies = retrieveCheckboxList(form, "AddImageLanguageCodeForMovies");
-            config.RespectPreferredImage = form.querySelector("#RespectPreferredImage").checked;
+            config.RespectPreferredImagePerStructureType = retrieveCheckboxList(form, "RespectPreferredImagePerStructureType");
             config.HideUnverifiedTags = form.querySelector("#HideUnverifiedTags").checked;
             config.TagSources = retrieveCheckboxList(form, "TagSources").join(", ");
             config.TagIncludeFilters = retrieveCheckboxList(form, "TagIncludeFilters").join(", ");
@@ -532,7 +532,7 @@ async function applyConfigToForm(form, config) {
             );
             renderCheckboxList(form, "AddImageLanguageCodeForShows", config.AddImageLanguageCodeForShows);
             renderCheckboxList(form, "AddImageLanguageCodeForMovies", config.AddImageLanguageCodeForMovies);
-            form.querySelector("#RespectPreferredImage").checked = config.RespectPreferredImage;
+            renderCheckboxList(form, "RespectPreferredImagePerStructureType", config.RespectPreferredImagePerStructureType.map(s => s.trim()).filter(s => s));
             form.querySelector("#HideUnverifiedTags").checked = config.HideUnverifiedTags;
             renderCheckboxList(form, "TagSources", config.TagSources.split(",").map(s => s.trim()).filter(s => s));
             renderCheckboxList(form, "TagIncludeFilters", config.TagIncludeFilters.split(",").map(s => s.trim()).filter(s => s));

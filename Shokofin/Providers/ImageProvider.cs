@@ -26,16 +26,16 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
         var list = new List<RemoteImageInfo>();
         var metadataLanguage = item.GetPreferredMetadataLanguage();
         var baseKind = item.GetBaseItemKind();
-        var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImage;
         var trackerId = Plugin.Instance.Tracker.Add($"Providing images for {baseKind} \"{item.Name}\". (Path=\"{item.Path}\")");
         try {
             switch (item) {
                 case Episode episode: {
-                    var (fileInfo, _, _) = await _apiManager.GetFileInfoByPath(episode.Path).ConfigureAwait(false);
-                    if (fileInfo is not { EpisodeList.Count: > 0 })
+                    var (fileInfo, seasonInfo, _) = await _apiManager.GetFileInfoByPath(episode.Path).ConfigureAwait(false);
+                    if (fileInfo is not { EpisodeList.Count: > 0 } || seasonInfo is null)
                         break;
 
                     var episodeInfo = fileInfo.EpisodeList[0].Episode;
+                    var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(seasonInfo.StructureType);
                     if (await episodeInfo.GetImages(cancellationToken).ConfigureAwait(false) is { } episodeImages)
                         AddImagesForEpisode(ref list, episodeImages, metadataLanguage, sortPreferred);
 
@@ -46,6 +46,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                     if (_lookup.TryGetSeasonIdFor(series, out var seasonId)) {
                         if (await _apiManager.GetShowInfoBySeasonId(seasonId).ConfigureAwait(false) is { } showInfo) {
                             var images = await showInfo.GetImages(cancellationToken).ConfigureAwait(false);
+                            var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(showInfo.DefaultSeason.StructureType);
                             AddImagesForSeries(ref list, images, metadataLanguage, sortPreferred);
                             sortPreferred = false;
 
@@ -71,17 +72,19 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                             break;
 
                         var seriesImages = await seasonInfo.GetImages(cancellationToken).ConfigureAwait(false);
+                        var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(seasonInfo.StructureType);
                         AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
                         _logger.LogInformation("Getting {Count} images for season {SeasonNumber} in {SeriesName} (Season={SeasonId},Language={MetadataLanguage})", list.Count, season.IndexNumber, season.SeriesName, seasonId, metadataLanguage);
                     }
                     break;
                 }
                 case Movie movie: {
-                    var (fileInfo, _, _) = await _apiManager.GetFileInfoByPath(movie.Path).ConfigureAwait(false);
-                    if (fileInfo is not { EpisodeList.Count: > 0 })
+                    var (fileInfo, seasonInfo, _) = await _apiManager.GetFileInfoByPath(movie.Path).ConfigureAwait(false);
+                    if (fileInfo is not { EpisodeList.Count: > 0 } || seasonInfo is null)
                         break;
 
                     var episodeInfo = fileInfo.EpisodeList[0].Episode;
+                    var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(seasonInfo.StructureType);
                     if (await episodeInfo.GetImages(cancellationToken).ConfigureAwait(false) is { } episodeImages)
                         AddImagesForSeries(ref list, episodeImages, metadataLanguage, sortPreferred, BaseItemKind.Movie);
 
@@ -97,6 +100,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
 
                     if (!string.IsNullOrEmpty(seasonId) && await _apiManager.GetShowInfoBySeasonId(seasonId).ConfigureAwait(false) is { } showInfo) {
                         var showImages = await showInfo.GetImages(cancellationToken).ConfigureAwait(false);
+                        var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(showInfo.DefaultSeason.StructureType);
                         AddImagesForSeries(ref list, showImages, metadataLanguage, sortPreferred);
                     }
 

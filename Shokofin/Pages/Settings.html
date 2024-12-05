@@ -1104,12 +1104,38 @@ form:not(.expert-mode) .expert-only {
                             </div>
                             <div class="fieldDescription">Add the language code to image metadata for movie libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="RespectPreferredImage" />
-                                <span>Respect Preferred Image</span>
-                            </label>
-                            <div class="fieldDescription checkboxFieldDescription">Respect the preferred image flag sent from server when selecting the correct image to use for the library. Setting this will also set the language code to the preferred language code for the library if "Add Language Code" is enabled, thus ensuring it is always selected for the library.</div>
+                        <div id="RespectPreferredImagePerStructureType" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Respect Preferred Image</h3>
+                            <div class="checkboxList paperList checkboxList-paperList">
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="AniDB_Anime">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">AniDB Anime Structure</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Shoko_Groups">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Shoko Group Structure</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TMDB_SeriesAndMovies">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TheMovieDb Shows &amp; Movies Structure</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">Respect the preferred image flag sent from server when selecting the correct image to use for the entity. Setting this will also set the language code to the preferred language code for the entity if "Add Language Code" is enabled, thus ensuring it is always selected for the given entity.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>Save</span>
