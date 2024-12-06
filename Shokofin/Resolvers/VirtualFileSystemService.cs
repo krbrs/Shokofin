@@ -17,6 +17,7 @@ using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.API.Models;
 using Shokofin.Configuration;
+using Shokofin.Extensions;
 using Shokofin.ExternalIds;
 using Shokofin.Resolvers.Models;
 using Shokofin.Utils;

@@ -14,6 +14,7 @@ using MediaBrowser.Model.IO;
 using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.API.Models;
+using Shokofin.Extensions;
 using Shokofin.ExternalIds;
 
 using File = System.IO.File;

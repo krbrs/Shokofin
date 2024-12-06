@@ -16,7 +16,7 @@ using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.Configuration;
-
+using Shokofin.Extensions;
 using UserStats = Shokofin.API.Models.File.UserStats;
 
 namespace Shokofin.Sync;

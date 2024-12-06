@@ -7,7 +7,7 @@ using MediaBrowser.Common.Providers;
 using MediaBrowser.Model.Entities;
 using Shokofin.ExternalIds;
 
-namespace Shokofin;
+namespace Shokofin.Extensions;
 
 public static partial class StringExtensions {
     public static string Replace(this string input, Regex regex, string replacement, int count, int startAt)

@@ -4,7 +4,7 @@ using Jellyfin.Extensions;
 using Shokofin.API.Info;
 using Shokofin.API.Models;
 using Shokofin.API.Models.AniDB;
-
+using Shokofin.Extensions;
 using ExtraType = MediaBrowser.Model.Entities.ExtraType;
 
 namespace Shokofin.Utils;

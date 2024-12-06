@@ -2,6 +2,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using MediaBrowser.Model.Entities;
+using Shokofin.Extensions;
 using Shokofin.Resolvers.Models;
 
 namespace Shokofin.Web.Models;

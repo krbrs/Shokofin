@@ -19,6 +19,7 @@ using ContentRating = Shokofin.Utils.ContentRating;
 using Path = System.IO.Path;
 using Regex = System.Text.RegularExpressions.Regex;
 using RegexOptions = System.Text.RegularExpressions.RegexOptions;
+using Shokofin.Extensions;
 
 namespace Shokofin.API;
 

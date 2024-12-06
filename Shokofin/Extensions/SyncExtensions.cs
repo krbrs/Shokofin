@@ -3,7 +3,7 @@ using System;
 using MediaBrowser.Controller.Entities;
 using Shokofin.API.Models;
 
-namespace Shokofin.Sync;
+namespace Shokofin.Extensions;
 
 public static class SyncExtensions {
     public static File.UserStats ToFileUserStats(this UserItemData userData) {

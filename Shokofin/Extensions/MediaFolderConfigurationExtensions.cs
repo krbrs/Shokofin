@@ -2,8 +2,9 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using MediaBrowser.Controller.Entities;
+using Shokofin.Configuration;
 
-namespace Shokofin.Configuration;
+namespace Shokofin.Extensions;
 
 public static class MediaFolderConfigurationExtensions {
     public static Folder GetFolderForPath(this string mediaFolderPath)

@@ -2,7 +2,7 @@
 using Jellyfin.Data.Enums;
 using MediaBrowser.Model.Entities;
 
-namespace Shokofin;
+namespace Shokofin.Extensions;
 
 public static class CollectionTypeExtensions {
     public static CollectionType? ConvertToCollectionType(this CollectionTypeOptions? collectionType)

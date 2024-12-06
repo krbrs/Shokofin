@@ -10,6 +10,7 @@ using MediaBrowser.Model.IO;
 using MediaBrowser.Model.Tasks;
 using Microsoft.Extensions.Logging;
 using Shokofin.Configuration;
+using Shokofin.Extensions;
 using Shokofin.Utils;
 
 namespace Shokofin.Tasks;

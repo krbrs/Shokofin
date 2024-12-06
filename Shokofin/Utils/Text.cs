@@ -1,10 +1,11 @@
-using Shokofin.API;
-using Shokofin.API.Info;
-using Shokofin.API.Models;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
+using Shokofin.API;
+using Shokofin.API.Info;
+using Shokofin.API.Models;
+using Shokofin.Extensions;
 
 namespace Shokofin.Utils;
 

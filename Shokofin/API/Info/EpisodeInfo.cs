@@ -12,6 +12,7 @@ using Shokofin.API.Models.Shoko;
 using Shokofin.API.Models.TMDB;
 using Shokofin.Configuration;
 using Shokofin.Events.Interfaces;
+using Shokofin.Extensions;
 using Shokofin.Utils;
 
 namespace Shokofin.API.Info;

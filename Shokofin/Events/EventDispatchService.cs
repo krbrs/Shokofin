@@ -16,6 +16,7 @@ using Shokofin.API.Info;
 using Shokofin.API.Models;
 using Shokofin.Configuration;
 using Shokofin.Events.Interfaces;
+using Shokofin.Extensions;
 using Shokofin.ExternalIds;
 using Shokofin.Resolvers;
 using Shokofin.Resolvers.Models;

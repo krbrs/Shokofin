@@ -7,7 +7,7 @@ using System.Linq;
 using Shokofin.API.Info;
 using Shokofin.API.Models;
 using Shokofin.Events.Interfaces;
-
+using Shokofin.Extensions;
 using TagWeight = Shokofin.Utils.TagFilter.TagWeight;
 
 namespace Shokofin.Utils;

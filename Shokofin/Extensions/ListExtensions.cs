@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 
-namespace Shokofin;
+namespace Shokofin.Extensions;
 
 public static class ListExtensions {
     public static bool TryRemoveAt<T>(this List<T> list, int index, [NotNullWhen(true)] out T? item) {

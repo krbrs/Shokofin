@@ -9,6 +9,7 @@ using Shokofin.API.Models;
 using Shokofin.Configuration;
 using Shokofin.Events;
 using Shokofin.Events.Interfaces;
+using Shokofin.Extensions;
 using Shokofin.SignalR.Models;
 using Shokofin.Utils;
 

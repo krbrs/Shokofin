@@ -14,6 +14,7 @@ using MediaBrowser.Model.IO;
 using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.Configuration.Models;
+using Shokofin.Extensions;
 using Shokofin.Utils;
 
 namespace Shokofin.Configuration;

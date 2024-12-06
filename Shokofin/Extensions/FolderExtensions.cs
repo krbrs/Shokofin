@@ -1,7 +1,7 @@
 using System.IO;
 using MediaBrowser.Controller.Entities;
 
-namespace Shokofin;
+namespace Shokofin.Extensions;
 
 public static class FolderExtensions {
     public static string GetVirtualRoot(this Folder libraryFolder)

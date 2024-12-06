@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Text.Json;
+using Shokofin.Extensions;
 
 namespace Shokofin.API.Models;
 
@@ -79,12 +80,5 @@ public class ApiException : Exception {
         Simple = 0,
         ValidationErrors = 1,
         RemoteException = 2,
-    }
-}
-
-public static class IListExtension {
-    public static void Deconstruct<T>(this IList<T> list, out T? first, out IList<T> rest) {
-        first = list.Count > 0 ? list[0] : default; // or throw
-        rest = list.Skip(1).ToList();
     }
 }
