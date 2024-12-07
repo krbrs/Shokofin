@@ -77,7 +77,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
             throw;
         }
         catch (Exception ex) {
-            Logger.LogWarning(ex, "Got an unexpected exception for key: {Key}", key);
+            Logger.LogTrace(ex, "Got an unexpected exception for key: {Key}", key);
             throw;
         }
     }
@@ -122,7 +122,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
             throw;
         }
         catch (Exception ex) {
-            Logger.LogWarning(ex, "Got an unexpected exception for key: {Key}", key);
+            Logger.LogTrace(ex, "Got an unexpected exception for key: {Key}", key);
             throw;
         }
     }
@@ -162,7 +162,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
             throw;
         }
         catch (Exception ex) {
-            Logger.LogWarning(ex, "Got an unexpected exception for key: {Key}", key);
+            Logger.LogTrace(ex, "Got an unexpected exception for key: {Key}", key);
             throw;
         }
     }
@@ -202,7 +202,7 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
             throw;
         }
         catch (Exception ex) {
-            Logger.LogWarning(ex, "Got an unexpected exception for key: {Key}", key);
+            Logger.LogTrace(ex, "Got an unexpected exception for key: {Key}", key);
             throw;
         }
     }
