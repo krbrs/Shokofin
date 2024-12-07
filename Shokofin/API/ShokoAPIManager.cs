@@ -1008,7 +1008,7 @@ public partial class ShokoApiManager : IDisposable {
                 string? topLevelShokoGroupId = null;
                 if (tmdbSeason.SeasonNumber > 0) {
                     var animeIds = (await ApiClient.GetTmdbCrossReferencesForTmdbShow(tmdbSeason.ShowId.ToString()).ConfigureAwait(false))
-                        .Where(x => tmdbEpisodes[x.TmdbEpisodeId].SeasonId == tmdbSeason.Id)
+                        .Where(x => tmdbEpisodes.TryGetValue(x.TmdbEpisodeId, out var tmdbEpisode) && tmdbEpisode.SeasonId == tmdbSeason.Id)
                         .GroupBy(x => x.AnidbAnimeId)
                         .OrderByDescending(x => x.Count())
                         .Select(x => x.Key)
