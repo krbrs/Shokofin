@@ -1584,7 +1584,7 @@ public partial class ShokoApiManager : IDisposable {
                 return await CreateShowInfoForTmdbMovie(tmdbMovie).ConfigureAwait(false);
 
             if (await ApiClient.GetTmdbMovieCollection(tmdbMovie.CollectionId.Value.ToString()).ConfigureAwait(false) is not { } tmdbMovieCollection)
-                return null;
+                return await CreateShowInfoForTmdbMovie(tmdbMovie).ConfigureAwait(false);
 
             return await CreateShowInfoForTmdbMovieCollection(tmdbMovieCollection).ConfigureAwait(false);
         }
