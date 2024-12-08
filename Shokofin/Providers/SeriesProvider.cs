@@ -88,7 +88,7 @@ public class SeriesProvider(IHttpClientFactory _httpClientFactory, ILogger<Serie
     public static void AddProviderIds(IHasProviderIds item, string internalId, string? seriesId = null, string? groupId = null, string? anidbId = null, string? tmdbId = null, string? tvdbId = null) {
         var config = Plugin.Instance.Configuration;
 
-        item.SetProviderId(ShokoInternalId.Name, ShokoInternalId.Namespace + internalId);
+        item.SetProviderId(ShokoInternalId.Name, internalId);
         if (!string.IsNullOrEmpty(seriesId))
             item.SetProviderId(ShokoSeriesId.Name, seriesId);
         if (!string.IsNullOrEmpty(groupId))
