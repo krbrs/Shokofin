@@ -2,6 +2,7 @@ using System;
 using System.ComponentModel;
 using System.Linq;
 using System.Text.Json.Serialization;
+using System.Xml.Serialization;
 using Shokofin.Extensions;
 
 namespace Shokofin.API.Models;
@@ -18,7 +19,14 @@ public class ComponentVersion {
     /// Version number.
     /// </summary>
     [DefaultValue("1.0.0.0")]
+    [XmlIgnore]
     public Version Version { get; set; } = new("1.0.0.0");
+
+    [XmlElement("Version")]
+    public string VersionString {
+        get => Version.ToString();
+        set => Version = string.IsNullOrEmpty(value) ? new("1.0.0.0") : new(value);
+    }
 
     /// <summary>
     /// Commit SHA.
