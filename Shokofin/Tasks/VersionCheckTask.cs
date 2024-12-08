@@ -58,6 +58,9 @@ public class VersionCheckTask(ILogger<VersionCheckTask> _logger, ILibraryManager
             updated = true;
         }
 
+        if (string.IsNullOrEmpty(Plugin.Instance.Configuration.ApiKey))
+            return;
+
         var mediaFolders = Plugin.Instance.Configuration.MediaFolders.ToList();
         var importFolderNameMap = await Task
             .WhenAll(

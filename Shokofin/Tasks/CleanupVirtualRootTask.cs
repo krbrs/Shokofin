@@ -58,6 +58,9 @@ public class CleanupVirtualRootTask(
         if (_scanWatcher.IsScanRunning)
             return;
 
+        if (string.IsNullOrEmpty(Plugin.Instance.Configuration.ApiKey))
+            return;
+
         var id = _usageTracker.Add("Clean up Virtual File System Roots");
         try {
             var mediaFolders = (await _configurationService.GetAvailableMediaFoldersForLibraries().ConfigureAwait(false))
