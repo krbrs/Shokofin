@@ -64,7 +64,7 @@ public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<Seaso
                 return result;
             }
 
-            _logger.LogInformation("Found info for Season {SeasonNumber} in Series {SeriesName} (MainSeason={MainSeasonId},Group={GroupId})", seasonNumber, showInfo.DefaultTitle, seasonId, showInfo.ShokoGroupId);
+            _logger.LogInformation("Found info for Season {SeasonNumber} in Series {SeriesName} (MainSeason={MainSeasonId},Group={GroupId})", seasonNumber, showInfo.Title, seasonId, showInfo.ShokoGroupId);
 
             var offset = Math.Abs(seasonNumber - baseSeasonNumber);
 
@@ -93,7 +93,7 @@ public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<Seaso
 
     private static Season CreateMetadata(Info.SeasonInfo seasonInfo, int seasonNumber, int offset, string metadataLanguage, string metadataCountryCode, Series? series, Guid seasonId) {
         var (displayTitle, alternateTitle) = Text.GetSeasonTitles(seasonInfo, offset, metadataLanguage);
-        var sortTitle = $"S{seasonNumber} - {seasonInfo.DefaultTitle}";
+        var sortTitle = $"S{seasonNumber} - {seasonInfo.Title}";
         Season season;
         if (series != null) {
             season = new Season {

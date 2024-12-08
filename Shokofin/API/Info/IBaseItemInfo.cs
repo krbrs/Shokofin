@@ -3,16 +3,37 @@ using Shokofin.API.Models;
 
 namespace Shokofin.API.Info;
 
+/// <summary>
+/// Information about a base item.
+/// </summary>
 public interface IBaseItemInfo {
+    /// <summary>
+    /// Unique identifier for the base item.
+    /// </summary>
     string Id { get; }
 
-    string DefaultTitle { get; }
+    /// <summary>
+    /// Preferred title according to title settings on the server for the base item type.
+    /// </summary>
+    string Title { get; }
 
+    /// <summary>
+    /// List of all available titles for the base item.
+    /// </summary>
     IReadOnlyList<Title> Titles { get; }
 
-    string? DefaultOverview { get; }
+    /// <summary>
+    /// Preferred overview according to description settings on the server.
+    /// </summary>
+    string? Overview { get; }
 
+    /// <summary>
+    /// List of all available overviews for the base item.
+    /// </summary>
     IReadOnlyList<TextOverview> Overviews { get; }
 
+    /// <summary>
+    /// Original language code for the base item if available.
+    /// </summary>
     string? OriginalLanguageCode { get; }
 }

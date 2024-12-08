@@ -45,11 +45,11 @@ public class SeasonInfo : IExtendedItemInfo {
 
     public bool IsRestricted { get; init; }
 
-    public string DefaultTitle { get; init; }
+    public string Title { get; init; }
 
     public IReadOnlyList<Title> Titles { get; init; }
 
-    public string? DefaultOverview { get; init; }
+    public string? Overview { get; init; }
 
     public IReadOnlyList<TextOverview> Overviews { get; init; }
 
@@ -300,12 +300,12 @@ public class SeasonInfo : IExtendedItemInfo {
         Type = type;
         IsMultiEntry = type is SeriesType.Movie && series.Sizes.Total.Episodes > 1;
         IsRestricted = series.AniDB.Restricted;
-        DefaultTitle = series.Name;
+        Title = series.Name;
         Titles = [
             ..series.AniDB.Titles,
             ..(tmdbEntity?.Titles ?? []),
         ];
-        DefaultOverview = series.Description == series.AniDB.Description
+        Overview = series.Description == series.AniDB.Description
             ? Text.SanitizeAnidbDescription(series.Description)
             : series.Description;
         Overviews = [
@@ -369,9 +369,9 @@ public class SeasonInfo : IExtendedItemInfo {
         Type = SeriesType.TV;
         IsMultiEntry = true;
         IsRestricted = tmdbShow.IsRestricted;
-        DefaultTitle = tmdbShow.Title;
+        Title = tmdbShow.Title;
         Titles = tmdbSeason.Titles;
-        DefaultOverview = tmdbSeason.Overview;
+        Overview = tmdbSeason.Overview;
         Overviews = tmdbSeason.Overviews;
         OriginalLanguageCode = tmdbShow.OriginalLanguage;
         CommunityRating = tmdbShow.UserRating;
@@ -409,9 +409,9 @@ public class SeasonInfo : IExtendedItemInfo {
         Type = SeriesType.Movie;
         IsMultiEntry = false;
         IsRestricted = tmdbMovie.IsRestricted;
-        DefaultTitle = tmdbMovie.Title;
+        Title = tmdbMovie.Title;
         Titles = tmdbMovie.Titles;
-        DefaultOverview = tmdbMovie.Overview;
+        Overview = tmdbMovie.Overview;
         Overviews = tmdbMovie.Overviews;
         OriginalLanguageCode = tmdbMovie.OriginalLanguage;
         CommunityRating = episodeInfo.CommunityRating;
@@ -445,9 +445,9 @@ public class SeasonInfo : IExtendedItemInfo {
         Type = SeriesType.Movie;
         IsMultiEntry = true;
         IsRestricted = movies.Any(movie => movie.IsRestricted);
-        DefaultTitle = tmdbMovieCollection.Title;
+        Title = tmdbMovieCollection.Title;
         Titles = tmdbMovieCollection.Titles;
-        DefaultOverview = tmdbMovieCollection.Overview;
+        Overview = tmdbMovieCollection.Overview;
         Overviews = tmdbMovieCollection.Overviews;
         OriginalLanguageCode = movies[0].OriginalLanguage;
         CommunityRating = episodes[0].CommunityRating;

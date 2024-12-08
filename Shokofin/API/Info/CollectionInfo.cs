@@ -35,14 +35,14 @@ public class CollectionInfo(ShokoGroup group, string? mainSeasonId, List<ShowInf
     /// <summary>
     /// Collection Name.
     /// </summary>
-    public string DefaultTitle { get; init; } = group.Name;
+    public string Title { get; init; } = group.Name;
 
     public IReadOnlyList<Title> Titles { get; init; } = [];
 
     /// <summary>
     /// Collection Description.
     /// </summary>
-    public string DefaultOverview { get; init; } = group.Description;
+    public string Overview { get; init; } = group.Description;
 
     public IReadOnlyList<TextOverview> Overviews { get; init; } = [];
 
@@ -74,9 +74,9 @@ public class CollectionInfo(ShokoGroup group, string? mainSeasonId, List<ShowInf
 
     public CollectionInfo(ShokoGroup group, ShokoSeries series, string? mainSeasonId, List<ShowInfo> shows, List<CollectionInfo> subCollections) : this(group, mainSeasonId, shows, subCollections)
     {
-        DefaultTitle = series.Name;
+        Title = series.Name;
         Titles = series.AniDB.Titles;
-        DefaultOverview = series.Description == series.AniDB.Description
+        Overview = series.Description == series.AniDB.Description
             ? Text.SanitizeAnidbDescription(series.Description)
             : series.Description;
         Overviews = [

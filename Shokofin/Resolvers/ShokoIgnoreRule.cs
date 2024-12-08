@@ -140,7 +140,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
                     foreach (var entry in entries) {
                         season = await ApiManager.GetSeasonInfoByPath(entry.FullName).ConfigureAwait(false);
                         if (season is not null) {
-                            Logger.LogDebug("Found shoko series {SeriesName} for sub-directory of path {Path} (Season={SeasonId},ExtraSeries={ExtraIds})", season.DefaultTitle, partialPath, season.Id, season.ExtraIds);
+                            Logger.LogDebug("Found shoko series {SeriesName} for sub-directory of path {Path} (Season={SeasonId},ExtraSeries={ExtraIds})", season.Title, partialPath, season.Id, season.ExtraIds);
                             break;
                         }
                     }
@@ -175,9 +175,9 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
 
         var show = await ApiManager.GetShowInfoBySeasonId(season.Id).ConfigureAwait(false)!;
         if (!string.IsNullOrEmpty(show?.ShokoGroupId))
-            Logger.LogInformation("Found shoko group {GroupName} (Season={SeasonId},ExtraSeries={ExtraIds},Group={GroupId})", show.DefaultTitle, season.Id, season.ExtraIds, show.ShokoGroupId);
+            Logger.LogInformation("Found shoko group {GroupName} (Season={SeasonId},ExtraSeries={ExtraIds},Group={GroupId})", show.Title, season.Id, season.ExtraIds, show.ShokoGroupId);
         else
-            Logger.LogInformation("Found series {SeriesName} (Season={SeasonId},ExtraSeries={ExtraIds})", season.DefaultTitle, season.Id, season.ExtraIds);
+            Logger.LogInformation("Found series {SeriesName} (Season={SeasonId},ExtraSeries={ExtraIds})", season.Title, season.Id, season.ExtraIds);
 
         return false;
     }
@@ -194,7 +194,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
             return shouldIgnore;
         }
 
-        Logger.LogInformation("Found {EpisodeCount} shoko episode(s) for {SeriesName} (Season={SeasonId},ExtraSeries={ExtraIds},File={FileId})", file.EpisodeList.Count, season.DefaultTitle, season.Id, season.ExtraIds, file.Id);
+        Logger.LogInformation("Found {EpisodeCount} shoko episode(s) for {SeriesName} (Season={SeasonId},ExtraSeries={ExtraIds},File={FileId})", file.EpisodeList.Count, season.Title, season.Id, season.ExtraIds, file.Id);
 
         // We're going to post process this file later, but we don't want to include it in our library for now.
         if (file.EpisodeList.Any(eI => season.IsExtraEpisode(eI.Episode))) {

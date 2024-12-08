@@ -81,14 +81,14 @@ public class BoxSetProvider(IHttpClientFactory _httpClientFactory, ILogger<BoxSe
         }
 
         var (displayTitle, alternateTitle) = Text.GetShowTitles(collectionInfo, info.MetadataLanguage);
-        displayTitle ??= collectionInfo.DefaultTitle;
+        displayTitle ??= collectionInfo.Title;
 
         _logger.LogInformation("Found collection {CollectionName} (Collection={CollectionId})", displayTitle, collectionInfo.Id);
 
         result.Item = new BoxSet {
             Name = displayTitle,
             OriginalTitle = alternateTitle,
-            Overview = Text.SanitizeAnidbDescription(collectionInfo.DefaultOverview),
+            Overview = Text.SanitizeAnidbDescription(collectionInfo.Overview),
         };
         result.Item.SetProviderId(ShokoCollectionGroupId.Name, collectionInfo.Id);
         result.HasMetadata = true;

@@ -957,7 +957,7 @@ public partial class ShokoApiManager : IDisposable {
     private Task<SeasonInfo> CreateSeasonInfo(TmdbMovie tmdbMovie)
         => DataCache.GetOrCreateAsync(
             $"season:{IdPrefix.TmdbMovie}{tmdbMovie.Id}",
-            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,Movie={MovieId})", seasonInfo.DefaultTitle, tmdbMovie.Id),
+            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,Movie={MovieId})", seasonInfo.Title, tmdbMovie.Id),
             async () => {
                 Logger.LogTrace("Creating info object for season {SeasonTitle}. (Source=TMDB,Movie={MovieId})", tmdbMovie.Title, tmdbMovie.Id);
 
@@ -975,7 +975,7 @@ public partial class ShokoApiManager : IDisposable {
     private Task<SeasonInfo> CreateSeasonInfo(TmdbMovieCollection tmdbMovieCollection)
         => DataCache.GetOrCreateAsync(
             $"season:{IdPrefix.TmdbMovieCollection}{tmdbMovieCollection.Id}",
-            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,MovieCollection={MovieId})", seasonInfo.DefaultTitle, tmdbMovieCollection.Id),
+            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,MovieCollection={MovieId})", seasonInfo.Title, tmdbMovieCollection.Id),
             async () => {
                 Logger.LogTrace("Creating info object for season {SeasonTitle}. (Source=TMDB,MovieCollection={MovieId})", tmdbMovieCollection.Title, tmdbMovieCollection.Id);
 
@@ -995,7 +995,7 @@ public partial class ShokoApiManager : IDisposable {
     private Task<SeasonInfo> CreateSeasonInfo(TmdbSeason tmdbSeason, TmdbShow tmdbShow)
         => DataCache.GetOrCreateAsync(
             $"season:{IdPrefix.TmdbShow}{tmdbSeason.Id}",
-            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,Season={SeasonId},Show={ShowId})", seasonInfo.DefaultTitle, tmdbSeason.Id, tmdbSeason.ShowId),
+            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=TMDB,Season={SeasonId},Show={ShowId})", seasonInfo.Title, tmdbSeason.Id, tmdbSeason.ShowId),
             async () => {
                 Logger.LogTrace("Creating info object for season {SeasonTitle}. (Source=TMDB,Season={SeasonId},Show={ShowId})", tmdbSeason.Title, tmdbSeason.Id, tmdbSeason.ShowId);
 
@@ -1080,7 +1080,7 @@ public partial class ShokoApiManager : IDisposable {
         var (primaryId, extraIds) = await GetSeriesIdsForSeason(series).ConfigureAwait(false);
         return await DataCache.GetOrCreateAsync(
             $"season:{primaryId}",
-            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=Shoko,Series={SeriesId},ExtraSeries={ExtraIds})", seasonInfo.DefaultTitle, primaryId, extraIds),
+            (seasonInfo) => Logger.LogTrace("Reusing info object for season {SeasonTitle}. (Source=Shoko,Series={SeriesId},ExtraSeries={ExtraIds})", seasonInfo.Title, primaryId, extraIds),
             async () => {
                 // We updated the "primary" series id for the merge group, so fetch the new series details from the client cache.
                 if (!string.Equals(series.Id, primaryId, StringComparison.Ordinal))
@@ -1624,7 +1624,7 @@ public partial class ShokoApiManager : IDisposable {
     private Task<ShowInfo> CreateShowInfo(TmdbShow tmdbShow)
         => DataCache.GetOrCreateAsync(
             $"show:by-tmdb-show-id:{tmdbShow.Id}",
-            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,Show={ShowId})", showInfo?.DefaultTitle, tmdbShow.Id),
+            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,Show={ShowId})", showInfo?.Title, tmdbShow.Id),
             async () => {
                 Logger.LogTrace("Creating info object for show {ShowName}. (Source=TMDB,Show={ShowId})", tmdbShow.Title, tmdbShow.Id);
                 var seasonsInShow = await ApiClient.GetTmdbSeasonsInTmdbShow(tmdbShow.Id.ToString()).ConfigureAwait(false);
@@ -1642,7 +1642,7 @@ public partial class ShokoApiManager : IDisposable {
     private Task<ShowInfo> CreateShowInfoForTmdbMovieCollection(TmdbMovieCollection tmdbMovieCollection, bool singleSeasonMode = false)
         => DataCache.GetOrCreateAsync(
             $"show:by-tmdb-movie-collection-id:{tmdbMovieCollection.Id}:{singleSeasonMode}",
-            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,MovieCollection={MovieCollectionId},SingleSeasonMode={SingleSeasonMode})", showInfo?.DefaultTitle, tmdbMovieCollection.Id, singleSeasonMode),
+            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,MovieCollection={MovieCollectionId},SingleSeasonMode={SingleSeasonMode})", showInfo?.Title, tmdbMovieCollection.Id, singleSeasonMode),
             async () => {
                 Logger.LogTrace("Creating info object for show {ShowName}. (Source=TMDB,MovieCollection={MovieCollectionId},SingleSeasonMode={SingleSeasonMode})", tmdbMovieCollection.Title, tmdbMovieCollection.Id, singleSeasonMode);
 
@@ -1662,7 +1662,7 @@ public partial class ShokoApiManager : IDisposable {
     private Task<ShowInfo> CreateShowInfoForTmdbMovie(TmdbMovie tmdbMovie)
         => DataCache.GetOrCreateAsync(
             $"show:by-tmdb-movie-id:{tmdbMovie.Id}",
-            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,Movie={MovieId})", showInfo?.DefaultTitle, tmdbMovie.Id),
+            (showInfo) => Logger.LogTrace("Reusing info object for show {ShowName}. (Source=TMDB,Movie={MovieId})", showInfo?.Title, tmdbMovie.Id),
             async () => {
                 Logger.LogTrace("Creating info object for show {ShowName}. (Source=TMDB,Movie={MovieId})", tmdbMovie.Title, tmdbMovie.Id);
 
@@ -1678,7 +1678,7 @@ public partial class ShokoApiManager : IDisposable {
     private Task<ShowInfo?> CreateShowInfoForShokoGroup(ShokoGroup group, string groupId)
         => DataCache.GetOrCreateAsync(
             $"show:by-group-id:{groupId}",
-            (showInfo) => Logger.LogTrace("Reusing info object for show {GroupName}. (Source=Shoko,Group={GroupId})", showInfo?.DefaultTitle, groupId),
+            (showInfo) => Logger.LogTrace("Reusing info object for show {GroupName}. (Source=Shoko,Group={GroupId})", showInfo?.Title, groupId),
             async () => {
                 Logger.LogTrace("Creating info object for show {GroupName}. (Source=Shoko,Group={GroupId})", group.Name, groupId);
 
@@ -1705,10 +1705,10 @@ public partial class ShokoApiManager : IDisposable {
                 var tmdbEntities = new List<ITmdbEntity>();
                 foreach (var seasonInfo in seasonList) {
                     if (!string.IsNullOrEmpty(seasonInfo.TmdbSeasonId)) {
-                        Logger.LogTrace("Fetching TMDB show for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.DefaultTitle, seasonInfo.Id, seasonInfo.TmdbSeasonId);
+                        Logger.LogTrace("Fetching TMDB show for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.Title, seasonInfo.Id, seasonInfo.TmdbSeasonId);
 
                         if (await ApiClient.GetTmdbShowForSeason(seasonInfo.TmdbSeasonId).ConfigureAwait(false) is not { } tmdbShow) {
-                            Logger.LogTrace("Failed to fetch TMDB show for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.DefaultTitle, seasonInfo.Id, seasonInfo.TmdbSeasonId);
+                            Logger.LogTrace("Failed to fetch TMDB show for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.Title, seasonInfo.Id, seasonInfo.TmdbSeasonId);
                             continue;
                         }
 
@@ -1716,10 +1716,10 @@ public partial class ShokoApiManager : IDisposable {
                     }
 
                     if (!string.IsNullOrEmpty(seasonInfo.TmdbMovieCollectionId)) {
-                        Logger.LogTrace("Fetching TMDB movie collection for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.DefaultTitle, seasonInfo.Id, seasonInfo.TmdbMovieCollectionId);
+                        Logger.LogTrace("Fetching TMDB movie collection for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.Title, seasonInfo.Id, seasonInfo.TmdbMovieCollectionId);
 
                         if (await ApiClient.GetTmdbMovieCollection(seasonInfo.TmdbMovieCollectionId).ConfigureAwait(false) is not { } tmdbMovieCollection) {
-                            Logger.LogTrace("Failed to fetch TMDB movie collection for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.DefaultTitle, seasonInfo.Id, seasonInfo.TmdbMovieCollectionId);
+                            Logger.LogTrace("Failed to fetch TMDB movie collection for Shoko Series {SeriesName}. (Series={SeriesId},Show={ShowId})", seasonInfo.Title, seasonInfo.Id, seasonInfo.TmdbMovieCollectionId);
                             continue;
                         }
 
@@ -1746,9 +1746,9 @@ public partial class ShokoApiManager : IDisposable {
     private ShowInfo CreateShowInfoForShokoSeries(SeasonInfo seasonInfo, string? collectionId = null)
         => DataCache.GetOrCreate(
             $"show:by-series-id:{seasonInfo.Id}",
-            (showInfo) => Logger.LogTrace("Reusing info object for show {GroupName}. (Source=Shoko,Series={SeriesId})", showInfo.DefaultTitle, seasonInfo.Id),
+            (showInfo) => Logger.LogTrace("Reusing info object for show {GroupName}. (Source=Shoko,Series={SeriesId})", showInfo.Title, seasonInfo.Id),
             () => {
-                Logger.LogTrace("Creating info object for show {SeriesName}. (Source=Shoko,Series={SeriesId})", seasonInfo.DefaultTitle, seasonInfo.Id);
+                Logger.LogTrace("Creating info object for show {SeriesName}. (Source=Shoko,Series={SeriesId})", seasonInfo.Title, seasonInfo.Id);
 
                 var showInfo = new ShowInfo(ApiClient, seasonInfo, collectionId);
 
@@ -1792,7 +1792,7 @@ public partial class ShokoApiManager : IDisposable {
             return null;
 
         if (DataCache.TryGetValue<CollectionInfo>($"collection:{collectionId}", out var collectionInfo)) {
-            Logger.LogTrace("Reusing info object for collection {GroupName}. (Group={GroupId})", collectionInfo.DefaultTitle, collectionId);
+            Logger.LogTrace("Reusing info object for collection {GroupName}. (Group={GroupId})", collectionInfo.Title, collectionId);
             return collectionInfo;
         }
 
@@ -1805,7 +1805,7 @@ public partial class ShokoApiManager : IDisposable {
     private Task<CollectionInfo> CreateCollectionInfo(ShokoGroup group, string groupId)
         => DataCache.GetOrCreateAsync(
             $"collection:{groupId}",
-            (collectionInfo) => Logger.LogTrace("Reusing info object for collection {GroupName}. (Group={GroupId})", collectionInfo.DefaultTitle, groupId),
+            (collectionInfo) => Logger.LogTrace("Reusing info object for collection {GroupName}. (Group={GroupId})", collectionInfo.Title, groupId),
             async () => {
                 Logger.LogTrace("Creating info object for collection {GroupName}. (Group={GroupId})", group.Name, groupId);
                 Logger.LogTrace("Fetching show info objects for collection {GroupName}. (Group={GroupId})", group.Name, groupId);

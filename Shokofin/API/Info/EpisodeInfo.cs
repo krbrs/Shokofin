@@ -46,11 +46,11 @@ public class EpisodeInfo : IExtendedItemInfo {
 
     public int EpisodeNumber { get; init; }
 
-    public string DefaultTitle { get; init; }
+    public string Title { get; init; }
 
     public IReadOnlyList<Title> Titles { get; init; }
 
-    public string? DefaultOverview { get; init; }
+    public string? Overview { get; init; }
 
     public IReadOnlyList<TextOverview> Overviews { get; init; }
 
@@ -119,12 +119,12 @@ public class EpisodeInfo : IExtendedItemInfo {
         SeasonNumber = null;
         EpisodeNumber = episode.AniDB.EpisodeNumber;
         ExtraType = Ordering.GetExtraType(episode.AniDB);
-        DefaultTitle = episode.Name;
+        Title = episode.Name;
         Titles = [
             ..episode.AniDB.Titles,
             ..(tmdbEntity?.Titles ?? []),
         ];
-        DefaultOverview = episode.Description == episode.AniDB.Description
+        Overview = episode.Description == episode.AniDB.Description
             ? Text.SanitizeAnidbDescription(episode.Description)
             : episode.Description;
         Overviews = [
@@ -232,9 +232,9 @@ public class EpisodeInfo : IExtendedItemInfo {
         IsStandalone = false;
         SeasonNumber = tmdbEpisode.SeasonNumber;
         EpisodeNumber = tmdbEpisode.EpisodeNumber;
-        DefaultTitle = tmdbEpisode.Title;
+        Title = tmdbEpisode.Title;
         Titles = tmdbEpisode.Titles;
-        DefaultOverview = tmdbEpisode.Overview;
+        Overview = tmdbEpisode.Overview;
         Overviews = tmdbEpisode.Overviews;
         OriginalLanguageCode = tmdbShow.OriginalLanguage;
         ExtraType = null;
@@ -284,9 +284,9 @@ public class EpisodeInfo : IExtendedItemInfo {
         IsStandalone = true;
         SeasonNumber = null;
         EpisodeNumber = 1;
-        DefaultTitle = tmdbMovie.Title;
+        Title = tmdbMovie.Title;
         Titles = tmdbMovie.Titles;
-        DefaultOverview = tmdbMovie.Overview;
+        Overview = tmdbMovie.Overview;
         Overviews = tmdbMovie.Overviews;
         OriginalLanguageCode = tmdbMovie.OriginalLanguage;
         ExtraType = null;

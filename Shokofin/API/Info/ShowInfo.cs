@@ -46,11 +46,11 @@ public class ShowInfo : IExtendedItemInfo {
     /// </summary>
     public string? CollectionId { get; init; }
 
-    public string DefaultTitle { get; init; }
+    public string Title { get; init; }
 
     public IReadOnlyList<Title> Titles { get; init; }
 
-    public string? DefaultOverview { get; init; }
+    public string? Overview { get; init; }
 
     public IReadOnlyList<TextOverview> Overviews { get; init; }
 
@@ -175,9 +175,9 @@ public class ShowInfo : IExtendedItemInfo {
         CollectionId = collectionId ?? seasonInfo.ShokoGroupId;
         IsMovieCollection = seasonInfo.Type is SeriesType.Movie;
         IsStandalone = true;
-        DefaultTitle = seasonInfo.DefaultTitle;
+        Title = seasonInfo.Title;
         Titles = seasonInfo.Titles;
-        DefaultOverview = seasonInfo.DefaultOverview;
+        Overview = seasonInfo.Overview;
         Overviews = seasonInfo.Overviews;
         OriginalLanguageCode = seasonInfo.OriginalLanguageCode;
         Tags = seasonInfo.Tags;
@@ -278,12 +278,12 @@ public class ShowInfo : IExtendedItemInfo {
             TmdbId = tmdbShow.Id.ToString();
             TvdbId = tmdbShow.TvdbId?.ToString();
         }
-        DefaultTitle = group.Name;
+        Title = group.Name;
         Titles = [
             ..defaultSeason.Titles.Where(t => t.Source is "AniDB"),
             ..(tmdbEntity?.Titles ?? []),
         ];
-        DefaultOverview = Text.SanitizeAnidbDescription(group.Description) == defaultSeason.Overviews.FirstOrDefault(t => t.Source is "AniDB")?.Value
+        Overview = Text.SanitizeAnidbDescription(group.Description) == defaultSeason.Overviews.FirstOrDefault(t => t.Source is "AniDB")?.Value
             ? Text.SanitizeAnidbDescription(group.Description)
             : group.Description;
         Overviews = [
@@ -365,9 +365,9 @@ public class ShowInfo : IExtendedItemInfo {
         TvdbId = tmdbShow.TvdbId?.ToString();
         IsMovieCollection = false;
         IsStandalone = true;
-        DefaultTitle = tmdbShow.Title;
+        Title = tmdbShow.Title;
         Titles = tmdbShow.Titles;
-        DefaultOverview = tmdbShow.Overview;
+        Overview = tmdbShow.Overview;
         Overviews = tmdbShow.Overviews;
         OriginalLanguageCode = tmdbShow.OriginalLanguage;
         PremiereDate = tmdbShow.FirstAiredAt?.ToDateTime(TimeOnly.Parse("00:00:00", CultureInfo.InvariantCulture), DateTimeKind.Local);
@@ -402,9 +402,9 @@ public class ShowInfo : IExtendedItemInfo {
         CollectionId = ShokoGroupId;
         IsMovieCollection = true;
         IsStandalone = true;
-        DefaultTitle = tmdbMovie.Title;
+        Title = tmdbMovie.Title;
         Titles = tmdbMovie.Titles;
-        DefaultOverview = tmdbMovie.Overview;
+        Overview = tmdbMovie.Overview;
         Overviews = tmdbMovie.Overviews;
         OriginalLanguageCode = tmdbMovie.OriginalLanguage;
         PremiereDate = releasedAt;
@@ -473,9 +473,9 @@ public class ShowInfo : IExtendedItemInfo {
         CollectionId = ShokoGroupId;
         IsMovieCollection = seasonList.Count is 1;
         IsStandalone = false;
-        DefaultTitle = tmdbMovieCollection.Title;
+        Title = tmdbMovieCollection.Title;
         Titles = tmdbMovieCollection.Titles;
-        DefaultOverview = tmdbMovieCollection.Overview;
+        Overview = tmdbMovieCollection.Overview;
         Overviews = tmdbMovieCollection.Overviews;
         OriginalLanguageCode = defaultSeason.OriginalLanguageCode;
         Tags = seasonList.SelectMany(s => s.Tags).Distinct().ToArray();

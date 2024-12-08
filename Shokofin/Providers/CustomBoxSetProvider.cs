@@ -103,7 +103,7 @@ public class CustomBoxSetProvider(ILogger<CustomBoxSetProvider> _logger, ShokoAp
         var updated = EnsureNoTmdbIdIsSet(collection);
         var parent = collectionInfo.IsTopLevel ? collectionRoot : await GetCollectionByCollectionId(collectionRoot, collectionInfo.ParentId).ConfigureAwait(false);
         var (displayTitle, alternateTitle) = Text.GetShowTitles(collectionInfo, collection.GetPreferredMetadataLanguage());
-        displayTitle ??= collectionInfo.DefaultTitle;
+        displayTitle ??= collectionInfo.Title;
         if (collection.ParentId != parent.Id) {
             collection.SetParent(parent);
             updated = true;
@@ -153,7 +153,7 @@ public class CustomBoxSetProvider(ILogger<CustomBoxSetProvider> _logger, ShokoAp
     }
 
     private BoxSet? GetCollectionByPath(Folder collectionRoot, CollectionInfo collectionInfo) {
-        var baseName = $"{collectionInfo.DefaultTitle.ForceASCII()} [{ShokoCollectionGroupId.Name}={collectionInfo.Id}]";
+        var baseName = $"{collectionInfo.Title.ForceASCII()} [{ShokoCollectionGroupId.Name}={collectionInfo.Id}]";
         var folderName = BaseItem.FileSystem.GetValidFilename(baseName) + " [boxset]";
         var path = Path.Combine(collectionRoot.Path, folderName);
         return _libraryManager.FindByPath(path, true) as BoxSet;

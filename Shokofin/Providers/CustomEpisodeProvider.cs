@@ -115,7 +115,7 @@ public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibr
         var episodeId = libraryManager.GetNewItemId(season.Series.Id + " Season " + seasonInfo.Id + " Episode " + episodeInfo.Id, typeof(Episode));
         var episode = EpisodeProvider.CreateMetadata(showInfo, seasonInfo, episodeInfo, season, episodeId);
 
-        logger.LogInformation("Adding virtual Episode {EpisodeNumber} in Season {SeasonNumber} for Series {SeriesName}. (Episode={EpisodeId},Season={SeasonId},ExtraSeasons={ExtraIds},Group={GroupId})", episode.IndexNumber, season.IndexNumber, showInfo.DefaultTitle, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds, showInfo.ShokoGroupId);
+        logger.LogInformation("Adding virtual Episode {EpisodeNumber} in Season {SeasonNumber} for Series {SeriesName}. (Episode={EpisodeId},Season={SeasonId},ExtraSeasons={ExtraIds},Group={GroupId})", episode.IndexNumber, season.IndexNumber, showInfo.Title, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds, showInfo.ShokoGroupId);
 
         season.AddChild(episode);
 

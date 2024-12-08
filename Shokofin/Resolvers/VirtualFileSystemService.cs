@@ -761,7 +761,7 @@ public class VirtualFileSystemService {
         if (show is null)
             return ([], null);
 
-        var showName = (show.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.IsDefault)?.Value ?? show.DefaultTitle)?.ReplaceInvalidPathCharacters() ?? $"Shoko Series {show.Id}";
+        var showName = (show.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.IsDefault)?.Value ?? show.Title)?.ReplaceInvalidPathCharacters() ?? $"Shoko Series {show.Id}";
         var episodeNumber = Ordering.GetEpisodeNumber(show, season, episode);
         var episodeName = (episode.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.LanguageCode == "en")?.Value ?? $"{(episode.Type is EpisodeType.Normal ? "Episode " : $"{episode.Type} ")}{episodeNumber}").ReplaceInvalidPathCharacters();
 

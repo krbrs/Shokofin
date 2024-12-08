@@ -106,7 +106,7 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
             var displayTitles = new List<string?>();
             var alternateTitles = new List<string?>();
             foreach (var (eI, _, _) in file.EpisodeList) {
-                string defaultEpisodeTitle = eI.DefaultTitle;
+                string defaultEpisodeTitle = eI.Title;
                 if (
                     // Movies
                     (seasonInfo.Type == SeriesType.Movie && eI.Type is EpisodeType.Normal or EpisodeType.Special) ||
@@ -128,7 +128,7 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
             description = Text.GetDescription(file.EpisodeList.Select(tuple => tuple.Episode), metadataLanguage);
         }
         else {
-            string defaultEpisodeTitle = episodeInfo.DefaultTitle;
+            string defaultEpisodeTitle = episodeInfo.Title;
             if (
                 // Movies
                 (seasonInfo.Type == SeriesType.Movie && episodeInfo.Type is EpisodeType.Normal or EpisodeType.Special) ||

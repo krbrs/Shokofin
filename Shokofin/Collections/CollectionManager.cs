@@ -152,7 +152,7 @@ public class CollectionManager(
         foreach (var missingId in toAdd) {
             var seasonInfo = seasonDict[missingId];
             var collection = await _collection.CreateCollectionAsync(new() {
-                Name = $"{seasonInfo.DefaultTitle.ForceASCII()} [{ShokoCollectionSeriesId.Name}={missingId}]",
+                Name = $"{seasonInfo.Title.ForceASCII()} [{ShokoCollectionSeriesId.Name}={missingId}]",
                 ProviderIds = new() { { ShokoCollectionSeriesId.Name, missingId } },
             }).ConfigureAwait(false);
 
@@ -402,7 +402,7 @@ public class CollectionManager(
             var missingId = toAdd[index];
             var collectionInfo = finalGroups[missingId];
             var collection = await _collection.CreateCollectionAsync(new() {
-                Name = $"{collectionInfo.DefaultTitle.ForceASCII()} [{ShokoCollectionGroupId.Name}={missingId}]",
+                Name = $"{collectionInfo.Title.ForceASCII()} [{ShokoCollectionGroupId.Name}={missingId}]",
                 ProviderIds = new() { { ShokoCollectionGroupId.Name, missingId } },
             }).ConfigureAwait(false);
 
@@ -426,8 +426,8 @@ public class CollectionManager(
                 collection.SetParent(parent);
                 updated = true;
             }
-            if (!string.Equals(collection.Name, collectionInfo.DefaultTitle)) {
-                collection.Name = collectionInfo.DefaultTitle;
+            if (!string.Equals(collection.Name, collectionInfo.Title)) {
+                collection.Name = collectionInfo.Title;
                 updated = true;
             }
             if (updated) {

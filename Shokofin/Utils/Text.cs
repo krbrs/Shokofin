@@ -159,7 +159,7 @@ public static partial class Text {
         foreach (var provider in GetOrderedDescriptionProviders()) {
             var overview = provider switch {
                 DescriptionProvider.Shoko =>
-                    baseInfo.DefaultOverview,
+                    baseInfo.Overview,
                 DescriptionProvider.AniDB =>
                     baseInfo.Overviews.Where(o => o.Source is "AniDB" && string.Equals(o.LanguageCode, metadataLanguage, StringComparison.InvariantCultureIgnoreCase)).FirstOrDefault()?.Value,
                 DescriptionProvider.TMDB =>
@@ -329,7 +329,7 @@ public static partial class Text {
         foreach (var provider in GetOrderedTitleProvidersByType(type)) {
             var title = provider switch {
                 TitleProvider.Shoko_Default =>
-                    episodeInfo.DefaultTitle,
+                    episodeInfo.Title,
                 TitleProvider.AniDB_Default =>
                     episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value,
                 TitleProvider.AniDB_LibraryLanguage =>
@@ -354,7 +354,7 @@ public static partial class Text {
         foreach (var provider in GetOrderedTitleProvidersByType(type)) {
             var title = provider switch {
                 TitleProvider.Shoko_Default =>
-                    baseInfo.DefaultTitle,
+                    baseInfo.Title,
                 TitleProvider.AniDB_Default =>
                     baseInfo.Titles.Where(t => t.Source is "AniDB").FirstOrDefault(title => title.IsDefault)?.Value,
                 TitleProvider.AniDB_LibraryLanguage =>
