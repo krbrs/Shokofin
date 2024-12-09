@@ -968,8 +968,8 @@ public partial class ShokoApiManager : IDisposable {
                     .Select(x => x.Key)
                     .Except([0])
                     .ToList();
-                var (shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"TMDB movie \"{tmdbMovie.Title}\"", $"Movie=\"{tmdbMovie.Id}\"").ConfigureAwait(false);
-                return new SeasonInfo(ApiClient, tmdbMovie, episodeInfo, shokoGroupId, shokoGroupId, topLevelShokoGroupId);
+                var (anidbId, shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"TMDB movie \"{tmdbMovie.Title}\"", $"Movie=\"{tmdbMovie.Id}\"").ConfigureAwait(false);
+                return new SeasonInfo(ApiClient, tmdbMovie, episodeInfo, anidbId, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
             });
 
     private Task<SeasonInfo> CreateSeasonInfo(TmdbMovieCollection tmdbMovieCollection)
@@ -988,8 +988,8 @@ public partial class ShokoApiManager : IDisposable {
                     .Select(x => x.Key)
                     .Except([0])
                     .ToList();
-                var (shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"TMDB movie collection \"{tmdbMovieCollection.Title}\"", $"MovieCollection=\"{tmdbMovieCollection.Id}\"").ConfigureAwait(false);
-                return new SeasonInfo(ApiClient, tmdbMovieCollection, moviesInCollection, episodeInfos, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
+                var (anidbId, shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"TMDB movie collection \"{tmdbMovieCollection.Title}\"", $"MovieCollection=\"{tmdbMovieCollection.Id}\"").ConfigureAwait(false);
+                return new SeasonInfo(ApiClient, tmdbMovieCollection, moviesInCollection, episodeInfos, anidbId, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
             });
 
     private Task<SeasonInfo> CreateSeasonInfo(TmdbSeason tmdbSeason, TmdbShow tmdbShow)
@@ -1003,6 +1003,7 @@ public partial class ShokoApiManager : IDisposable {
                     .ToDictionary(e => e.Id);
                 var episodeInfos = tmdbEpisodes.Values.Select(tmdbEpisode => CreateEpisodeInfo(tmdbEpisode, tmdbShow)).ToList();
 
+                string? anidbId = null;
                 string? shokoSeriesId = null;
                 string? shokoGroupId = null;
                 string? topLevelShokoGroupId = null;
@@ -1014,36 +1015,37 @@ public partial class ShokoApiManager : IDisposable {
                         .Select(x => x.Key)
                         .Except([0])
                         .ToList();
-                    (shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"season {tmdbSeason.SeasonNumber} in TMDB show \"{tmdbShow.Title}\"", $"Season=\"{tmdbSeason.Id}\",Show=\"{tmdbSeason.ShowId}\"").ConfigureAwait(false);
+                    (anidbId, shokoSeriesId, shokoGroupId, topLevelShokoGroupId) = await GetGroupIdsForAnidbAnime(animeIds, $"season {tmdbSeason.SeasonNumber} in TMDB show \"{tmdbShow.Title}\"", $"Season=\"{tmdbSeason.Id}\",Show=\"{tmdbSeason.ShowId}\"").ConfigureAwait(false);
                 }
 
-                return new SeasonInfo(ApiClient, tmdbSeason, tmdbShow, episodeInfos, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
+                return new SeasonInfo(ApiClient, tmdbSeason, tmdbShow, episodeInfos, anidbId, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
             });
 
 #pragma warning disable CA2254 // Template should be a static method
-    private async Task<(string? shokoSeriesId, string? shokoGroupId, string? topLevelShokoGroupId)> GetGroupIdsForAnidbAnime(IReadOnlyList<int> animeIds, string entryName, string entryId) {
+    private async Task<(string? anidbId, string? shokoSeriesId, string? shokoGroupId, string? topLevelShokoGroupId)> GetGroupIdsForAnidbAnime(IReadOnlyList<int> animeIds, string entryName, string entryId) {
         Logger.LogTrace($"Found {{AnidbAnimeCount}} AniDB anime for {entryName} to pick a Shoko Group to use. (Anime={{AnimeIds}},{entryId})", animeIds.Count, animeIds);
 
         if (animeIds.Count is 0)
-            return (null, null, null);
+            return (null, null, null, null);
 
+        string? anidbId = null;
         string? shokoSeriesId = null;
         string? shokoGroupId = null;
         string? topLevelShokoGroupId = null;
-        var shokoGroupIdList = new List<(string shokoSeriesId, string shokoGroupId, string topLevelShokoGroupId)>();
+        var shokoGroupIdList = new List<(string anidbId, string shokoSeriesId, string shokoGroupId, string topLevelShokoGroupId)>();
         foreach (var animeId in animeIds) {
-            if (await ApiClient.GetShokoSeriesForAnidbAnime(animeIds[0].ToString()).ConfigureAwait(false) is not { } shokoSeries)
+            if (await ApiClient.GetShokoSeriesForAnidbAnime(animeId.ToString()).ConfigureAwait(false) is not { } shokoSeries)
                 continue;
 
-            shokoGroupIdList.Add((shokoSeries.IDs.Shoko.ToString(), shokoSeries.IDs.ParentGroup.ToString(), shokoSeries.IDs.TopLevelGroup.ToString()));
+            shokoGroupIdList.Add((animeId.ToString(), shokoSeries.IDs.Shoko.ToString(), shokoSeries.IDs.ParentGroup.ToString(), shokoSeries.IDs.TopLevelGroup.ToString()));
 
-            Logger.LogTrace($"Found Shoko series to use for {entryName}. (Anime={{AnimeId}},Series={{SeriesId}},Group={{GroupId}},{entryId})", animeIds[0], shokoSeries.Id, shokoSeries.IDs.ParentGroup.ToString());
+            Logger.LogTrace($"Found Shoko series to use for {entryName}. (Anime={{AnimeId}},Series={{SeriesId}},Group={{GroupId}},{entryId})", animeId, shokoSeries.Id, shokoSeries.IDs.ParentGroup.ToString());
         }
 
         var shokoGroupIdCounts = shokoGroupIdList
             .GroupBy(x => x.shokoGroupId)
             .OrderByDescending(x => x.Count())
-            .ToDictionary(x => x.Key, x => (x.Select(y => y.shokoSeriesId).Distinct().ToArray(), x.First().topLevelShokoGroupId));
+            .ToDictionary(x => x.Key, x => (x.Select(y => (y.shokoSeriesId, y.anidbId)).Distinct().ToArray(), x.First().topLevelShokoGroupId));
         if (shokoGroupIdCounts.Count is > 1) {
             var topLevelGroupIdCount = shokoGroupIdList
                 .GroupBy(x => x.topLevelShokoGroupId)
@@ -1061,8 +1063,9 @@ public partial class ShokoApiManager : IDisposable {
         else if (shokoGroupIdCounts.Count is 1) {
             (shokoGroupId, (var shokoSeriesIdList, topLevelShokoGroupId)) = shokoGroupIdCounts.First();
             if (shokoSeriesIdList.Length is 1) {
-                shokoSeriesId = shokoSeriesIdList[0];
-                Logger.LogTrace($"Found Shoko series and Shoko group to use for {entryName}. (Series={{SeriesId}},Group={{GroupId}},TopLevelGroup={{TopLevelGroupId}},{entryId})", shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
+                anidbId = shokoSeriesIdList[0].anidbId;
+                shokoSeriesId = shokoSeriesIdList[0].shokoSeriesId;
+                Logger.LogTrace($"Found Shoko series and Shoko group to use for {entryName}. (Anime={{AnimeId}}Series={{SeriesId}},Group={{GroupId}},TopLevelGroup={{TopLevelGroupId}},{entryId})", anidbId, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
             }
             else {
                 Logger.LogTrace($"Found Shoko group to use for {entryName}. (Group={{GroupId}},TopLevelGroup={{TopLevelGroupId}},{entryId})", shokoGroupId, topLevelShokoGroupId);
@@ -1072,7 +1075,7 @@ public partial class ShokoApiManager : IDisposable {
             Logger.LogTrace($"Could not find Shoko group for {entryName}. ({entryId})");
         }
 
-        return (shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
+        return (anidbId, shokoSeriesId, shokoGroupId, topLevelShokoGroupId);
     }
 #pragma warning restore CA2254 // Template should be a static method
 

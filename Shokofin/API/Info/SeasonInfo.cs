@@ -346,7 +346,7 @@ public class SeasonInfo : IExtendedItemInfo {
         RelationMap = relationMap;
     }
 
-    public SeasonInfo(ShokoApiClient client, TmdbSeason tmdbSeason, TmdbShow tmdbShow, IReadOnlyList<EpisodeInfo> episodes, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
+    public SeasonInfo(ShokoApiClient client, TmdbSeason tmdbSeason, TmdbShow tmdbShow, IReadOnlyList<EpisodeInfo> episodes, string? anidbId = null, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
         var tags = new List<string>();
         var genres = new List<string>();
         if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.TmdbKeywords))
@@ -362,6 +362,7 @@ public class SeasonInfo : IExtendedItemInfo {
         Id = IdPrefix.TmdbShow + tmdbSeason.Id;
         ExtraIds = [];
         TmdbSeasonId = tmdbSeason.Id;
+        AnidbId = anidbId;
         ShokoSeriesId = shokoSeriesId;
         ShokoGroupId = shokoGroupId;
         TopLevelShokoGroupId = topLevelShokoGroupId;
@@ -397,11 +398,12 @@ public class SeasonInfo : IExtendedItemInfo {
         RelationMap = new Dictionary<string, RelationType>();
     }
 
-    public SeasonInfo(ShokoApiClient client, TmdbMovie tmdbMovie, EpisodeInfo episodeInfo, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
+    public SeasonInfo(ShokoApiClient client, TmdbMovie tmdbMovie, EpisodeInfo episodeInfo, string? anidbId = null, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
         _client = client;
         Id = IdPrefix.TmdbMovie + tmdbMovie.Id.ToString();
         ExtraIds = [];
         TmdbMovieCollectionId = tmdbMovie.CollectionId?.ToString();
+        AnidbId = anidbId;
         ShokoSeriesId = shokoSeriesId;
         ShokoGroupId = shokoGroupId;
         TopLevelShokoGroupId = topLevelShokoGroupId;
@@ -433,11 +435,12 @@ public class SeasonInfo : IExtendedItemInfo {
         RelationMap = new Dictionary<string, RelationType>();
     }
 
-    public SeasonInfo(ShokoApiClient client, TmdbMovieCollection tmdbMovieCollection, IReadOnlyList<TmdbMovie> movies, IReadOnlyList<EpisodeInfo> episodes, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
+    public SeasonInfo(ShokoApiClient client, TmdbMovieCollection tmdbMovieCollection, IReadOnlyList<TmdbMovie> movies, IReadOnlyList<EpisodeInfo> episodes, string? anidbId = null, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
         _client = client;
         Id = IdPrefix.TmdbMovieCollection + tmdbMovieCollection.Id.ToString();
         ExtraIds = [];
         TmdbMovieCollectionId = tmdbMovieCollection.Id.ToString();
+        AnidbId = anidbId;
         ShokoSeriesId = shokoSeriesId;
         ShokoGroupId = shokoGroupId;
         TopLevelShokoGroupId = topLevelShokoGroupId;

@@ -171,6 +171,8 @@ public class ShowInfo : IExtendedItemInfo {
 
         _client = client;
         Id = seasonInfo.Id;
+        AnidbId = seasonInfo.AnidbId;
+        ShokoSeriesId = seasonInfo.ShokoSeriesId;
         ShokoGroupId = seasonInfo.ShokoGroupId;
         CollectionId = collectionId ?? seasonInfo.ShokoGroupId;
         IsMovieCollection = seasonInfo.Type is SeriesType.Movie;
@@ -273,6 +275,8 @@ public class ShowInfo : IExtendedItemInfo {
 
         _client = client;
         Id = defaultSeason.Id;
+        AnidbId = defaultSeason.AnidbId;
+        ShokoSeriesId = defaultSeason.ShokoSeriesId;
         ShokoGroupId = groupId;
         if (tmdbEntity is TmdbShow tmdbShow) {
             TmdbId = tmdbShow.Id.ToString();
@@ -330,6 +334,15 @@ public class ShowInfo : IExtendedItemInfo {
                 specialsSet.Add(episodeInfo.Id, episodeInfo.IsAvailable);
         }
 
+        if (seasonList.All(seasonInfo => !string.IsNullOrEmpty(seasonInfo.AnidbId))) {
+            var anidbIdList = seasonList
+                .GroupBy(s => s.AnidbId)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .ToList();
+            if (anidbIdList.Count is 1)
+                AnidbId = anidbIdList[0];
+        }
         if (seasonList.All(seasonInfo => !string.IsNullOrEmpty(seasonInfo.ShokoSeriesId))) {
             var shokoSeriesIdList = seasonList
                 .GroupBy(s => s.ShokoSeriesId)
@@ -397,6 +410,7 @@ public class ShowInfo : IExtendedItemInfo {
 
         _client = client;
         Id = IdPrefix.TmdbMovie + tmdbMovie.Id.ToString();
+        AnidbId = seasonInfo.AnidbId;
         ShokoSeriesId = seasonInfo.ShokoSeriesId;
         ShokoGroupId = seasonInfo.ShokoGroupId ?? seasonInfo.TopLevelShokoGroupId;
         CollectionId = ShokoGroupId;
@@ -440,6 +454,15 @@ public class ShowInfo : IExtendedItemInfo {
                 specialsSet.Add(episodeInfo.Id, episodeInfo.IsAvailable);
         }
 
+        if (seasonList.All(seasonInfo => !string.IsNullOrEmpty(seasonInfo.AnidbId))) {
+            var anidbIdList = seasonList
+                .GroupBy(s => s.AnidbId)
+                .OrderByDescending(g => g.Count())
+                .Select(g => g.Key)
+                .ToList();
+            if (anidbIdList.Count is 1)
+                AnidbId = anidbIdList[0];
+        }
         if (seasonList.All(seasonInfo => !string.IsNullOrEmpty(seasonInfo.ShokoSeriesId))) {
             var shokoSeriesIdList = seasonList
                 .GroupBy(s => s.ShokoSeriesId)
