@@ -829,6 +829,8 @@ public class VirtualFileSystemService {
                     var files = (await Task.WhenAll(list.Select(xref => ApiClient.GetFileByEd2kAndFileSize(xref.ED2K, xref.FileSize))).ConfigureAwait(false))
                         .OfType<API.Models.File>()
                         .ToList();
+                    if (files.Count != list.Count)
+                        throw new Exception($"Mismatch between cross-references and files. (FileCount={files.Count},CrossReferenceCount={list.Count},Episode={episode.Id},File={fileId},Series={seriesId})");
 
                     var index = list.FindIndex(xref => xref.Percentage!.Start == episodeXref.Percentage!.Start && xref.Percentage!.End == episodeXref.Percentage!.End);
                     filePartSuffix = $".pt{index + 1}";
