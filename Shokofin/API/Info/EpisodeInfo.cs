@@ -383,7 +383,7 @@ public class EpisodeInfo : IExtendedItemInfo {
             CreatorRoleType.Seiyuu => new PersonInfo {
                 Type = PersonKind.Actor,
                 Name = roles[0].Staff.Name,
-                Role = roles.Select(role => role.Character!.Name).Order().Join(" / "),
+                Role = roles.Select(role => role?.Character?.Name ?? string.Empty).Where(role => !string.IsNullOrEmpty(role)).Order().Join(" / "),
                 ImageUrl = GetImagePath(roles[0].Staff.Image),
                 ProviderIds = new() {
                     { roleProvider, roles[0].Staff.Id!.Value.ToString() },
