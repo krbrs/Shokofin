@@ -151,6 +151,12 @@ public class EpisodeInfo : IExtendedItemInfo {
                 .Select(roles => RoleToPersonInfo(roles.ToList(), MetadataProvider.Tmdb.ToString()))
                 .OfType<PersonInfo>()
                 .ToArray();
+            if (Staff.Count is 0)
+                Staff = cast
+                    .GroupBy(role => (role.Type, role.Staff.Id))
+                    .Select(roles => RoleToPersonInfo(roles.ToList(), AnidbCreatorId.Name))
+                    .OfType<PersonInfo>()
+                    .ToArray();
             productionLocationDict[ProviderName.TMDB] = tmdbMovie.ProductionCountries.Values.ToArray();
             contentRatings.AddRange(tmdbMovie.ContentRatings);
             Studios = tmdbMovie.Studios.Select(r => r.Name).ToArray();
@@ -174,6 +180,12 @@ public class EpisodeInfo : IExtendedItemInfo {
                 .Select(roles => RoleToPersonInfo(roles.ToList(), MetadataProvider.Tmdb.ToString()))
                 .OfType<PersonInfo>()
                 .ToArray();
+            if (Staff.Count is 0)
+                Staff = cast
+                    .GroupBy(role => (role.Type, role.Staff.Id))
+                    .Select(roles => RoleToPersonInfo(roles.ToList(), AnidbCreatorId.Name))
+                    .OfType<PersonInfo>()
+                    .ToArray();
             if (tmdbParentEntity is not null) {
                 productionLocationDict[ProviderName.TMDB] = tmdbParentEntity.ProductionCountries.Values.ToArray();
                 contentRatings.AddRange(tmdbParentEntity.ContentRatings);
