@@ -13,6 +13,7 @@ using Shokofin.API.Models.TMDB;
 using Shokofin.Configuration;
 using Shokofin.Events.Interfaces;
 using Shokofin.Extensions;
+using Shokofin.ExternalIds;
 using Shokofin.Utils;
 
 namespace Shokofin.API.Info;
@@ -192,8 +193,8 @@ public class EpisodeInfo : IExtendedItemInfo {
             AiredAt = episode.AniDB.AirDate;
             CommunityRating = episode.AniDB.Rating;
             Staff = cast
-            .GroupBy(role => (role.Type, role.Staff.Id))
-            .Select(roles => RoleToPersonInfo(roles.ToList(), "AniDB"))
+                .GroupBy(role => (role.Type, role.Staff.Id))
+                .Select(roles => RoleToPersonInfo(roles.ToList(), AnidbCreatorId.Name))
                 .OfType<PersonInfo>()
                 .ToArray();
             Studios = cast
