@@ -350,29 +350,44 @@ public class EpisodeInfo : IExtendedItemInfo {
                 Name = roles[0].Staff.Name,
                 Role = roles[0].Name,
                 ImageUrl = GetImagePath(roles[0].Staff.Image),
+                ProviderIds = new() {
+                    { roleProvider, roles[0].Staff.Id!.Value.ToString() },
+                },
             },
             CreatorRoleType.Music => new PersonInfo {
                 Type = PersonKind.Lyricist,
                 Name = roles[0].Staff.Name,
                 Role = roles[0].Name,
                 ImageUrl = GetImagePath(roles[0].Staff.Image),
+                ProviderIds = new() {
+                    { roleProvider, roles[0].Staff.Id!.Value.ToString() },
+                },
             },
             CreatorRoleType.SourceWork => new PersonInfo {
                 Type = PersonKind.Writer,
                 Name = roles[0].Staff.Name,
                 Role = roles[0].Name,
                 ImageUrl = GetImagePath(roles[0].Staff.Image),
+                ProviderIds = new() {
+                    { roleProvider, roles[0].Staff.Id!.Value.ToString() },
+                },
             },
             CreatorRoleType.SeriesComposer => new PersonInfo {
                 Type = PersonKind.Composer,
                 Name = roles[0].Staff.Name,
                 ImageUrl = GetImagePath(roles[0].Staff.Image),
+                ProviderIds = new() {
+                    { roleProvider, roles[0].Staff.Id!.Value.ToString() },
+                },
             },
             CreatorRoleType.Seiyuu => new PersonInfo {
                 Type = PersonKind.Actor,
                 Name = roles[0].Staff.Name,
                 Role = roles.Select(role => role.Character!.Name).Order().Join(" / "),
                 ImageUrl = GetImagePath(roles[0].Staff.Image),
+                ProviderIds = new() {
+                    { roleProvider, roles[0].Staff.Id!.Value.ToString() },
+                },
             },
             _ => null,
         };
