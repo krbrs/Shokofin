@@ -85,8 +85,7 @@ public class ShowInfo : IExtendedItemInfo {
     /// <summary>
     /// Overall community rating of the show.
     /// </summary>
-    public float CommunityRating =>
-        (float)(SeasonList.Aggregate(0f, (total, seasonInfo) => total + seasonInfo.CommunityRating.ToFloat(10)) / SeasonList.Count);
+    public float CommunityRating { get; init; }
 
     /// <summary>
     /// All tags from across all seasons.
@@ -182,10 +181,11 @@ public class ShowInfo : IExtendedItemInfo {
         Overview = seasonInfo.Overview;
         Overviews = seasonInfo.Overviews;
         OriginalLanguageCode = seasonInfo.OriginalLanguageCode;
+        CommunityRating = seasonInfo.CommunityRating.ToFloat(10);
         Tags = seasonInfo.Tags;
+        Genres = seasonInfo.Genres;
         PremiereDate = seasonInfo.PremiereDate;
         EndDate = seasonInfo.EndDate;
-        Genres = seasonInfo.Genres;
         ProductionLocations = seasonInfo.ProductionLocations;
         ContentRatings = seasonInfo.ContentRatings;
         Studios = seasonInfo.Studios;
@@ -259,6 +259,10 @@ public class ShowInfo : IExtendedItemInfo {
                 specialsSet.Add(episodeInfo.Id, episodeInfo.IsAvailable);
         }
 
+        var communityRatingSeasons = seasonOrderDictionary
+            .Where(pair => seasonNumberBaseDictionary.TryGetValue(pair.Value.Id, out var seasonNumber) && seasonNumber == pair.Key && pair.Value.CommunityRating is { Value: > 0 })
+            .Select(pair => pair.Value)
+            .ToList();
         var anidbRating = ContentRatingUtil.GetCombinedAnidbContentRating(seasonOrderDictionary.Values);
         var contentRatings = seasonOrderDictionary.Values
             .SelectMany(sI => sI.ContentRatings)
@@ -300,6 +304,9 @@ public class ShowInfo : IExtendedItemInfo {
         EndDate = !seasonList.Any(s => s.PremiereDate.HasValue && s.PremiereDate.Value < DateTime.Now && s.EndDate == null)
             ? seasonList.Select(s => s.EndDate).Where(s => s.HasValue).Max()
             : null;
+        CommunityRating = communityRatingSeasons.Count > 0
+            ? communityRatingSeasons.Aggregate(0f, (total, seasonInfo) => total + seasonInfo.CommunityRating.ToFloat(10)) / communityRatingSeasons.Count
+            : 0f;
         Genres = seasonList.SelectMany(s => s.Genres).Distinct().ToArray();
         Tags = seasonList.SelectMany(s => s.Tags).Distinct().ToArray();
         Studios = seasonList.SelectMany(s => s.Studios).Distinct().ToArray();
@@ -385,6 +392,7 @@ public class ShowInfo : IExtendedItemInfo {
         OriginalLanguageCode = tmdbShow.OriginalLanguage;
         PremiereDate = tmdbShow.FirstAiredAt?.ToDateTime(TimeOnly.Parse("00:00:00", CultureInfo.InvariantCulture), DateTimeKind.Local);
         EndDate = tmdbShow.LastAiredAt?.ToDateTime(TimeOnly.Parse("00:00:00", CultureInfo.InvariantCulture), DateTimeKind.Local);
+        CommunityRating = tmdbShow.UserRating.ToFloat(10);
         Genres = seasonList.SelectMany(s => s.Genres).Distinct().ToArray();
         Tags = seasonList.SelectMany(s => s.Tags).Distinct().ToArray();
         Studios = seasonList.SelectMany(s => s.Studios).Distinct().ToArray();
@@ -423,6 +431,7 @@ public class ShowInfo : IExtendedItemInfo {
         OriginalLanguageCode = tmdbMovie.OriginalLanguage;
         PremiereDate = releasedAt;
         EndDate = releasedAt < DateTime.Now ? releasedAt : null;
+        CommunityRating = tmdbMovie.UserRating.ToFloat(10);
         Genres = seasonInfo.Genres;
         Tags = seasonInfo.Tags;
         Studios = seasonInfo.Studios;
@@ -453,6 +462,10 @@ public class ShowInfo : IExtendedItemInfo {
             foreach (var episodeInfo in seasonInfo.SpecialsList)
                 specialsSet.Add(episodeInfo.Id, episodeInfo.IsAvailable);
         }
+        var communityRatingSeasons = seasonOrderDictionary
+            .Where(pair => seasonNumberBaseDictionary.TryGetValue(pair.Value.Id, out var seasonNumber) && seasonNumber == pair.Key && pair.Value.CommunityRating is { Value: > 0 })
+            .Select(pair => pair.Value)
+            .ToList();
 
         if (seasonList.All(seasonInfo => !string.IsNullOrEmpty(seasonInfo.AnidbId))) {
             var anidbIdList = seasonList
@@ -501,6 +514,11 @@ public class ShowInfo : IExtendedItemInfo {
         Overview = tmdbMovieCollection.Overview;
         Overviews = tmdbMovieCollection.Overviews;
         OriginalLanguageCode = defaultSeason.OriginalLanguageCode;
+        PremiereDate = seasonList[0].PremiereDate;
+        EndDate = seasonList[^1].EndDate;
+        CommunityRating = communityRatingSeasons.Count > 0
+            ? communityRatingSeasons.Aggregate(0f, (total, seasonInfo) => total + seasonInfo.CommunityRating.ToFloat(10)) / communityRatingSeasons.Count
+            : 0f;
         Tags = seasonList.SelectMany(s => s.Tags).Distinct().ToArray();
         Genres = seasonList.SelectMany(s => s.Genres).Distinct().ToArray();
         ProductionLocations = seasonList
