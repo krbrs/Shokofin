@@ -318,7 +318,7 @@ public class ShowInfo : IExtendedItemInfo {
     }
 
     public ShowInfo(ShokoApiClient client, TmdbShow tmdbShow, IReadOnlyList<SeasonInfo> seasonList) {
-        var defaultSeason = seasonList.First(s => s.EpisodeList.Any(e => e.SeasonNumber is 1));
+        var defaultSeason = seasonList[0];
         var specialsSet = new Dictionary<string, bool>();
         var seasonOrderDictionary = new Dictionary<int, SeasonInfo>();
         var seasonNumberBaseDictionary = new Dictionary<string, int>();

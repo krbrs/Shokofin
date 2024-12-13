@@ -156,7 +156,6 @@ public class SeasonInfo : IExtendedItemInfo {
             .ThenBy(episode => episode.AiredAt)
             .ThenBy(e => seasonIdOrder.IndexOf(e.SeasonId))
             .ThenBy(episode => episode.Type)
-            .ThenBy(episode => episode.SeasonNumber)
             .ThenBy(episode => episode.EpisodeNumber)
             .ToList();
 
@@ -213,19 +212,16 @@ public class SeasonInfo : IExtendedItemInfo {
             episodesList = episodesList
                 .OrderBy(e => seasonIdOrder.IndexOf(e.SeasonId))
                 .ThenBy(e => e.Type)
-                .ThenBy(e => e.SeasonNumber)
                 .ThenBy(e => e.EpisodeNumber)
                 .ToList();
             altEpisodesList = altEpisodesList
                 .OrderBy(e => seasonIdOrder.IndexOf(e.SeasonId))
                 .ThenBy(e => e.Type)
-                .ThenBy(e => e.SeasonNumber)
                 .ThenBy(e => e.EpisodeNumber)
                 .ToList();
             specialsList = specialsList
                 .OrderBy(e => seasonIdOrder.IndexOf(e.SeasonId))
                 .ThenBy(e => e.Type)
-                .ThenBy(e => e.SeasonNumber)
                 .ThenBy(e => e.EpisodeNumber)
                 .ToList();
         }
