@@ -31,15 +31,16 @@ GitHub repository, or you can build it from source.
 Below is a version compatibility matrix for which version of Shokofin is
 compatible with what.
 
-| Shokofin          | Jellyfin | Shoko Server  |
-|-------------------|----------|---------------|
+| Shokofin          | Jellyfin | Shoko Server      |
+|-------------------|----------|-------------------|
 | `0.x.x`           | `10.7`   | `4.0.0` — `4.1.2` |
 | `1.x.x`           | `10.7`   | `4.1.0` — `4.1.2` |
 | `2.x.x`           | `10.8`   | `4.1.2`           |
 | `3.x.x`           | `10.8`   | `4.2.0`           |
 | `4.0.0` — `4.1.1` | `10.9`   | `4.2.2`           |
 | `4.2.0` — `4.2.2` | `10.9`   | `4.2.2` — `5.0.0` |
-| `5.x.x`           | `10.10`  | `5.0.0`           |
+| `5.0.0`           | `10.10`  | `5.0.0`           |
+| `5.1.0` — `5.x.x` | `10.10`  | `5.1.0` — `5.x.x` |
 | `dev`             | `10.10`  | `dev`             |
 
 ### Official Repository
