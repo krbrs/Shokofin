@@ -206,6 +206,18 @@ public class PluginConfiguration : BasePluginConfiguration {
     public ImageType[] AddImageLanguageCodeForMovies { get; set; }
 
     /// <summary>
+    /// Add community rating to image metadata provided to shows in Jellyfin for
+    /// it to select the correct image to use for the library.
+    /// </summary>
+    public ImageType[] AddImageCommunityRatingForShows { get; set; }
+
+    /// <summary>
+    /// Add community rating to image metadata provided to movies in Jellyfin for
+    /// it to select the correct image to use for the library.
+    /// </summary>
+    public ImageType[] AddImageCommunityRatingForMovies { get; set; }
+
+    /// <summary>
     /// This isn't used anymore, but is kept for upgrading the config in a
     /// backwards compatible manner.
     /// TODO: REMOVE THIS IN 6.0
@@ -672,6 +684,8 @@ public class PluginConfiguration : BasePluginConfiguration {
         AddImageLanguageCode = null;
         AddImageLanguageCodeForShows = [];
         AddImageLanguageCodeForMovies = [];
+        AddImageCommunityRatingForMovies = [];
+        AddImageCommunityRatingForShows = [];
         RespectPreferredImage = null;
         RespectPreferredImagePerStructureType = [
             SeriesStructureType.AniDB_Anime,

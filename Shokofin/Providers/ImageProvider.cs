@@ -15,6 +15,8 @@ using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.ExternalIds;
 
+using RatingType = MediaBrowser.Model.Dto.RatingType;
+
 namespace Shokofin.Providers;
 
 public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageProvider> _logger, ShokoApiManager _apiManager, IIdLookup _lookup) : IRemoteImageProvider, IHasOrder {
@@ -127,7 +129,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
             ? images.Thumbnails.Concat(images.Backdrops).OrderByDescending(image => image.IsPreferred).ThenByDescending(image => image.Type is API.Models.ImageType.Thumbnail)
             : images.Thumbnails.Concat(images.Backdrops).OrderByDescending(image => image.Type is API.Models.ImageType.Thumbnail);
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Primary, image, metadataLanguage);
+            AddImage(ref list, ImageType.Primary, image, metadataLanguage, overridePreferred: sortList);
     }
 
     private static void AddImagesForSeries(ref List<RemoteImageInfo> list, API.Models.Images images, string metadataLanguage, bool sortList, BaseItemKind baseKind = BaseItemKind.Series) {
@@ -135,47 +137,70 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
             ? images.Posters.OrderByDescending(image => image.IsPreferred)
             : images.Posters;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Primary, image, sortList ? metadataLanguage : null, baseKind);
+            AddImage(ref list, ImageType.Primary, image, sortList ? metadataLanguage : null, baseKind, sortList);
 
         imagesList = sortList
             ? images.Backdrops.OrderByDescending(image => image.IsPreferred)
             : images.Backdrops;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Backdrop, image, sortList ? metadataLanguage : null, baseKind);
+            AddImage(ref list, ImageType.Backdrop, image, sortList ? metadataLanguage : null, baseKind, sortList);
 
         imagesList = sortList
             ? images.Banners.OrderByDescending(image => image.IsPreferred)
             : images.Banners;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Banner, image, sortList ? metadataLanguage : null, baseKind);
+            AddImage(ref list, ImageType.Banner, image, metadataLanguage, baseKind, sortList);
 
         imagesList = sortList
             ? images.Logos.OrderByDescending(image => image.IsPreferred)
             : images.Logos;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Logo, image, sortList ? metadataLanguage : null, baseKind);
+            AddImage(ref list, ImageType.Logo, image, metadataLanguage, baseKind, sortList);
     }
 
-    private static void AddImage(ref List<RemoteImageInfo> list, ImageType imageType, API.Models.Image? image, string? metadataLanguage, BaseItemKind baseKind = BaseItemKind.Series) {
+    private static void AddImage(ref List<RemoteImageInfo> list, ImageType imageType, API.Models.Image? image, string? metadataLanguage, BaseItemKind baseKind = BaseItemKind.Series, bool overridePreferred = false) {
         if (image is not { IsAvailable: true })
             return;
 
-        list.Add(new RemoteImageInfo {
+        var imageDto = new RemoteImageInfo {
             ProviderName = $"{image.Source.ToString().Replace("TMDB", "TheMovieDb")} ({Plugin.MetadataProviderName})",
             Type = imageType,
             Width = image.Width,
             Height = image.Height,
             Url = image.ToURLString(),
-            Language = UseLanguageCode(imageType, baseKind)
-                ? !string.IsNullOrEmpty(metadataLanguage) && image.IsPreferred ? metadataLanguage : image.LanguageCode
-                : null,
-        });
+        };
+        if (UseLanguageCode(imageType, baseKind))
+            imageDto.Language = !string.IsNullOrEmpty(metadataLanguage) && overridePreferred && image.IsPreferred ? metadataLanguage : image.LanguageCode;
+
+        if (UseCommunityRating(imageType, baseKind)) {
+            if (overridePreferred && image.IsPreferred) {
+                imageDto.CommunityRating = 10;
+                imageDto.VoteCount = 1337;
+                imageDto.RatingType = RatingType.Score;
+            }
+            else if (image.CommunityRating is { } rating) {
+                imageDto.CommunityRating = rating.ToFloat();
+                imageDto.VoteCount = rating.Votes;
+                imageDto.RatingType = RatingType.Score;
+            }
+        }
+
+        list.Add(imageDto);
     }
 
     private static bool UseLanguageCode(ImageType imageType, BaseItemKind baseKind) {
         var array = baseKind switch {
             BaseItemKind.Movie => Plugin.Instance.Configuration.AddImageLanguageCodeForMovies,
             BaseItemKind.Series => Plugin.Instance.Configuration.AddImageLanguageCodeForShows,
+            _ => [],
+        };
+        return array.Contains(imageType);
+    }
+
+    private static bool UseCommunityRating(ImageType imageType, BaseItemKind baseKind) {
+        var array = baseKind switch {
+            BaseItemKind.Movie => Plugin.Instance.Configuration.AddImageCommunityRatingForMovies,
+            BaseItemKind.Series => Plugin.Instance.Configuration.AddImageCommunityRatingForShows,
             _ => [],
         };
         return array.Contains(imageType);

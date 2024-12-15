@@ -1104,6 +1104,72 @@ form:not(.expert-mode) .expert-only {
                             </div>
                             <div class="fieldDescription">Add the language code to image metadata for movie libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
                         </div>
+                        <div id="AddImageCommunityRatingForShows" is="checkbox-list" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Add Community Rating for Shows</h3>
+                            <div class="checkboxList paperList checkboxList-paperList">
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Primary">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Posters</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Backdrop">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Backdrops</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Logo">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Logos</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">Add the community rating to image metadata for show libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
+                        </div>
+                        <div id="AddImageCommunityRatingForMovies" is="checkbox-list" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Add Community Rating for Movies</h3>
+                            <div class="checkboxList paperList checkboxList-paperList">
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Primary">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Posters</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Backdrop">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Backdrops</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Logo">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Logos</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">Add the community rating to image metadata for movie libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
+                        </div>
                         <div id="RespectPreferredImagePerStructureType" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
                             <h3 class="checkboxListLabel">Respect Preferred Image</h3>
                             <div class="checkboxList paperList checkboxList-paperList">

@@ -65,6 +65,11 @@ public class Image {
         => !string.IsNullOrEmpty(LocalPath);
 
     /// <summary>
+    /// Community rating for the image, if available.
+    /// </summary>
+    public Rating? CommunityRating { get; set; }
+
+    /// <summary>
     /// Get an URL to both download the image on the backend and preview it for
     /// the clients.
     /// </summary>
