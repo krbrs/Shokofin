@@ -314,7 +314,7 @@ public static partial class Text {
         };
 
     private static string? GetMovieTitleByType(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, TitleProviderType type, string? metadataLanguage) {
-        if (episodeInfo.Id[0] is not IdPrefix.TmdbMovie)
+        if (episodeInfo.Id[0] is IdPrefix.TmdbMovie)
             return GetEpisodeTitleByType(episodeInfo, seasonInfo, type, metadataLanguage);
 
         var mainTitle = GetSeriesTitleByType(seasonInfo, type, metadataLanguage);
