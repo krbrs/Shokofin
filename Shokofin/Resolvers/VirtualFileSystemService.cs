@@ -45,7 +45,7 @@ public class VirtualFileSystemService {
 
     private readonly GuardedMemoryCache DataCache;
 
-    // Note: Out of the 14k entries in my test shoko database, then only **319** entries have a title longer than 100 characters.
+    // Note: Out of the 14k entries in my test shoko database, then only **348** entries have a title longer than 64 characters.
     private const int NameCutOff = 64;
 
     private static readonly HashSet<string> IgnoreFolderNames = [
