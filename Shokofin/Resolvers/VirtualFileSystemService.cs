@@ -748,6 +748,7 @@ public class VirtualFileSystemService {
             return ([], null);
 
         var isMovieSeason = season.Type is SeriesType.Movie;
+        var isMovieLibrary = collectionType is CollectionType.movies || (collectionType is null && isMovieSeason);
         var config = Plugin.Instance.Configuration;
         var shouldAbort = collectionType switch {
             CollectionType.tvshows => isMovieSeason && config.SeparateMovies,
@@ -761,7 +762,9 @@ public class VirtualFileSystemService {
         if (show is null)
             return ([], null);
 
-        var showName = (show.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.IsDefault)?.Value ?? show.Title)?.ReplaceInvalidPathCharacters() ?? $"Shoko Series {show.Id}";
+        var showName = (show.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.IsDefault)?.Value ?? show.Titles.FirstOrDefault(t => t.Source is "TMDB" && t.IsDefault)?.Value)?.ReplaceInvalidPathCharacters();
+        if (string.IsNullOrWhiteSpace(showName))
+            showName = isMovieLibrary ? "Movie" : "Series";
         var episodeNumber = Ordering.GetEpisodeNumber(show, season, episode);
         var episodeName = (episode.Titles.FirstOrDefault(t => t.Source is "AniDB" && t.LanguageCode == "en")?.Value ?? $"{(episode.Type is EpisodeType.Normal ? "Episode " : $"{episode.Type} ")}{episodeNumber}").ReplaceInvalidPathCharacters();
 
@@ -796,7 +799,7 @@ public class VirtualFileSystemService {
         };
         var fileIdList = fileId;
         var filePartSuffix = "";
-        if (collectionType is CollectionType.movies || (collectionType is null && isMovieSeason)) {
+        if (isMovieLibrary) {
             if (extrasFolders != null) {
                 foreach (var extrasFolder in extrasFolders)
                     foreach (var episodeInfo in season.EpisodeList.Where(e => e.IsAvailable))
