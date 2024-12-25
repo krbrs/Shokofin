@@ -69,7 +69,7 @@ form:not(.expert-mode) .expert-only {
                                 <div class="fieldDescription">The password of your administrator account in Shoko.</div>
                             </div>
                             <button is="emby-button" type="submit" name="establish-connection" class="raised button-submit block emby-button">
-                                <span>Connect</span>
+                                <span>${Connect}</span>
                             </button>
                             <div class="fieldDescription">Establish a connection to Shoko using the provided credentials.</div>
                         </div>
@@ -79,7 +79,7 @@ form:not(.expert-mode) .expert-only {
                                 <div class="fieldDescription">The version of Shoko we're connected to.</div>
                             </div>
                             <button is="emby-button" type="submit" name="reset-connection" class="raised block emby-button">
-                                <span>Reset Connection</span>
+                                <span>${Disconnect}</span>
                             </button>
                             <div class="fieldDescription">Reset the connection. Be sure to stop any tasks using this plugin before you press the button.</div>
                         </div>
@@ -283,7 +283,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription checkboxFieldDescription">Allows for any titles to be utilized if an official title is not present in the given language. Only applies to the AniDB title selectors above.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Metadata_Description_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -342,7 +342,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">The metadata providers to use as the source of descriptions for entities, in priority order.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Metadata_TagGenre_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
@@ -1031,7 +1031,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">The maximum relative depth of a tag to be included with the displayed genres based on it's source category.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Metadata_Image_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1204,7 +1204,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">Respect the preferred image flag sent from server when selecting the correct image to use for the entity. Setting this will also set the language code to the preferred language code for the entity if "Add Language Code" is enabled, thus ensuring it is always selected for the given entity.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Metadata_Misc_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
@@ -1272,7 +1272,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">The metadata providers to use as the source of production locations for entities, in priority order.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Metadata_ThirdPartyIntegration_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1313,7 +1313,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">Enable which third party IDs to provide for other plugins to consume with supported media items.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Library_Basic_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1391,7 +1391,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription checkboxFieldDescription">Append all specials in an AniDB movie series as special features for the movie(s). By default only some specials will be automatically recognized as special features, but by enabling this option you will force all specials to be used as special features. This setting applies to movie series across all library types, and will break some movie series in a show type library.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Library_Collection_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1439,7 +1439,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription checkboxFieldDescription">If collections are enabled, only create a collection when the collection will contain at least two items.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Library_MultipleVersions_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
@@ -1556,7 +1556,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">The selectors to use to sort the multiple versions of the same video, in priority order.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Library_New_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1603,7 +1603,7 @@ form:not(.expert-mode) .expert-only {
                             </div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Library_Existing_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1665,12 +1665,12 @@ form:not(.expert-mode) .expert-only {
                             </div>
                             <div class="inputContainer inputContainer-withDescription">
                                 <button is="emby-button" type="submit" name="remove-library" class="raised button-delete block emby-button">
-                                    <span>Remove</span>
+                                    <span>${ButtonRemove}</span>
                                 </button>
                                 <div class="fieldDescription">This will delete the saved settings and reset the mapping for the library.</div>
                             </div>
                             <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                                <span>Save</span>
+                                <span>${Save}</span>
                             </button>
                         </div>
                     </fieldset>
@@ -1687,7 +1687,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription checkboxFieldDescription">Blur the boundaries between AniDB anime further by merging entries which could have just been a single anime entry based on name matching and a configurable merge window.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="VFS_Basic_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1730,7 +1730,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription checkboxFieldDescription">Enabling this will add the standardized resolution (e.g. 480p, 1080p, 4K, etc.) to all files in the VFS if available. <strong>Warning</strong>: Though rare, we may fail to read the media info in Shoko when the files were first added (e.g. because of a corrupt file, encountering an unsupported <i>new</i> codec, etc.), then reading it later. This may lead to episode/movie entries to be "removed" and "added" as new entries the next time they are refreshed after the metadata has been added. <strong>Use at your own risk.</strong></div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="VFS_Location_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
@@ -1768,7 +1768,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">An absolute path, or a relative path from the Jellyfin Data Directory, to the custom root directory of where the VFS will be placed. You decide.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="SignalR_Connection_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1781,13 +1781,13 @@ form:not(.expert-mode) .expert-only {
                         </div>
                         <div id="SignalRConnectContainer" hidden>
                             <button id="SignalRConnectButton" is="emby-button" type="submit" name="signalr-connect" class="raised button-submit block emby-button" disabled>
-                                <span>Connect</span>
+                                <span>${Connect}</span>
                             </button>
                             <div class="fieldDescription">Establish a SignalR connection to Shoko.</div>
                         </div>
                         <div id="SignalRDisconnectContainer">
                             <button is="emby-button" type="submit" name="signalr-disconnect" class="raised block emby-button">
-                                <span>Disconnect</span>
+                                <span>${Disconnect}</span>
                             </button>
                             <div class="fieldDescription">Terminate the SignalR connection to Shoko.</div>
                         </div>
@@ -1852,7 +1852,7 @@ form:not(.expert-mode) .expert-only {
                             </div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="SignalR_Library_New_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1878,7 +1878,7 @@ form:not(.expert-mode) .expert-only {
                             </div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="SignalR_Library_Existing_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
@@ -1912,7 +1912,7 @@ form:not(.expert-mode) .expert-only {
                                 </div>
                             </div>
                             <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                                <span>Save</span>
+                                <span>${Save}</span>
                             </button>
                         </div>
                     </fieldset>
@@ -1987,12 +1987,12 @@ form:not(.expert-mode) .expert-only {
                             </div>
                             <div id="UserDeleteContainer" class="inputContainer inputContainer-withDescription" hidden>
                                 <button is="emby-button" type="submit" name="unlink-user" class="raised button-delete block emby-button">
-                                    <span>Remove</span>
+                                    <span>${ButtonRemove}</span>
                                 </button>
                                 <div class="fieldDescription">This will delete any saved settings for the user.</div>
                             </div>
                             <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                                <span>Save</span>
+                                <span>${Save}</span>
                             </button>
                         </div>
                     </fieldset>
@@ -2012,7 +2012,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">A comma separated list of folder names to ignore during a library scan. Useful for skipping folders generated by a NAS or other pieces of software that access the file system where media resides. Only applicable to libraries not managed by the VFS as files not recognized by Shoko Server are already ignored.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>Save</span>
+                            <span>${Save}</span>
                         </button>
                     </fieldset>
                     <fieldset id="Utilities_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
