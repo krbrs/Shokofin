@@ -24,6 +24,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
 
     private readonly ILogger<Plugin> Logger;
 
+    private readonly object Lock = new();
+
     /// <summary>
     /// The last time the base URL and base path was updated.
     /// </summary>
@@ -43,7 +45,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             if (CachedBaseUrl is not null && LastBaseUrlUpdate is not null && DateTime.Now - LastBaseUrlUpdate < BaseUrlUpdateDelay)
                 return CachedBaseUrl;
 
-            lock(this) {
+            lock (Lock) {
                 LastBaseUrlUpdate = DateTime.Now;
                 if (_configurationManager.GetNetworkConfiguration() is not { } networkOptions) {
                     CachedBaseUrl = "http://localhost:8096/";
@@ -78,12 +80,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             if (CachedBasePath is not null && LastBaseUrlUpdate is not null && DateTime.Now - LastBaseUrlUpdate < BaseUrlUpdateDelay)
                 return CachedBasePath;
 
-            lock(this) {
+            lock (Lock) {
                 LastBaseUrlUpdate = DateTime.Now;
                 if (_configurationManager.GetNetworkConfiguration() is not { } networkOptions) {
                     CachedBaseUrl = "http://localhost:8096/";
                     CachedBasePath = string.Empty;
-                    return CachedBaseUrl;
+                    return CachedBasePath;
                 }
 
                 var protocol = networkOptions.RequireHttps && networkOptions.EnableHttps ? "https" : "http";
