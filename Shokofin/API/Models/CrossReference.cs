@@ -55,12 +55,12 @@ public class CrossReference {
         /// <summary>
         /// Percentage file is matched to the episode.
         /// </summary>
-        public CrossReferencePercentage? Percentage { get; set; }
+        public CrossReferencePercentage Percentage { get; set; } = new();
     }
 
     public class CrossReferencePercentage {
         /// <summary>
-        /// File/episode cross-reference percentage range end.
+        /// File/episode cross-reference percentage range start.
         /// </summary>
         public int Start { get; set; }
 

@@ -827,15 +827,15 @@ public class VirtualFileSystemService {
             else {
                 folders.Add(Path.Join(vfsPath, showFolder, seasonFolder));
                 episodeName = $"{showName} S{(isSpecial ? 0 : seasonNumber).ToString().PadLeft(2, '0')}E{episodeNumber.ToString().PadLeft(show.EpisodePadding, '0')}";
-                if ((episodeXref.Percentage?.Group ?? 1) is not 1) {
-                    var list = episode.CrossReferences.Where(xref => xref.ReleaseGroup == episodeXref.ReleaseGroup && xref.Percentage!.Group == episodeXref.Percentage!.Group).ToList();
+                if (episodeXref.Percentage.Group is not 1) {
+                    var list = episode.CrossReferences.Where(xref => xref.ReleaseGroup == episodeXref.ReleaseGroup && xref.Percentage.Group == episodeXref.Percentage.Group).ToList();
                     var files = (await Task.WhenAll(list.Select(xref => ApiClient.GetFileByEd2kAndFileSize(xref.ED2K, xref.FileSize))).ConfigureAwait(false))
                         .OfType<API.Models.File>()
                         .ToList();
                     if (files.Count != list.Count)
                         throw new Exception($"Mismatch between cross-references and files. (FileCount={files.Count},CrossReferenceCount={list.Count},Episode={episode.Id},File={fileId},Series={seriesId})");
 
-                    var index = list.FindIndex(xref => xref.Percentage!.Start == episodeXref.Percentage!.Start && xref.Percentage!.End == episodeXref.Percentage!.End);
+                    var index = list.FindIndex(xref => xref.Percentage.Start == episodeXref.Percentage.Start && xref.Percentage.End == episodeXref.Percentage.End);
                     filePartSuffix = $".pt{index + 1}";
                     fileIdList = files.Select(f => f.Id.ToString()).Join(",");
                 }
