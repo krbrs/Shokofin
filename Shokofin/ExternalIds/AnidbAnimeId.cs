@@ -21,5 +21,5 @@ public class AnidbAnimeId : IExternalId {
     public ExternalIdMediaType? Type
         => null;
 
-    public virtual string? UrlFormatString => "https://anidb.net/anime/{0}";
+    public string? UrlFormatString => "https://anidb.net/anime/{0}";
 }

@@ -20,5 +20,5 @@ public class AnidbEpisodeId : IExternalId {
     public ExternalIdMediaType? Type
         => null;
 
-    public virtual string? UrlFormatString => "https://anidb.net/episode/{0}";
+    public string? UrlFormatString => "https://anidb.net/episode/{0}";
 }

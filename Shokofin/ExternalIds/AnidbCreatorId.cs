@@ -20,5 +20,5 @@ public class AnidbCreatorId : IExternalId {
     public ExternalIdMediaType? Type
         => null;
 
-    public virtual string? UrlFormatString => "https://anidb.net/creator/{0}";
+    public string? UrlFormatString => "https://anidb.net/creator/{0}";
 }

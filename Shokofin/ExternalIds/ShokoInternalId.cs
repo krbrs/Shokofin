@@ -23,5 +23,5 @@ public class ShokoInternalId : IExternalId {
     public ExternalIdMediaType? Type
         => null;
 
-    public virtual string? UrlFormatString => null;
+    public string? UrlFormatString => null;
 }
