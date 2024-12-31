@@ -26,7 +26,7 @@ public class Role : IEquatable<Role> {
 
     /// <summary>
     /// The character played, the <see cref="Role.Type"/> is of type
-    /// <see cref="CreatorRoleType.Seiyuu"/>.
+    /// <see cref="CreatorRoleType.Actor"/>.
     /// </summary>
     public Person? Character { get; set; }
 
@@ -101,7 +101,12 @@ public enum CreatorRoleType {
     /// <summary>
     /// Voice actor or voice actress.
     /// </summary>
-    Seiyuu,
+    Actor,
+
+    /// <summary>
+    /// Synonym of <see cref="CreatorRoleType.Actor"/> for backwards compatibility for a few server versions.
+    /// </summary>
+    Seiyuu = Actor,
 
     /// <summary>
     /// This can be anything involved in writing the show.
