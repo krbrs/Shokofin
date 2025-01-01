@@ -252,6 +252,7 @@ public class EventDispatchService {
                             var videos = LibraryManager
                                 .GetItemList(
                                     new() {
+                                        SourceTypes = [SourceType.Library],
                                         AncestorIds = mediaConfigs.Select(c => c.MediaFolderId).ToArray(),
                                         HasAnyProviderId = new Dictionary<string, string> { { ShokoFileId.Name, fileId.ToString() } },
                                         DtoOptions = new(true),
@@ -337,6 +338,7 @@ public class EventDispatchService {
                             var videos = LibraryManager
                                 .GetItemList(
                                     new() {
+                                        SourceTypes = [SourceType.Library],
                                         HasAnyProviderId = new Dictionary<string, string> { { ShokoFileId.Name, fileId.ToString() } },
                                         DtoOptions = new(true),
                                     },
@@ -612,6 +614,7 @@ public class EventDispatchService {
             var shows = LibraryManager
                 .GetItemList(new() {
                     IncludeItemTypes = [BaseItemKind.Series],
+                    SourceTypes = [SourceType.Library],
                     HasAnyProviderId = new Dictionary<string, string> { { ShokoInternalId.Name, showInfo.InternalId } },
                     DtoOptions = new(true),
                 })
@@ -659,6 +662,7 @@ public class EventDispatchService {
                 var seasons = LibraryManager
                     .GetItemList(new() {
                         IncludeItemTypes = [BaseItemKind.Season],
+                        SourceTypes = [SourceType.Library],
                         HasAnyProviderId = new Dictionary<string, string> { { ShokoInternalId.Name, seasonInfo.InternalId } },
                         DtoOptions = new(true),
                     })
@@ -700,6 +704,7 @@ public class EventDispatchService {
                 var episodes = LibraryManager
                     .GetItemList(new() {
                         IncludeItemTypes = [BaseItemKind.Episode],
+                        SourceTypes = [SourceType.Library],
                         HasAnyProviderId = new Dictionary<string, string> { { ShokoEpisodeId.Name, episodeInfo.Id } },
                         DtoOptions = new(true),
                     })
@@ -762,6 +767,7 @@ public class EventDispatchService {
             var movies = LibraryManager
                 .GetItemList(new() {
                     IncludeItemTypes = [BaseItemKind.Movie],
+                    SourceTypes = [SourceType.Library],
                     HasAnyProviderId = new Dictionary<string, string> { { ShokoEpisodeId.Name, episodeInfo.Id } },
                     DtoOptions = new(true),
                 })

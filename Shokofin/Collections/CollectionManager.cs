@@ -599,6 +599,7 @@ public class CollectionManager(
     private List<Movie> GetMovies()
         => _libraryManager.GetItemList(new() {
             IncludeItemTypes = [BaseItemKind.Movie],
+            SourceTypes = [SourceType.Library],
             HasAnyProviderId = new() { { ShokoFileId.Name, string.Empty } },
             IsVirtualItem = false,
             Recursive = true,
@@ -610,6 +611,7 @@ public class CollectionManager(
     private List<Series> GetShows()
         => _libraryManager.GetItemList(new() {
             IncludeItemTypes = [BaseItemKind.Series],
+            SourceTypes = [SourceType.Library],
             HasAnyProviderId = new() { { ShokoInternalId.Name, string.Empty } },
             IsVirtualItem = false,
             Recursive = true,
@@ -621,6 +623,7 @@ public class CollectionManager(
     private Dictionary<string, IReadOnlyList<BoxSet>> GetSeriesCollections()
         => _libraryManager.GetItemList(new() {
             IncludeItemTypes = [BaseItemKind.BoxSet],
+            SourceTypes = [SourceType.Library],
             HasAnyProviderId = new() { { ShokoCollectionSeriesId.Name, string.Empty } },
             IsVirtualItem = false,
             Recursive = true,
@@ -634,6 +637,7 @@ public class CollectionManager(
     private Dictionary<string, IReadOnlyList<BoxSet>> GetGroupCollections()
         => _libraryManager.GetItemList(new() {
             IncludeItemTypes = [BaseItemKind.BoxSet],
+            SourceTypes = [SourceType.Library],
             HasAnyProviderId = new() { { ShokoCollectionGroupId.Name, string.Empty } },
             IsVirtualItem = false,
             Recursive = true,

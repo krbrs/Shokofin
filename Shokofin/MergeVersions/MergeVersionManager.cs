@@ -173,6 +173,7 @@ public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibrary
         => _libraryManager
             .GetItemList(new() {
                 IncludeItemTypes = [BaseItemKind.Movie],
+                SourceTypes = [SourceType.Library],
                 IsVirtualItem = false,
                 Recursive = true,
                 HasAnyProviderId = new Dictionary<string, string> { {ShokoEpisodeId.Name, episodeId } },
@@ -190,6 +191,7 @@ public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibrary
         => _libraryManager
             .GetItemList(new() {
                 IncludeItemTypes = [BaseItemKind.Episode],
+                SourceTypes = [SourceType.Library],
                 HasAnyProviderId = new Dictionary<string, string> { {ShokoEpisodeId.Name, episodeId } },
                 IsVirtualItem = false,
                 Recursive = true,
