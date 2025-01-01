@@ -602,7 +602,7 @@ public partial class ShokoApiManager : IDisposable {
 
                 // Group and order the episodes, then select the first group to use.
                 var groupedEpisodeLists = episodeList
-                    .GroupBy(tuple => (type: tuple.Episode.Type, group: tuple.CrossReference.Percentage?.Group ?? 1, isStandalone: tuple.Episode.IsStandalone))
+                    .GroupBy(tuple => (type: tuple.Episode.Type, group: tuple.CrossReference.Percentage.Group, isStandalone: tuple.Episode.IsStandalone))
                     .OrderByDescending(a => Array.IndexOf(EpisodePickOrder, a.Key.type))
                     .ThenBy(a => a.Key.group)
                     .ThenByDescending(a => a.Key.isStandalone)
