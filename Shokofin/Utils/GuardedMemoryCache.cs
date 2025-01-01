@@ -37,14 +37,16 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
         cache.Dispose();
     }
 
-    public TItem GetOrCreate<TItem>(object key, Action<TItem> foundAction, Func<TItem> createFactory, MemoryCacheEntryOptions? createOptions = null) {
+    public TItem GetOrCreate<TItem>(object key, Action<TItem> foundAction, Func<TItem> createFactory, MemoryCacheEntryOptions? createOptions = null, CancellationToken cancellationToken = default) {
         if (TryGetValue<TItem>(key, out var value)) {
             foundAction(value);
             return value;
         }
 
         try {
-            using (Semaphores.Lock(key)) {
+            using (Semaphores.Lock(key, cancellationToken)) {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (TryGetValue(key, out value)) {
                     foundAction(value);
                     return value;
@@ -82,14 +84,16 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
         }
     }
 
-    public async Task<TItem> GetOrCreateAsync<TItem>(object key, Action<TItem> foundAction, Func<Task<TItem>> createFactory, MemoryCacheEntryOptions? createOptions = null) {
+    public async Task<TItem> GetOrCreateAsync<TItem>(object key, Action<TItem> foundAction, Func<Task<TItem>> createFactory, MemoryCacheEntryOptions? createOptions = null, CancellationToken cancellationToken = default) {
         if (TryGetValue<TItem>(key, out var value)) {
             foundAction(value);
             return value;
         }
 
         try {
-            using (await Semaphores.LockAsync(key).ConfigureAwait(false)) {
+            using (await Semaphores.LockAsync(key, cancellationToken).ConfigureAwait(false)) {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (TryGetValue(key, out value)) {
                     foundAction(value);
                     return value;
@@ -127,12 +131,14 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
         }
     }
 
-    public TItem GetOrCreate<TItem>(object key, Func<TItem> createFactory, MemoryCacheEntryOptions? createOptions = null) {
+    public TItem GetOrCreate<TItem>(object key, Func<TItem> createFactory, MemoryCacheEntryOptions? createOptions = null, CancellationToken cancellationToken = default) {
         if (TryGetValue<TItem>(key, out var value))
             return value;
 
         try {
-            using (Semaphores.Lock(key)) {
+            using (Semaphores.Lock(key, cancellationToken)) {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (TryGetValue(key, out value))
                     return value;
 
@@ -167,12 +173,14 @@ sealed class GuardedMemoryCache : IDisposable, IMemoryCache {
         }
     }
 
-    public async Task<TItem> GetOrCreateAsync<TItem>(object key, Func<Task<TItem>> createFactory, MemoryCacheEntryOptions? createOptions = null) {
+    public async Task<TItem> GetOrCreateAsync<TItem>(object key, Func<Task<TItem>> createFactory, MemoryCacheEntryOptions? createOptions = null, CancellationToken cancellationToken = default) {
         if (TryGetValue<TItem>(key, out var value))
             return value;
 
         try {
-            using (await Semaphores.LockAsync(key).ConfigureAwait(false)) {
+            using (await Semaphores.LockAsync(key, cancellationToken).ConfigureAwait(false)) {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 if (TryGetValue(key, out value))
                     return value;
 
