@@ -34,6 +34,8 @@ public partial class ShokoApiManager : IDisposable {
 
     private readonly ILibraryManager LibraryManager;
 
+    private readonly UsageTracker UsageTracker;
+
     private readonly GuardedMemoryCache DataCache;
 
     private readonly object MediaFolderListLock = new();
@@ -52,16 +54,17 @@ public partial class ShokoApiManager : IDisposable {
 
     private readonly ConcurrentDictionary<string, List<string>> FileAndSeasonIdToEpisodeIdDictionary = new();
 
-    public ShokoApiManager(ILogger<ShokoApiManager> logger, ShokoApiClient apiClient, ILibraryManager libraryManager) {
+    public ShokoApiManager(ILogger<ShokoApiManager> logger, ShokoApiClient apiClient, ILibraryManager libraryManager, UsageTracker usageTracker) {
         Logger = logger;
         ApiClient = apiClient;
         LibraryManager = libraryManager;
+        UsageTracker = usageTracker;
         DataCache = new(logger, new() { ExpirationScanFrequency = TimeSpan.FromMinutes(25) }, new() { AbsoluteExpirationRelativeToNow = new(2, 30, 0) });
-        Plugin.Instance.Tracker.Stalled += OnTrackerStalled;
+        UsageTracker.Stalled += OnTrackerStalled;
     }
 
     ~ShokoApiManager() {
-        Plugin.Instance.Tracker.Stalled -= OnTrackerStalled;
+        UsageTracker.Stalled -= OnTrackerStalled;
     }
 
     private void OnTrackerStalled(object? sender, EventArgs eventArgs)

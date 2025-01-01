@@ -20,21 +20,24 @@ namespace Shokofin.API;
 public class ShokoApiClient : IDisposable {
     private readonly HttpClient _httpClient;
 
+    private readonly UsageTracker _tracker;
+
     private readonly ILogger<ShokoApiClient> _logger;
 
     private readonly GuardedMemoryCache _cache;
 
-    public ShokoApiClient(ILogger<ShokoApiClient> logger) {
+    public ShokoApiClient(ILogger<ShokoApiClient> logger, UsageTracker tracker) {
         _httpClient = new HttpClient {
             Timeout = TimeSpan.FromMinutes(10),
         };
         _logger = logger;
+        _tracker = tracker;
         _cache = new(logger, new() { ExpirationScanFrequency = TimeSpan.FromMinutes(25) }, new() { SlidingExpiration = new(2, 30, 0) });
-        Plugin.Instance.Tracker.Stalled += OnTrackerStalled;
+        _tracker.Stalled += OnTrackerStalled;
     }
 
     ~ShokoApiClient() {
-        Plugin.Instance.Tracker.Stalled -= OnTrackerStalled;
+        _tracker.Stalled -= OnTrackerStalled;
     }
 
     private void OnTrackerStalled(object? sender, EventArgs eventArgs)
