@@ -63,6 +63,10 @@ public class EpisodeInfo : IExtendedItemInfo {
 
     public DateTime? AiredAt { get; init; }
 
+    public DateTime CreatedAt { get; init; }
+
+    public DateTime LastUpdatedAt { get; init; }
+
     public Rating CommunityRating { get; init; }
 
     public IReadOnlyList<string> Genres { get; init; }
@@ -214,6 +218,8 @@ public class EpisodeInfo : IExtendedItemInfo {
                 .Select(r => r.Staff.Name)
                 .ToArray();
         }
+        CreatedAt = episode.CreatedAt;
+        LastUpdatedAt = episode.LastUpdatedAt;
         Genres = genres;
         Tags = tags;
         ProductionLocations = productionLocationDict;
@@ -253,6 +259,8 @@ public class EpisodeInfo : IExtendedItemInfo {
         ExtraType = null;
         Runtime = tmdbEpisode.Runtime;
         AiredAt = tmdbEpisode.AiredAt?.ToDateTime(TimeOnly.Parse("00:00:00", CultureInfo.InvariantCulture), DateTimeKind.Local);
+        CreatedAt = tmdbEpisode.CreatedAt;
+        LastUpdatedAt = tmdbEpisode.LastUpdatedAt;
         CommunityRating = tmdbEpisode.UserRating;
         Genres = genres;
         Tags = tags;
@@ -305,6 +313,8 @@ public class EpisodeInfo : IExtendedItemInfo {
         ExtraType = null;
         Runtime = tmdbMovie.Runtime;
         AiredAt = tmdbMovie.ReleasedAt?.ToDateTime(TimeOnly.Parse("00:00:00", CultureInfo.InvariantCulture), DateTimeKind.Local);
+        CreatedAt = tmdbMovie.CreatedAt;
+        LastUpdatedAt = tmdbMovie.LastUpdatedAt;
         CommunityRating = tmdbMovie.UserRating;
         Genres = genres;
         Tags = tags;

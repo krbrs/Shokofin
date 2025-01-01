@@ -1,4 +1,7 @@
 
+using System;
+using System.Text.Json.Serialization;
+
 namespace Shokofin.API.Models.Shoko;
 
 public class ShokoGroup {
@@ -19,6 +22,18 @@ public class ShokoGroup {
     public int Size { get; set; }
 
     public GroupSizes Sizes { get; set; } = new();
+
+    /// <summary>
+    /// When the group entry was created.
+    /// </summary>
+    [JsonPropertyName("Created")]
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// When the group entry was last updated.
+    /// </summary>
+    [JsonPropertyName("Updated")]
+    public DateTime LastUpdatedAt { get; set; }
 
     public class GroupIDs : IDs {
         public int MainSeries { get; set; }

@@ -56,6 +56,10 @@ public class ShowInfo : IExtendedItemInfo {
 
     public string? OriginalLanguageCode { get; init; }
 
+    public DateTime CreatedAt { get; init; }
+
+    public DateTime LastUpdatedAt { get; init; }
+
     /// <summary>
     /// Indicates that this show is consistent of only movies.
     /// </summary>
@@ -186,6 +190,8 @@ public class ShowInfo : IExtendedItemInfo {
         Genres = seasonInfo.Genres;
         PremiereDate = seasonInfo.PremiereDate;
         EndDate = seasonInfo.EndDate;
+        CreatedAt = seasonInfo.CreatedAt;
+        LastUpdatedAt = seasonInfo.LastUpdatedAt;
         ProductionLocations = seasonInfo.ProductionLocations;
         ContentRatings = seasonInfo.ContentRatings;
         Studios = seasonInfo.Studios;
@@ -304,6 +310,8 @@ public class ShowInfo : IExtendedItemInfo {
         EndDate = !seasonList.Any(s => s.PremiereDate.HasValue && s.PremiereDate.Value < DateTime.Now && s.EndDate == null)
             ? seasonList.Select(s => s.EndDate).Where(s => s.HasValue).Max()
             : null;
+        CreatedAt = seasonList.Select(s => s.CreatedAt).Min();
+        LastUpdatedAt = seasonList.Select(s => s.LastUpdatedAt).Max();
         CommunityRating = communityRatingSeasons.Count > 0
             ? communityRatingSeasons.Aggregate(0f, (total, seasonInfo) => total + seasonInfo.CommunityRating.ToFloat(10)) / communityRatingSeasons.Count
             : 0f;
@@ -392,6 +400,8 @@ public class ShowInfo : IExtendedItemInfo {
         OriginalLanguageCode = tmdbShow.OriginalLanguage;
         PremiereDate = tmdbShow.FirstAiredAt?.ToDateTime(TimeOnly.Parse("00:00:00", CultureInfo.InvariantCulture), DateTimeKind.Local);
         EndDate = tmdbShow.LastAiredAt?.ToDateTime(TimeOnly.Parse("00:00:00", CultureInfo.InvariantCulture), DateTimeKind.Local);
+        CreatedAt = tmdbShow.CreatedAt;
+        LastUpdatedAt = tmdbShow.LastUpdatedAt;
         CommunityRating = tmdbShow.UserRating.ToFloat(10);
         Genres = seasonList.SelectMany(s => s.Genres).Distinct().ToArray();
         Tags = seasonList.SelectMany(s => s.Tags).Distinct().ToArray();
@@ -431,6 +441,8 @@ public class ShowInfo : IExtendedItemInfo {
         OriginalLanguageCode = tmdbMovie.OriginalLanguage;
         PremiereDate = releasedAt;
         EndDate = releasedAt < DateTime.Now ? releasedAt : null;
+        CreatedAt = tmdbMovie.CreatedAt;
+        LastUpdatedAt = tmdbMovie.LastUpdatedAt;
         CommunityRating = tmdbMovie.UserRating.ToFloat(10);
         Genres = seasonInfo.Genres;
         Tags = seasonInfo.Tags;
@@ -516,6 +528,8 @@ public class ShowInfo : IExtendedItemInfo {
         OriginalLanguageCode = defaultSeason.OriginalLanguageCode;
         PremiereDate = seasonList[0].PremiereDate;
         EndDate = seasonList[^1].EndDate;
+        CreatedAt = tmdbMovieCollection.CreatedAt;
+        LastUpdatedAt = tmdbMovieCollection.LastUpdatedAt;
         CommunityRating = communityRatingSeasons.Count > 0
             ? communityRatingSeasons.Aggregate(0f, (total, seasonInfo) => total + seasonInfo.CommunityRating.ToFloat(10)) / communityRatingSeasons.Count
             : 0f;

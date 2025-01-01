@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using Shokofin.API.Models;
@@ -48,6 +49,10 @@ public class CollectionInfo(ShokoGroup group, string? mainSeasonId, List<ShowInf
 
     public string? OriginalLanguageCode => null;
 
+    public DateTime CreatedAt { get; init; }
+
+    public DateTime LastUpdatedAt { get; init; }
+
     /// <summary>
     /// Number of files across all shows and movies in the collection and all sub-collections.
     /// </summary>
@@ -88,5 +93,7 @@ public class CollectionInfo(ShokoGroup group, string? mainSeasonId, List<ShowInf
                 Value = Text.SanitizeAnidbDescription(series.AniDB.Description),
             },
         ];
+        CreatedAt = group.CreatedAt;
+        LastUpdatedAt = group.LastUpdatedAt;
     }
 }

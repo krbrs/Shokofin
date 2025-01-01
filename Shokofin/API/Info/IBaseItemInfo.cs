@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Shokofin.API.Models;
 
@@ -36,4 +37,14 @@ public interface IBaseItemInfo {
     /// Original language code for the base item if available.
     /// </summary>
     string? OriginalLanguageCode { get; }
+
+    /// <summary>
+    /// Date and time the base item was created.
+    /// </summary>
+    DateTime CreatedAt { get; }
+
+    /// <summary>
+    /// Date and time the base item was last updated.
+    /// </summary>
+    DateTime LastUpdatedAt { get; }
 }

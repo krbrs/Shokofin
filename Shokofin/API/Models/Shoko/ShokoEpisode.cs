@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 using Shokofin.API.Models.AniDB;
 
 namespace Shokofin.API.Models.Shoko;
@@ -51,6 +52,18 @@ public class ShokoEpisode {
     /// File cross-references for the episode.
     /// </summary>
     public List<CrossReference.EpisodeCrossReferenceIDs> CrossReferences { get; set; } = [];
+
+    /// <summary>
+    /// When the episode entry was created.
+    /// </summary>
+    [JsonPropertyName("Created")]
+    public DateTime CreatedAt { get; set; }
+
+    /// <summary>
+    /// When the episode entry was last updated.
+    /// </summary>
+    [JsonPropertyName("Updated")]
+    public DateTime LastUpdatedAt { get; set; }
 
     public class EpisodeIDs : IDs {
         public int ParentSeries { get; set; }

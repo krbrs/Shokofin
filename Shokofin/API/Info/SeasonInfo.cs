@@ -67,6 +67,10 @@ public class SeasonInfo : IExtendedItemInfo {
     /// </summary>
     public DateTime? EndDate { get; init; }
 
+    public DateTime CreatedAt { get; init; }
+
+    public DateTime LastUpdatedAt { get; init; }
+
     public IReadOnlyList<string> Genres { get; init; }
 
     public IReadOnlyList<string> Tags { get; init; }
@@ -319,6 +323,8 @@ public class SeasonInfo : IExtendedItemInfo {
         OriginalLanguageCode = null;
         CommunityRating = series.AniDB.Rating;
         PremiereDate = series.AniDB.AirDate;
+        CreatedAt = series.CreatedAt;
+        LastUpdatedAt = series.LastUpdatedAt;
         EndDate = series.AniDB.EndDate;
         Genres = episodes.SelectMany(s => s.Genres).Distinct().ToArray();
         Tags = episodes.SelectMany(s => s.Tags).Distinct().ToArray();
@@ -376,6 +382,8 @@ public class SeasonInfo : IExtendedItemInfo {
             PremiereDate = episodes[0].AiredAt;
             EndDate = (tmdbShow.LastAiredAt.HasValue || tmdbSeason.SeasonNumber < tmdbShow.SeasonCount) && episodes[^1].AiredAt is { } endDate && endDate < DateTime.Now ? endDate : null;
         }
+        CreatedAt = tmdbSeason.CreatedAt;
+        LastUpdatedAt = tmdbSeason.LastUpdatedAt;
         Genres = genres;
         Tags = tags;
         Studios = tmdbShow.Studios.Select(s => s.Name).ToArray();
@@ -414,6 +422,8 @@ public class SeasonInfo : IExtendedItemInfo {
         OriginalLanguageCode = tmdbMovie.OriginalLanguage;
         CommunityRating = episodeInfo.CommunityRating;
         PremiereDate = episodeInfo.AiredAt;
+        CreatedAt = tmdbMovie.CreatedAt;
+        LastUpdatedAt = tmdbMovie.LastUpdatedAt;
         EndDate = episodeInfo.AiredAt is { } endDate && endDate < DateTime.Now ? endDate : null;
         Genres = episodeInfo.Genres;
         Tags = episodeInfo.Tags;
@@ -451,6 +461,8 @@ public class SeasonInfo : IExtendedItemInfo {
         OriginalLanguageCode = movies[0].OriginalLanguage;
         CommunityRating = episodes[0].CommunityRating;
         PremiereDate = episodes[0].AiredAt;
+        CreatedAt = tmdbMovieCollection.CreatedAt;
+        LastUpdatedAt = tmdbMovieCollection.LastUpdatedAt;
         EndDate = episodes[^1].AiredAt is { } endDate && endDate < DateTime.Now ? endDate : null;
         Genres = episodes.SelectMany(m => m.Genres).Distinct().ToArray();
         Tags = episodes.SelectMany(m => m.Tags).Distinct().ToArray();
