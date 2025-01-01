@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
+using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -24,6 +25,10 @@ public class ShokoApiClient : IDisposable {
 
     private readonly ILogger<ShokoApiClient> _logger;
 
+    private readonly SemaphoreSlim _requestLimiter;
+
+    private static readonly TimeSpan _requestWaitLogThreshold = TimeSpan.FromMilliseconds(50);
+
     private readonly GuardedMemoryCache _cache;
 
     public ShokoApiClient(ILogger<ShokoApiClient> logger, UsageTracker tracker) {
@@ -33,6 +38,7 @@ public class ShokoApiClient : IDisposable {
         _logger = logger;
         _tracker = tracker;
         _cache = new(logger, new() { ExpirationScanFrequency = TimeSpan.FromMinutes(25) }, new() { SlidingExpiration = new(2, 30, 0) });
+        _requestLimiter = new(10, 10);
         _tracker.Stalled += OnTrackerStalled;
     }
 
@@ -70,28 +76,26 @@ public class ShokoApiClient : IDisposable {
 
     private async Task<ReturnType> Get<ReturnType>(string url, HttpMethod method, string? apiKey = null, bool skipCache = false, CancellationToken cancellationToken = default) {
         if (skipCache) {
-            _logger.LogTrace("Creating object for {Method} {URL}", method, url);
+            _logger.LogTrace("Creating raw object for {Method} {URL}", method, url);
             var response = await Get(url, method, apiKey, cancellationToken: cancellationToken).ConfigureAwait(false);
             if (response.StatusCode != HttpStatusCode.OK)
                 throw ApiException.FromResponse(response);
             var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            responseStream.Seek(0, System.IO.SeekOrigin.Begin);
             var value = await JsonSerializer.DeserializeAsync<ReturnType>(responseStream, cancellationToken: cancellationToken).ConfigureAwait(false) ??
                 throw new ApiException(response.StatusCode, nameof(ShokoApiClient), "Unexpected null return value.");
             return value;
         }
 
         return await _cache.GetOrCreateAsync(
-            $"apiKey={apiKey ?? "default"},method={method},url={url},object",
+            $"apiKey={apiKey ?? "default"},method={method},body=null,url={url},object",
             (_) => _logger.LogTrace("Reusing object for {Method} {URL}", method, url),
             async () => {
-                _logger.LogTrace("Creating object for {Method} {URL}", method, url);
+                _logger.LogTrace("Creating cached object for {Method} {URL}", method, url);
                 var response = await Get(url, method, apiKey).ConfigureAwait(false);
                 if (response.StatusCode != HttpStatusCode.OK)
                     throw ApiException.FromResponse(response);
-                var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-                responseStream.Seek(0, System.IO.SeekOrigin.Begin);
-                var value = await JsonSerializer.DeserializeAsync<ReturnType>(responseStream).ConfigureAwait(false) ??
+                var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                var value = await JsonSerializer.DeserializeAsync<ReturnType>(responseStream, cancellationToken: cancellationToken).ConfigureAwait(false) ??
                     throw new ApiException(response.StatusCode, nameof(ShokoApiClient), "Unexpected null return value.");
                 return value;
             }
@@ -115,6 +119,13 @@ public class ShokoApiClient : IDisposable {
             Plugin.Instance.UpdateConfiguration();
         }
 
+        var result = await _requestLimiter.WaitAsync(_requestWaitLogThreshold, cancellationToken).ConfigureAwait(false);
+        if (!result) {
+            _logger.LogTrace("Waiting for our turn to try {Method} {URL}", method, url);
+            await _requestLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogTrace("Got our turn to try {Method} {URL}", method, url);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
         try {
             _logger.LogTrace("Trying to {Method} {URL}", method, url);
             var remoteUrl = string.Concat(Plugin.Instance.Configuration.Url, url);
@@ -134,24 +145,49 @@ public class ShokoApiClient : IDisposable {
             _logger.LogWarning(ex, "Unable to connect to complete the request to Shoko.");
             throw;
         }
+        finally {
+            _requestLimiter.Release();
+        }
     }
 
-    private Task<ReturnType> Post<Type, ReturnType>(string url, Type body, string? apiKey = null)
-        => Post<Type, ReturnType>(url, HttpMethod.Post, body, apiKey);
+    private Task<ReturnType> Post<Type, ReturnType>(string url, Type body, string? apiKey = null, bool skipCache = true, CancellationToken cancellationToken = default)
+        => Post<Type, ReturnType>(url, HttpMethod.Post, body, apiKey, skipCache, cancellationToken);
 
-    private async Task<ReturnType> Post<Type, ReturnType>(string url, HttpMethod method, Type body, string? apiKey = null) {
-        var response = await Post(url, method, body, apiKey).ConfigureAwait(false);
-        if (response.StatusCode != HttpStatusCode.OK)
-            throw ApiException.FromResponse(response);
-        var responseStream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        var value = await JsonSerializer.DeserializeAsync<ReturnType>(responseStream).ConfigureAwait(false) ??
-            throw new ApiException(response.StatusCode, nameof(ShokoApiClient), "Unexpected null return value.");
-        return value;
+    private async Task<ReturnType> Post<Type, ReturnType>(string url, HttpMethod method, Type body, string? apiKey = null, bool skipCache = true, CancellationToken cancellationToken = default) {
+        var bodyHash = Convert.ToHexString(MD5.HashData(JsonSerializer.SerializeToUtf8Bytes(body)));
+        if (skipCache) {
+            _logger.LogTrace("Creating raw object for {Method} {URL} ({Hash})", method, url, bodyHash);
+            var response = await Post(url, method, body, bodyHash, apiKey, cancellationToken).ConfigureAwait(false);
+            if (response.StatusCode != HttpStatusCode.OK)
+                throw ApiException.FromResponse(response);
+            var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+            var value = await JsonSerializer.DeserializeAsync<ReturnType>(responseStream, cancellationToken: cancellationToken).ConfigureAwait(false) ??
+                throw new ApiException(response.StatusCode, nameof(ShokoApiClient), "Unexpected null return value.");
+            return value;
+        }
+
+        return await _cache.GetOrCreateAsync(
+            $"apiKey={apiKey ?? "default"},method={method},body={bodyHash},url={url},object",
+            (_) => _logger.LogTrace("Reusing object for {Method} {URL} ({Hash})", method, url, bodyHash),
+            async () => {
+                _logger.LogTrace("Creating cached object for {Method} {URL} ({Hash})", method, url, bodyHash);
+                var response = await Post(url, method, body, bodyHash, apiKey, cancellationToken).ConfigureAwait(false);
+                if (response.StatusCode != HttpStatusCode.OK)
+                    throw ApiException.FromResponse(response);
+                var responseStream = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                var value = await JsonSerializer.DeserializeAsync<ReturnType>(responseStream, cancellationToken: cancellationToken).ConfigureAwait(false) ??
+                    throw new ApiException(response.StatusCode, nameof(ShokoApiClient), "Unexpected null return value.");
+                return value;
+            }
+        ).ConfigureAwait(false);
     }
 
-    private async Task<HttpResponseMessage> Post<Type>(string url, HttpMethod method, Type body, string? apiKey = null) {
+    private async Task<HttpResponseMessage> Post<Type>(string url, HttpMethod method, Type body, string? bodyHash = null, string? apiKey = null, CancellationToken cancellationToken = default) {
         // Use the default key if no key was provided.
         apiKey ??= Plugin.Instance.Configuration.ApiKey;
+
+        // Compute the hash if it hasn't been pre-computed.
+        bodyHash ??= Convert.ToHexString(MD5.HashData(JsonSerializer.SerializeToUtf8Bytes(body)));
 
         // Check if we have a key to use.
         if (string.IsNullOrEmpty(apiKey))
@@ -166,8 +202,15 @@ public class ShokoApiClient : IDisposable {
             Plugin.Instance.UpdateConfiguration();
         }
 
+        var result = await _requestLimiter.WaitAsync(_requestWaitLogThreshold, cancellationToken).ConfigureAwait(false);
+        if (!result) {
+            _logger.LogTrace("Waiting for our turn to try {Method} {URL} with body {HashCode}", method, url, bodyHash);
+            await _requestLimiter.WaitAsync(cancellationToken).ConfigureAwait(false);
+            _logger.LogTrace("Got our turn to try {Method} {URL} with body {HashCode}", method, url, bodyHash);
+        }
+        cancellationToken.ThrowIfCancellationRequested();
         try {
-            _logger.LogTrace("Trying to get {URL}", url);
+            _logger.LogTrace("Trying to {Method} {URL} with body {HashCode}", method, url, bodyHash);
             var remoteUrl = string.Concat(Plugin.Instance.Configuration.Url, url);
 
             if (method == HttpMethod.Get)
@@ -177,17 +220,21 @@ public class ShokoApiClient : IDisposable {
                 throw new HttpRequestException("Head requests cannot contain a body.");
 
             using var requestMessage = new HttpRequestMessage(method, remoteUrl);
-            requestMessage.Content = new StringContent(JsonSerializer.Serialize<Type>(body), Encoding.UTF8, "application/json");
+            requestMessage.Content = new StringContent(JsonSerializer.Serialize(body), Encoding.UTF8, "application/json");
             requestMessage.Headers.Add("apikey", apiKey);
-            var response = await _httpClient.SendAsync(requestMessage).ConfigureAwait(false);
+            var timeStart = DateTime.UtcNow;
+            var response = await _httpClient.SendAsync(requestMessage, cancellationToken).ConfigureAwait(false);
             if (response.StatusCode == HttpStatusCode.Unauthorized)
                 throw new HttpRequestException("Invalid or expired API Token. Please reconnect the plugin to Shoko Server by resetting the connection or deleting and re-adding the user in the plugin settings.", null, HttpStatusCode.Unauthorized);
-            _logger.LogTrace("API returned response with status code {StatusCode}", response.StatusCode);
+            _logger.LogTrace("API returned response with status code {StatusCode} for {Method} {URL} with body {HashCode} in {Elapsed}", response.StatusCode, method, url, bodyHash, DateTime.UtcNow - timeStart);
             return response;
         }
         catch (HttpRequestException ex) {
             _logger.LogWarning(ex, "Unable to connect to complete the request to Shoko.");
             throw;
+        }
+        finally {
+            _requestLimiter.Release();
         }
     }
 
