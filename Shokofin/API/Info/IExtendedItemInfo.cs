@@ -6,6 +6,8 @@ using Shokofin.Events.Interfaces;
 namespace Shokofin.API.Info;
 
 public interface IExtendedItemInfo : IBaseItemInfo {
+    bool IsAvailable { get; }
+
     IReadOnlyList<string> Tags { get; }
 
     IReadOnlyList<string> Genres { get; }

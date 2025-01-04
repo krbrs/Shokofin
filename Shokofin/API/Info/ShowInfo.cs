@@ -151,6 +151,10 @@ public class ShowInfo : IExtendedItemInfo {
     public bool HasSpecialsWithFiles =>
         SpecialsDict.Values.Contains(true);
 
+    private bool? _isAvailable = null;
+
+    public bool IsAvailable => _isAvailable ??= SeasonOrderDictionary.Values.Any(sI => sI.IsAvailable) || HasSpecialsWithFiles;
+
     /// <summary>
     /// The default season for the show.
     /// </summary>

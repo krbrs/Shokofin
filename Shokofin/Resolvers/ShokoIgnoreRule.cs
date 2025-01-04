@@ -174,6 +174,21 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
         }
 
         var show = await ApiManager.GetShowInfoBySeasonId(season.Id).ConfigureAwait(false)!;
+        if (show is null) {
+            if (shouldIgnore)
+                Logger.LogInformation("Ignored unknown folder at path {Path}", partialPath);
+            else
+                Logger.LogWarning("Skipped unknown folder at path {Path}", partialPath);
+            return shouldIgnore;
+        }
+        if (!show.IsAvailable) {
+            if (shouldIgnore)
+                Logger.LogInformation("Ignored folder at path {Path}", partialPath);
+            else
+                Logger.LogWarning("Skipped folder at path {Path}", partialPath);
+            return shouldIgnore;
+        }
+
         if (!string.IsNullOrEmpty(show?.ShokoGroupId))
             Logger.LogInformation("Found shoko group {GroupName} (Season={SeasonId},ExtraSeries={ExtraIds},Group={GroupId})", show.Title, season.Id, season.ExtraIds, show.ShokoGroupId);
         else
@@ -183,14 +198,21 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
     }
 
     private async Task<bool> ShouldFilterFile(string partialPath, string fullPath, bool shouldIgnore) {
-        var (file, season, _) = await ApiManager.GetFileInfoByPath(fullPath).ConfigureAwait(false);
+        var (file, season, show) = await ApiManager.GetFileInfoByPath(fullPath).ConfigureAwait(false);
 
         // We inform/warn here since we enabled the provider in our library, but we can't find a match for the given file path.
-        if (file is null || season is null) {
+        if (file is null || season is null || show is null) {
             if (shouldIgnore)
                 Logger.LogInformation("Ignored unknown file at path {Path}", partialPath);
             else
                 Logger.LogWarning("Skipped unknown file at path {Path}", partialPath);
+            return shouldIgnore;
+        }
+        if (!show.IsAvailable) {
+            if (shouldIgnore)
+                Logger.LogInformation("Ignored folder at path {Path}", partialPath);
+            else
+                Logger.LogWarning("Skipped folder at path {Path}", partialPath);
             return shouldIgnore;
         }
 

@@ -71,6 +71,10 @@ public class SeasonInfo : IExtendedItemInfo {
 
     public DateTime LastUpdatedAt { get; init; }
 
+    private bool? _isAvailable = null;
+
+    public bool IsAvailable => _isAvailable ??= EpisodeList.Any(e => e.IsAvailable) || AlternateEpisodesList.Any(e => e.IsAvailable);
+
     public IReadOnlyList<string> Genres { get; init; }
 
     public IReadOnlyList<string> Tags { get; init; }

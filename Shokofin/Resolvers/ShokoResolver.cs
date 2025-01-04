@@ -143,6 +143,15 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver {
                             return [];
                         }
 
+                        var show = ApiManager.GetShowInfoBySeasonId(seasonId)
+                            .ConfigureAwait(false)
+                            .GetAwaiter()
+                            .GetResult();
+                        if (show is null || !show.IsAvailable) {
+                            pathsToRemoveBag.Add((dirInfo.FullName, true));
+                            return [];
+                        }
+
                         if (createMovies && (season.Type is SeriesType.Movie || collectionType is CollectionType.movies && !Plugin.Instance.Configuration.FilterMovieLibraries)) {
                             return FileSystem.GetFiles(dirInfo.FullName)
                                 .AsParallel()
