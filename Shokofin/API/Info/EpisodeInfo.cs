@@ -393,7 +393,7 @@ public class EpisodeInfo : IExtendedItemInfo {
             CreatorRoleType.Actor => new PersonInfo {
                 Type = PersonKind.Actor,
                 Name = roles[0].Staff.Name,
-                Role = roles.Select(role => role?.Character?.Name ?? string.Empty).Where(role => !string.IsNullOrEmpty(role)).Order().Join(" / "),
+                Role = roles.Select(role => role?.Character?.Name ?? string.Empty).Where(role => !string.IsNullOrEmpty(role)).Distinct().Order().Join(" / "),
                 ImageUrl = GetImagePath(roles[0].Staff.Image),
                 ProviderIds = new() {
                     { roleProvider, roles[0].Staff.Id!.Value.ToString() },
