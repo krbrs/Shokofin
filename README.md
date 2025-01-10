@@ -1,7 +1,7 @@
 # Shokofin
 
 A Jellyfin plugin to integrate [Jellyfin](https://jellyfin.org/docs/) with
-[Shoko Server](https://shokoanime.com/downloads/shoko-server/).
+[Shoko Server](https://shokoanime.com/downloads/shoko-server).
 
 ## Read this before installing
 
