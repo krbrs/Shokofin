@@ -550,6 +550,10 @@ public class VirtualFileSystemService {
         );
     }
 
+    private static readonly HashSet<int> AnidbExceptionSet = [
+        3651, // Suzumiya Haruhi no Yuuutsu (2006)
+    ];
+
     private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForImportFolders(IReadOnlyList<MediaFolderConfiguration> mediaConfigs, HashSet<string> fileSet) {
         var start = DateTime.UtcNow;
         var singleSeriesIds = new HashSet<int>();
@@ -644,13 +648,14 @@ public class VirtualFileSystemService {
             foreach (var (file, sourceLocation) in multiSeriesFiles) {
                 var seriesIds = file.CrossReferences
                     .Where(xref => xref.Series.Shoko.HasValue && xref.Episodes.All(e => e.Shoko.HasValue))
-                    .Select(xref => xref.Series.Shoko!.Value.ToString())
+                    .Select(xref => (seriesId: xref.Series.Shoko!.Value.ToString(), anidbId: xref.Series.AniDB))
                     .Distinct()
-                    .Select(seriesId => (
-                        seriesId,
-                        showIds: ApiManager.GetShowInfosForShokoSeries(seriesId).ConfigureAwait(false).GetAwaiter().GetResult().Select(showInfo => showInfo.Id).ToHashSet()
+                    .Select(tuple => (
+                        tuple.seriesId,
+                        tuple.anidbId,
+                        showIds: ApiManager.GetShowInfosForShokoSeries(tuple.seriesId).ConfigureAwait(false).GetAwaiter().GetResult().Select(showInfo => showInfo.Id).ToHashSet()
                     ))
-                    .Where(tuple => tuple.showIds.Count > 0 && mappedSingleSeriesIds.Overlaps(tuple.showIds))
+                    .Where(tuple => tuple.showIds.Count > 0 && (mappedSingleSeriesIds.Overlaps(tuple.showIds) || AnidbExceptionSet.Contains(tuple.anidbId)))
                     .Select(tuple => tuple.seriesId)
                     .ToList();
                 foreach (var seriesId in seriesIds)
