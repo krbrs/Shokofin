@@ -359,8 +359,8 @@ public class EventDispatchService {
 
                             result.Print(Logger, mediaFolderPath);
 
-                            // If all the "top-level-folders" exist, then let the core logic handle the rest.
-                            if (topFolders.All(path => LibraryManager.FindByPath(path, true) is not null)) {
+                            // If we're using a physical VFS or all the "top-level-folders" exist, then let the core logic handle the rest.
+                            if (vfsPath == mainMediaFolderPath || topFolders.All(path => LibraryManager.FindByPath(path, true) is not null)) {
                                 locationsToNotify.AddRange(vfsSymbolicLinks);
                             }
                             // Else give the core logic _any_ file or folder placed directly in the media folder, so it will schedule the media folder to be refreshed.
@@ -488,9 +488,8 @@ public class EventDispatchService {
     }
 
     private async Task ReportMediaFolderChanged(Folder mediaFolder, string pathToReport) {
-        // Don't block real-time file events on the media folder that uses a physical VFS root, or if real-time monitoring is disabled.
-        if (mediaFolder.Path.StartsWith(Plugin.Instance.VirtualRoot) ||
-            LibraryManager.GetLibraryOptions(mediaFolder) is not LibraryOptions libraryOptions ||
+        // Block real-time file events if real-time monitoring is disabled.
+        if (LibraryManager.GetLibraryOptions(mediaFolder) is not LibraryOptions libraryOptions ||
             !libraryOptions.EnableRealtimeMonitor
         ) {
             LibraryMonitor.ReportFileSystemChanged(pathToReport);
