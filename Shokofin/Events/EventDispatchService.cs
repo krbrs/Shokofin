@@ -274,8 +274,8 @@ public class EventDispatchService {
 
                             result.Print(Logger, mediaFolderPath);
 
-                            // If all the "top-level-folders" exist, then let the core logic handle the rest.
-                            if (topFolders.All(path => LibraryManager.FindByPath(path, true) is not null)) {
+                            // If we're using a physical VFS or all the "top-level-folders" exist, then let the core logic handle the rest.
+                            if (vfsPath == mainMediaFolderPath || topFolders.All(path => LibraryManager.FindByPath(path, true) is not null)) {
                                 locationsToNotify.AddRange(vfsLocations.SelectMany(tuple => tuple.symbolicLinks));
                             }
                             // Else give the core logic _any_ file or folder placed directly in the media folder, so it will schedule the media folder to be refreshed.
