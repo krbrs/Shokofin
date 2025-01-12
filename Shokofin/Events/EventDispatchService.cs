@@ -383,8 +383,10 @@ public class EventDispatchService {
 
             // We let jellyfin take it from here.
             Logger.LogDebug("Notifying Jellyfin about {LocationCount} changes. (File={FileId})", locationsToNotify.Count + mediaFoldersToNotify.Count, fileId.ToString());
-            foreach (var location in locationsToNotify)
+            foreach (var location in locationsToNotify) {
+                Logger.LogTrace("Notifying Jellyfin about changes to {Location}. (File={FileId})", location, fileId.ToString());
                 LibraryMonitor.ReportFileSystemChanged(location);
+            }
             if (mediaFoldersToNotify.Count > 0)
                 await Task.WhenAll(mediaFoldersToNotify.Values.Select(tuple => ReportMediaFolderChanged(tuple.mediaFolder, tuple.pathToReport))).ConfigureAwait(false);
             Logger.LogDebug("Notified Jellyfin about {LocationCount} changes. (File={FileId})", locationsToNotify.Count + mediaFoldersToNotify.Count, fileId.ToString());
