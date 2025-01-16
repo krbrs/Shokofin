@@ -345,7 +345,7 @@ public class EpisodeInfo : IExtendedItemInfo {
         => image != null && image.IsAvailable ? image.ToURLString(internalUrl: true) : null;
 
     private static PersonInfo? RoleToPersonInfo(IReadOnlyList<Role> roles, string roleProvider)
-        => string.IsNullOrWhiteSpace(roles[0].Name) ? null : roles[0].Type switch {
+        => string.IsNullOrWhiteSpace(roles[0].Staff.Name) ? null : roles[0].Type switch {
             CreatorRoleType.Director => new PersonInfo {
                 Type = PersonKind.Director,
                 Name = roles[0].Staff.Name,
