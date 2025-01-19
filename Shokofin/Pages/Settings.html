@@ -1758,7 +1758,6 @@ form:not(.expert-mode) .expert-only {
                             <label class="selectLabel" for="VFS_Location">VFS Location</label>
                             <select is="emby-select" id="VFS_Location" name="VFS_Location" class="emby-select-withcolor emby-select">
                                 <option value="Default" selected>Jellyfin Data Directory (Default)</option>
-                                <option value="Cache">Jellyfin Cache Directory</option>
                                 <option value="Custom">Custom Directory</option>
                             </select>
                             <div class="fieldDescription">Change where the VFS structure will be placed. Changing this will cause your library to "remove" and "re-add" itself because of the path changes. You will need to manually move your VFS root if you plan to keep it when toggling this setting. Trick-play files will need to be backed-up beforehand and moved back the next library scan if you want to avoid regenerating them after you change this setting. <strong>You have been warned.</strong></div>

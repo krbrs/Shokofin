@@ -129,7 +129,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
         get {
             var virtualRoot = _virtualRoot ??= Configuration.VFS_Location switch {
                 VirtualRootLocation.Custom => VirtualRoot_Custom ?? VirtualRoot_Default,
-                VirtualRootLocation.Cache => VirtualRoot_Cache,
                 VirtualRootLocation.Default or _ => VirtualRoot_Default,
             };
             if (!Directory.Exists(virtualRoot))
@@ -146,7 +145,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
     /// </summary>
     public string[] AllVirtualRoots => _allVirtualRoots ??= (new string[] {
         VirtualRoot_Default,
-        VirtualRoot_Cache,
         VirtualRoot_Custom ?? string.Empty
     })
         .Except([string.Empty])
@@ -154,8 +152,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
         .ToArray();
 
     private string VirtualRoot_Default => Path.Join(ApplicationPaths.ProgramDataPath, "Shokofin", "VFS");
-
-    private string VirtualRoot_Cache => Path.Join(ApplicationPaths.CachePath, Name);
 
     private string? VirtualRoot_Custom => string.IsNullOrWhiteSpace(Configuration.VFS_CustomLocation) ? null : Path.Combine(ApplicationPaths.ProgramDataPath, Configuration.VFS_CustomLocation);
 
