@@ -14,7 +14,6 @@ using Info = Shokofin.API.Info;
 
 namespace Shokofin.Providers;
 #pragma warning disable IDE0059
-#pragma warning disable IDE0290
 
 /// <summary>
 /// The custom episode provider. Responsible for de-duplicating episodes, both
@@ -25,7 +24,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibraryManager _libraryManager, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Episode> {
+public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibraryManager _libraryManager, IIdLookup _lookup, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Episode> {
     public string Name => Plugin.MetadataProviderName;
 
     public bool HasChanged(BaseItem item, IDirectoryService directoryService) {
@@ -46,13 +45,17 @@ public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibr
             return ItemUpdateType.None;
 
         var itemUpdated = ItemUpdateType.None;
-        if (episode.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId)) {
-            using (Plugin.Instance.Tracker.Enter($"Providing custom info for Episode \"{episode.Name}\". (Path=\"{episode.Path}\",IsMissingEpisode={episode.IsMissingEpisode})"))
-                if (RemoveDuplicates(_libraryManager, _logger, episodeId, episode, series.GetPresentationUniqueKey()))
-                    itemUpdated |= ItemUpdateType.MetadataEdit;
+        if (_lookup.TryGetEpisodeIdsFor(episode, out var episodeIds)) {
+            using (Plugin.Instance.Tracker.Enter($"Providing custom info for Episode \"{episode.Name}\". (Path=\"{episode.Path}\",IsMissingEpisode={episode.IsMissingEpisode})")) {
+                foreach (var episodeId in episodeIds) {
+                    if (RemoveDuplicates(_libraryManager, _logger, episodeId, episode, series.GetPresentationUniqueKey()))
+                        itemUpdated |= ItemUpdateType.MetadataEdit;
+                }
+            }
 
             if (Plugin.Instance.Configuration.AutoMergeVersions && !_libraryManager.IsScanRunning && options.MetadataRefreshMode != MetadataRefreshMode.ValidationOnly) {
-                await _mergeVersionsManager.SplitAndMergeEpisodesByEpisodeId(episodeId).ConfigureAwait(false);
+                foreach (var episodeId in episodeIds)
+                    await _mergeVersionsManager.SplitAndMergeEpisodesByEpisodeId(episodeId).ConfigureAwait(false);
                 itemUpdated |= ItemUpdateType.MetadataEdit;
             }
         }

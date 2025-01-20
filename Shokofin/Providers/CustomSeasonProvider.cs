@@ -87,22 +87,14 @@ public class CustomSeasonProvider(ILogger<CustomSeasonProvider> _logger, ShokoAp
                         .ToHashSet();
                 var existingEpisodes = new HashSet<string>();
                 var toRemoveEpisodes = new List<Episode>();
-                foreach (var episode in season.Children.OfType<Episode>()) {
-                    if (_lookup.TryGetEpisodeIdsFor(episode, out var episodeIds)) {
-                        if ((string.IsNullOrEmpty(episode.Path) || episode.IsVirtualItem) && !knownEpisodeIds.Overlaps(episodeIds)) {
-                            toRemoveEpisodes.Add(episode);
-                        }
-                        else {
-                            foreach (var episodeId in episodeIds)
-                                existingEpisodes.Add(episodeId);
-                        }
-                    }
-                    else if (_lookup.TryGetEpisodeIdFor(episode, out var episodeId)) {
-                        if ((string.IsNullOrEmpty(episode.Path) || episode.IsVirtualItem) && !knownEpisodeIds.Contains(episodeId))
+                var orderedEpisodes = season.Children.OfType<Episode>().OrderBy(e => e.IndexNumber).ThenBy(e => e.IndexNumberEnd).ThenByDescending(e => e.IsVirtualItem).ToList();
+                foreach (var episode in orderedEpisodes) {
+                    if (_lookup.TryGetEpisodeIdsFor(episode, out var episodeIds))
+                        if ((string.IsNullOrEmpty(episode.Path) || episode.IsVirtualItem) && (!knownEpisodeIds.Overlaps(episodeIds) || existingEpisodes.Overlaps(episodeIds)))
                             toRemoveEpisodes.Add(episode);
                         else
-                            existingEpisodes.Add(episodeId);
-                    }
+                            foreach (var episodeId in episodeIds)
+                                existingEpisodes.Add(episodeId);
                 }
 
                 // Remove unknown or unwanted episodes.
@@ -150,22 +142,14 @@ public class CustomSeasonProvider(ILogger<CustomSeasonProvider> _logger, ShokoAp
                     : [];
                 var existingEpisodes = new HashSet<string>();
                 var toRemoveEpisodes = new List<Episode>();
-                foreach (var episode in season.Children.OfType<Episode>()) {
+                var orderedEpisodes = season.Children.OfType<Episode>().OrderBy(e => e.IndexNumber).ThenBy(e => e.IndexNumberEnd).ThenByDescending(e => e.IsVirtualItem).ToList();
+                foreach (var episode in orderedEpisodes) {
                     if (_lookup.TryGetEpisodeIdsFor(episode, out var episodeIds)) {
-                        if ((string.IsNullOrEmpty(episode.Path) || episode.IsVirtualItem) && !knownEpisodeIds.Overlaps(episodeIds)) {
-                            toRemoveEpisodes.Add(episode);
-                        }
-                        else {
-                            foreach (var episodeId in episodeIds)
-                                existingEpisodes.Add(episodeId);
-                        }
-                        
-                    }
-                    else if (_lookup.TryGetEpisodeIdFor(episode, out var episodeId)) {
-                        if ((string.IsNullOrEmpty(episode.Path) || episode.IsVirtualItem) && !knownEpisodeIds.Contains(episodeId))
+                        if ((string.IsNullOrEmpty(episode.Path) || episode.IsVirtualItem) && (!knownEpisodeIds.Overlaps(episodeIds) || existingEpisodes.Overlaps(episodeIds)))
                             toRemoveEpisodes.Add(episode);
                         else
-                            existingEpisodes.Add(episodeId);
+                            foreach (var episodeId in episodeIds)
+                                existingEpisodes.Add(episodeId);
                     }
                 }
 
