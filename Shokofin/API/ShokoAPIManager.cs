@@ -1489,7 +1489,7 @@ public partial class ShokoApiManager : IDisposable {
         }
     }
 
-    [System.Text.RegularExpressions.GeneratedRegex(@"Season (\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+    [System.Text.RegularExpressions.GeneratedRegex(@"Season (?<seasonNumber>\d+)", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
     private static partial Regex SeasonNameRegex();
 
     private async Task<string?> GetSeasonIdForPath(string path) {
@@ -1500,11 +1500,25 @@ public partial class ShokoApiManager : IDisposable {
         // Fast-path for VFS.
         if (path.StartsWith(Plugin.Instance.VirtualRoot + Path.DirectorySeparatorChar)) {
             var fileName = Path.GetFileName(path);
-            if (SeasonNameRegex().IsMatch(fileName))
+            var seasonNumberResult = SeasonNameRegex().Match(fileName);
+            if (seasonNumberResult.Success)
                 fileName = Path.GetFileName(Path.GetDirectoryName(path)!);
 
             if (!fileName.TryGetAttributeValue(ShokoSeriesId.Name, out seasonId))
                 return null;
+
+            if (seasonNumberResult.Success) {
+                var seasonNumber = int.Parse(seasonNumberResult.Groups["seasonNumber"].Value);
+                var showInfo = await GetShowInfoBySeasonId(seasonId).ConfigureAwait(false);
+                if (showInfo == null)
+                    return null;
+
+                var seasonInfo = showInfo.GetSeasonInfoBySeasonNumber(seasonNumber);
+                if (seasonInfo == null)
+                    return null;
+
+                seasonId = seasonInfo.Id;
+            }
 
             PathToSeasonIdDictionary[path] = seasonId;
             return seasonId;
