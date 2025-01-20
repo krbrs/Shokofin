@@ -767,17 +767,6 @@ public partial class ShokoApiManager : IDisposable {
 
     #region Episode Id Helpers
 
-    public bool TryGetEpisodeIdForPath(string path, [NotNullWhen(true)] out string? episodeId) {
-        if (string.IsNullOrEmpty(path)) {
-            episodeId = null;
-            return false;
-        }
-
-        var result = TryGetEpisodeIdsForPath(path, out var episodeIds);
-        episodeId = episodeIds?.FirstOrDefault();
-        return result;
-    }
-
     public bool TryGetEpisodeIdsForPath(string path, [NotNullWhen(true)] out List<string>? episodeIds) {
         if (string.IsNullOrEmpty(path)) {
             episodeIds = null;

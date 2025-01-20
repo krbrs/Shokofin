@@ -76,10 +76,6 @@ public interface IIdLookup {
 
     #region Episode Id
 
-    bool TryGetEpisodeIdFor(string path, [NotNullWhen(true)] out string? episodeId);
-
-    bool TryGetEpisodeIdFor(BaseItem item, [NotNullWhen(true)] out string? episodeId);
-
     bool TryGetEpisodeIdsFor(string path, [NotNullWhen(true)] out List<string>? episodeIds);
 
     bool TryGetEpisodeIdsFor(BaseItem item, [NotNullWhen(true)] out List<string>? episodeIds);
@@ -196,28 +192,6 @@ public class IdLookup(ShokoApiManager _apiManager, ILibraryManager _libraryManag
     #endregion
 
     #region Episode Id
-
-    public bool TryGetEpisodeIdFor(string path, [NotNullWhen(true)] out string? episodeId) {
-        if (_apiManager.TryGetEpisodeIdForPath(path, out episodeId))
-            return true;
-
-        episodeId = string.Empty;
-        return false;
-    }
-
-    public bool TryGetEpisodeIdFor(BaseItem item, [NotNullWhen(true)] out string? episodeId) {
-        // This will account for virtual episodes and existing episodes
-        if (item.TryGetProviderId(ShokoEpisodeId.Name, out episodeId)) {
-            return true;
-        }
-
-        // This will account for new episodes that haven't received their first metadata update yet.
-        if (TryGetEpisodeIdFor(item.Path, out episodeId)) {
-            return true;
-        }
-
-        return false;
-    }
 
     public bool TryGetEpisodeIdsFor(string path, [NotNullWhen(true)] out List<string>? episodeIds) {
         if (_apiManager.TryGetEpisodeIdsForPath(path, out episodeIds))

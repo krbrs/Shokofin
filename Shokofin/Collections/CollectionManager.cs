@@ -542,11 +542,11 @@ public class CollectionManager(
             if (string.IsNullOrEmpty(movie.CollectionName))
                 continue;
 
-            if (!_lookup.TryGetEpisodeIdFor(movie, out var episodeId) ||
+            if (!_lookup.TryGetEpisodeIdsFor(movie, out var episodeIds) ||
                 !_lookup.TryGetSeasonIdFor(movie, out var seasonId))
                 continue;
 
-            _logger.LogTrace("Removing movie {MovieName} from collection {CollectionName}. (Episode={EpisodeId},Season={SeasonId})", movie.Name, movie.CollectionName, episodeId, seasonId);
+            _logger.LogTrace("Removing movie {MovieName} from collection {CollectionName}. (Episode={EpisodeId},Season={SeasonId})", movie.Name, movie.CollectionName, episodeIds[0], seasonId);
             movie.CollectionName = string.Empty;
             await _libraryManager.UpdateItemAsync(movie, movie.GetParent(), ItemUpdateType.None, CancellationToken.None).ConfigureAwait(false);
         }

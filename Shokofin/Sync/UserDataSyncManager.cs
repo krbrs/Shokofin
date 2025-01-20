@@ -332,10 +332,10 @@ public class UserDataSyncManager {
         switch (e.Item) {
             case Episode:
             case Movie: {
-                if (e.Item is not Video video || !Lookup.TryGetEpisodeIdFor(video, out var episodeId))
+                if (e.Item is not Video video || !Lookup.TryGetEpisodeIdsFor(video, out var episodeIds))
                     return;
 
-                SyncVideo(video, userConfig!, userData, SyncDirection.Export, episodeId).ConfigureAwait(false);
+                SyncVideo(video, userConfig!, userData, SyncDirection.Export, episodeIds[0]).ConfigureAwait(false);
                 break;
             }
             case Season season: {
