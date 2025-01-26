@@ -7,7 +7,7 @@ namespace Shokofin.Utils;
 
 public class UsageTracker {
     private static readonly TimeSpan DefaultTimeout = TimeSpan.FromSeconds(60);
-    
+
     private readonly ILogger<UsageTracker> Logger;
 
     private readonly object LockObj = new();

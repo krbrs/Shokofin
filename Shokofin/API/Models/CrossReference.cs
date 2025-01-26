@@ -89,7 +89,7 @@ public class CrossReference {
         /// The Shoko ID, if the local metadata has been created yet.
         /// /// </summary>
         [JsonPropertyName("ID")]
-        
+
         public int? Shoko { get; set; }
 
         /// <summary>

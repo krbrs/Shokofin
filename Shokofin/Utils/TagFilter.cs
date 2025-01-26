@@ -40,7 +40,7 @@ public static class TagFilter {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
     public class TagSourceExcludeOnlyAttribute : Attribute {
         public string[] Values { get; init; }
-        
+
         public TagSourceExcludeOnlyAttribute(params string[] values) {
             Values = values;
         }
@@ -52,7 +52,7 @@ public static class TagFilter {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field | AttributeTargets.Parameter, AllowMultiple = false)]
     public class TagSourceExcludeAttribute : Attribute {
         public string[] Values { get; init; }
-        
+
         public TagSourceExcludeAttribute(params string[] values) {
             Values = values;
         }

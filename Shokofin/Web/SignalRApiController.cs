@@ -63,7 +63,6 @@ public class SignalRApiController(ILogger<SignalRApiController> logger, SignalRC
         catch (Exception ex) {
             Logger.LogError(ex, "Failed to disconnect from server.");
             return StatusCode(StatusCodes.Status500InternalServerError);
-            
         }
     }
 }

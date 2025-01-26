@@ -6,7 +6,6 @@ using Jellyfin.Data.Enums;
 namespace Shokofin.API.Models.TMDB;
 
 public class TmdbMovieCollection : ITmdbEntity {
-    
     /// <summary>
     /// TMDB Movie Collection ID.
     /// </summary>

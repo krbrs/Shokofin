@@ -206,7 +206,6 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver {
                                 Logger.LogTrace("Removing directory: {Path}", pathToRemove);
                                 Directory.Delete(pathToRemove, true);
                                 Logger.LogTrace("Removed directory: {Path}", pathToRemove);
-                                
                             }
                             else {
                                 Logger.LogTrace("Removing file: {Path}", pathToRemove);
