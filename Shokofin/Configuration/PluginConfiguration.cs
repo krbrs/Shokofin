@@ -507,6 +507,14 @@ public class PluginConfiguration : BasePluginConfiguration {
     public string? VFS_CustomLocation { get; set; }
 
     /// <summary>
+    /// Skips the file search pre-generation step for library scans and instead
+    /// performs file existence checks during the generation phase. This can be
+    /// useful if iterating the file system is expensive, such as when using
+    /// network mapped libraries.
+    /// </summary>
+    public bool VFS_IterativeFileChecks { get; set; }
+
+    /// <summary>
     /// Enable/disable the filtering for new media-folders/libraries.
     /// </summary>
     [XmlElement("LibraryFiltering")]
@@ -702,6 +710,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         VFS_ResolveLinks = false;
         VFS_MaxTotalExceptionsBeforeAbort = 10;
         VFS_MaxSeriesExceptionsBeforeAbort = 3;
+        VFS_IterativeFileChecks = false;
         AutoMergeVersions = true;
         MergeVersionSortSelectorList = [
             MergeVersionSortSelector.ImportedAt,

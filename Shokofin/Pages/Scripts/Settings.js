@@ -436,6 +436,7 @@ function applyFormToConfig(form, config) {
 
             config.VFS_ResolveLinks = form.querySelector("#VFS_ResolveLinks").checked;
             config.VFS_AttachRoot = form.querySelector("#VFS_AttachRoot").checked;
+            config.VFS_IterativeFileChecks = form.querySelector("#VFS_IterativeFileChecks").checked;
             config.VFS_Location = form.querySelector("#VFS_Location").value;
             config.VFS_CustomLocation = form.querySelector("#VFS_CustomLocation").value.trim() || null;
             break;
@@ -598,6 +599,7 @@ async function applyConfigToForm(form, config) {
 
             form.querySelector("#VFS_ResolveLinks").checked = config.VFS_ResolveLinks;
             form.querySelector("#VFS_AttachRoot").checked = config.VFS_AttachRoot;
+            form.querySelector("#VFS_IterativeFileChecks").checked = config.VFS_IterativeFileChecks;
             form.querySelector("#VFS_Location").value = config.VFS_Location;
             form.querySelector("#VFS_CustomLocation").value = config.VFS_CustomLocation || "";
             form.querySelector("#VFS_CustomLocation").disabled = config.VFS_Location !== "Custom";

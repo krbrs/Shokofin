@@ -348,6 +348,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   VFS_AttachRoot: boolean;
  *   VFS_Location: VirtualRootLocation;
  *   VFS_CustomLocation: string;
+ *   VFS_IterativeFileChecks: boolean;
  *   LibraryFilteringMode: LibraryFilteringMode;
  *   MediaFolders: MediaFolderConfig[];
  *   SignalR_AutoConnectEnabled: boolean;

@@ -1754,6 +1754,13 @@ form:not(.expert-mode) .expert-only {
                             </label>
                             <div class="fieldDescription checkboxFieldDescription">Makes the VFS structure that the plugin automatically creates show up as a folder for your libraries. This allows reusing the same media folder(s) across multiple libraries without needing any other workarounds. Useful for separating movies and series into separate libraries while still using the same media folder(s) for both.</div>
                         </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only debug-setting">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="VFS_IterativeFileChecks" />
+                                <span>Iterative File Checks</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Skips the file search pre-generation step for library scans and instead performs file existence checks during the generation phase. This can be useful if iterating the file system is expensive, such as when using network mapped libraries.</div>
+                        </div>
                         <div class="selectContainer selectContainer-withDescription expert-only">
                             <label class="selectLabel" for="VFS_Location">VFS Location</label>
                             <select is="emby-select" id="VFS_Location" name="VFS_Location" class="emby-select-withcolor emby-select">
