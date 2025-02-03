@@ -1740,14 +1740,14 @@ form:not(.expert-mode) .expert-only {
                         <div class="fieldDescription verticalSection-extrabottompadding">
                             Configure where to place the VFS in the file system and how to attach it to your libraries. <strong>Tweak at your own risk.</strong>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only debug-setting">
                             <label class="emby-checkbox-label">
                                 <input is="emby-checkbox" type="checkbox" id="VFS_ResolveLinks" />
                                 <span>Resolve Links Before VFS</span>
                             </label>
                             <div class="fieldDescription checkboxFieldDescription">If the library contains symbolic links to media, it will follow them until a final "real" file is found and use the path of said file for the VFS.</div>
                         </div>
-                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only debug-setting">
                             <label class="emby-checkbox-label">
                                 <input is="emby-checkbox" type="checkbox" id="VFS_AttachRoot" />
                                 <span>Attach VFS to Libraries</span>
@@ -1761,7 +1761,7 @@ form:not(.expert-mode) .expert-only {
                             </label>
                             <div class="fieldDescription checkboxFieldDescription">Skips the file search pre-generation step for library scans and instead performs file existence checks during the generation phase. This can be useful if iterating the file system is expensive, such as when using network mapped libraries.</div>
                         </div>
-                        <div class="selectContainer selectContainer-withDescription expert-only">
+                        <div class="selectContainer selectContainer-withDescription expert-only debug-setting">
                             <label class="selectLabel" for="VFS_Location">VFS Location</label>
                             <select is="emby-select" id="VFS_Location" name="VFS_Location" class="emby-select-withcolor emby-select">
                                 <option value="Default" selected>Jellyfin Data Directory (Default)</option>
@@ -1769,7 +1769,7 @@ form:not(.expert-mode) .expert-only {
                             </select>
                             <div class="fieldDescription">Change where the VFS structure will be placed. Changing this will cause your library to "remove" and "re-add" itself because of the path changes. You will need to manually move your VFS root if you plan to keep it when toggling this setting. Trick-play files will need to be backed-up beforehand and moved back the next library scan if you want to avoid regenerating them after you change this setting. <strong>You have been warned.</strong></div>
                         </div>
-                        <div id="VFS_CustomLocationContainer" class="inputContainer inputContainer-withDescription expert-only" hidden>
+                        <div id="VFS_CustomLocationContainer" class="inputContainer inputContainer-withDescription expert-only debug-setting" hidden>
                             <input is="emby-input" type="text" id="VFS_CustomLocation" label="Custom VFS Root Location" disabled />
                             <div class="fieldDescription">An absolute path, or a relative path from the Jellyfin Data Directory, to the custom root directory of where the VFS will be placed. You decide.</div>
                         </div>
