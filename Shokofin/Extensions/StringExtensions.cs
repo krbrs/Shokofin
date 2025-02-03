@@ -171,6 +171,11 @@ public static partial class StringExtensions {
         seasonId = internalId.StartsWith(ShokoInternalId.Namespace, StringComparison.OrdinalIgnoreCase)
             ? internalId[ShokoInternalId.Namespace.Length..]
             : null;
+
+        // Fix for dev users with the double namespace issue.
+        if (!string.IsNullOrEmpty(seasonId) && seasonId.StartsWith(ShokoInternalId.Namespace, StringComparison.OrdinalIgnoreCase))
+            seasonId = seasonId[ShokoInternalId.Namespace.Length..];
+
         return !string.IsNullOrEmpty(seasonId);
     }
 
