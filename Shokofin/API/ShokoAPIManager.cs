@@ -1274,6 +1274,8 @@ public partial class ShokoApiManager : IDisposable {
                         var prequelRelation in currentRelations
                             .Where(relation => relation.Type is RelationType.Prequel or RelationType.MainStory && relation.RelatedIDs.Shoko.HasValue)
                             .OrderBy(relation => relation.Type is RelationType.Prequel)
+                            .ThenBy(relation => relation.Type)
+                            .ThenBy(relation => relation.RelatedIDs.AniDB)
                     ) {
                         if (await ApiClient.GetShokoSeries(prequelRelation.RelatedIDs.Shoko!.Value.ToString()).ConfigureAwait(false) is not { } prequelSeries)
                             continue;
@@ -1369,6 +1371,8 @@ public partial class ShokoApiManager : IDisposable {
                             var sequelRelation in currentRelations
                                 .Where(relation => relation.Type is RelationType.Sequel or RelationType.SideStory && relation.RelatedIDs.Shoko.HasValue)
                                 .OrderBy(relation => relation.Type is RelationType.Sequel)
+                                .ThenBy(relation => relation.Type)
+                                .ThenBy(relation => relation.RelatedIDs.AniDB)
                                 .Skip(relationOffset)
                         ) {
                             relationOffset++;
