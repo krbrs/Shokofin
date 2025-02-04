@@ -172,15 +172,16 @@ public partial class ShokoApiManager : IDisposable {
             else if (tags.ContainsKey("/tmdb structure"))
                 seriesSettings.StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
 
-            if (tags.ContainsKey("/no merge")) {
-                seriesSettings.MergeOverride |= SeriesMergingOverride.NoMerge;
-            }
-            else {
-                if (tags.ContainsKey("/merge forward"))
-                    seriesSettings.MergeOverride |= SeriesMergingOverride.MergeForward;
-                if (tags.ContainsKey("/merge backward"))
-                    seriesSettings.MergeOverride |= SeriesMergingOverride.MergeBackward;
-            }
+            if (tags.ContainsKey("/no merge"))
+                seriesSettings.MergeOverride = SeriesMergingOverride.NoMerge;
+            else if (tags.ContainsKey("/merge with main story"))
+                seriesSettings.MergeOverride = SeriesMergingOverride.MergeWithMainStory;
+            else if (tags.ContainsKey("/merge forward") && tags.ContainsKey("/merge backward"))
+                seriesSettings.MergeOverride = SeriesMergingOverride.MergeForward | SeriesMergingOverride.MergeBackward;
+            else if (tags.ContainsKey("/merge forward"))
+                seriesSettings.MergeOverride = SeriesMergingOverride.MergeForward;
+            else if (tags.ContainsKey("/merge backward"))
+                seriesSettings.MergeOverride = SeriesMergingOverride.MergeBackward;
 
             if (tags.ContainsKey("/episodes as specials")) {
                 seriesSettings.EpisodesAsSpecials = true;
@@ -1267,12 +1268,17 @@ public partial class ShokoApiManager : IDisposable {
                 var currentDate = currentSeries.AniDB.AirDate.Value;
                 var currentRelations = relations;
                 var currentConfig = seriesConfig;
+                var groupId = currentSeries.IDs.ParentGroup;
                 while (currentRelations.Count > 0) {
-                    foreach (var prequelRelation in currentRelations.Where(relation => relation.Type is RelationType.Prequel && relation.RelatedIDs.Shoko.HasValue)) {
+                    foreach (
+                        var prequelRelation in currentRelations
+                            .Where(relation => relation.Type is RelationType.Prequel or RelationType.MainStory && relation.RelatedIDs.Shoko.HasValue)
+                            .OrderBy(relation => relation.Type is RelationType.Prequel)
+                    ) {
                         if (await ApiClient.GetShokoSeries(prequelRelation.RelatedIDs.Shoko!.Value.ToString()).ConfigureAwait(false) is not { } prequelSeries)
                             continue;
 
-                        if (prequelSeries.IDs.ParentGroup != currentSeries.IDs.ParentGroup)
+                        if (prequelSeries.IDs.ParentGroup != groupId)
                             continue;
 
                         var prequelConfig = await GetSeriesConfiguration(prequelSeries.Id).ConfigureAwait(false);
@@ -1285,10 +1291,14 @@ public partial class ShokoApiManager : IDisposable {
                         if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(prequelConfig.TypeOverride ?? prequelSeries.AniDB.Type))
                             continue;
 
-                        if (prequelSeries.AniDB.AirDate is not { } prequelDate || prequelDate > currentDate)
+                        if (prequelSeries.AniDB.AirDate is not { } prequelDate || (prequelRelation.Type is RelationType.Prequel && prequelDate > currentDate))
                             continue;
 
-                        var mergeOverride = currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward) || prequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward);
+                        var mergeOverride = (
+                            prequelRelation.Type is RelationType.Prequel && (currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward) || prequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward))
+                        ) || (
+                            prequelRelation.Type is RelationType.MainStory && currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeWithMainStory)
+                        );
                         if (!mergeOverride) {
                             if (maxDaysThreshold is -1)
                                 continue;
@@ -1310,6 +1320,10 @@ public partial class ShokoApiManager : IDisposable {
                             currentConfig = prequelConfig;
                             goto continuePrequelWhileLoop;
                         }
+
+                        // We only want to merge main/side stories if the override is set.
+                        if (prequelRelation.Type is RelationType.MainStory)
+                            continue;
 
                         if (string.IsNullOrEmpty(adjustedPrequelMainTitle)) {
                             if (string.Equals(adjustedMainTitle, prequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
@@ -1345,63 +1359,88 @@ public partial class ShokoApiManager : IDisposable {
                     goto logAndReturn;
                 }
 
-                while (currentRelations.Count > 0) {
-                    foreach (var sequelRelation in currentRelations.Where(relation => relation.Type == RelationType.Sequel && relation.RelatedIDs.Shoko.HasValue)) {
-                        if (await ApiClient.GetShokoSeries(sequelRelation.RelatedIDs.Shoko!.Value.ToString()).ConfigureAwait(false) is not { } sequelSeries)
-                            continue;
-
-                        if (sequelSeries.IDs.ParentGroup != currentSeries.IDs.ParentGroup)
-                            continue;
-
-                        var sequelConfig = await GetSeriesConfiguration(sequelSeries.Id).ConfigureAwait(false);
-                        if (sequelConfig.MergeOverride is SeriesMergingOverride.NoMerge)
-                            continue;
-
-                        if (sequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
-                            continue;
-
-                        if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(sequelConfig.TypeOverride ?? sequelSeries.AniDB.Type))
-                            continue;
-
-                        if (sequelSeries.AniDB.AirDate is not { } sequelDate || sequelDate < currentDate)
-                            continue;
-
-                        var mergeOverride = currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward) || sequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward);
-                        if (!mergeOverride) {
-                            if (maxDaysThreshold < 0)
+                var storyStack = new Stack<(string adjustedMainTitle, DateTime currentDate, SeriesConfiguration currentConfig, IReadOnlyList<Relation> currentRelations, int relationOffset)>([
+                    (adjustedMainTitle, currentDate, currentConfig, currentRelations, 0)
+                ]);
+                while (storyStack.Count > 0) {
+                    (adjustedMainTitle, currentDate, currentConfig, currentRelations, var relationOffset) = storyStack.Pop();
+                    while (currentRelations.Count > 0) {
+                        foreach (
+                            var sequelRelation in currentRelations
+                                .Where(relation => relation.Type is RelationType.Sequel or RelationType.SideStory && relation.RelatedIDs.Shoko.HasValue)
+                                .OrderBy(relation => relation.Type is RelationType.Sequel)
+                                .Skip(relationOffset)
+                        ) {
+                            relationOffset++;
+                            if (await ApiClient.GetShokoSeries(sequelRelation.RelatedIDs.Shoko!.Value.ToString()).ConfigureAwait(false) is not { } sequelSeries)
                                 continue;
 
-                            if (maxDaysThreshold > 0) {
-                                var deltaDays = (int)Math.Floor((sequelDate - currentDate).TotalDays);
-                                if (deltaDays > maxDaysThreshold)
+                            if (sequelSeries.IDs.ParentGroup != groupId)
+                                continue;
+
+                            var sequelConfig = await GetSeriesConfiguration(sequelSeries.Id).ConfigureAwait(false);
+                            if (sequelConfig.MergeOverride is SeriesMergingOverride.NoMerge)
+                                continue;
+
+                            if (sequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
+                                continue;
+
+                            if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(sequelConfig.TypeOverride ?? sequelSeries.AniDB.Type))
+                                continue;
+
+                            if (sequelSeries.AniDB.AirDate is not { } sequelDate || (sequelRelation.Type is RelationType.Sequel && sequelDate < currentDate))
+                                continue;
+
+                            var mergeOverride = (
+                                sequelRelation.Type is RelationType.Sequel && (currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward) || sequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward))
+                            ) || (
+                                sequelRelation.Type is RelationType.SideStory && sequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeWithMainStory)
+                            );
+                            if (!mergeOverride) {
+                                if (maxDaysThreshold < 0)
                                     continue;
+
+                                if (maxDaysThreshold > 0) {
+                                    var deltaDays = (int)Math.Floor((sequelDate - currentDate).TotalDays);
+                                    if (deltaDays > maxDaysThreshold)
+                                        continue;
+                                }
+                            }
+
+                            var sequelMainTitle = sequelSeries.AniDB.Titles.First(title => title.Type == TitleType.Main).Value;
+                            var adjustedSequelMainTitle = AdjustMainTitle(sequelMainTitle);
+                            if (mergeOverride) {
+                                // If we're about to enter a side story, then push the main story on the stack at the next relation index.
+                                if (sequelRelation.Type is RelationType.SideStory) 
+                                    storyStack.Push((adjustedMainTitle, currentDate, currentConfig, currentRelations, relationOffset));
+
+                                // Re-focus on the sequel when overriding.
+                                adjustedMainTitle = adjustedSequelMainTitle ?? sequelMainTitle;
+                                extraIds.Add(sequelSeries.Id);
+                                currentDate = sequelDate;
+                                currentRelations = await ApiClient.GetRelationsForShokoSeries(sequelSeries.Id).ConfigureAwait(false);
+                                currentConfig = sequelConfig;
+                                goto continueSequelWhileLoop;
+                            }
+
+                            // We only want to merge main/side stories if the override is set.
+                            if (sequelRelation.Type is RelationType.SideStory)
+                                continue;
+
+                            if (string.IsNullOrEmpty(adjustedSequelMainTitle))
+                                continue;
+
+                            if (string.Equals(adjustedMainTitle, adjustedSequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
+                                extraIds.Add(sequelSeries.Id);
+                                currentDate = sequelDate;
+                                currentRelations = await ApiClient.GetRelationsForShokoSeries(sequelSeries.Id).ConfigureAwait(false);
+                                currentConfig = sequelConfig;
+                                goto continueSequelWhileLoop;
                             }
                         }
-
-                        var sequelMainTitle = sequelSeries.AniDB.Titles.First(title => title.Type == TitleType.Main).Value;
-                        var adjustedSequelMainTitle = AdjustMainTitle(sequelMainTitle);
-                        if (mergeOverride) {
-                            adjustedMainTitle = adjustedSequelMainTitle ?? sequelMainTitle;
-                            extraIds.Add(sequelSeries.Id);
-                            currentSeries = sequelSeries;
-                            currentDate = sequelDate;
-                            currentRelations = await ApiClient.GetRelationsForShokoSeries(sequelSeries.Id).ConfigureAwait(false);
-                            currentConfig = sequelConfig;
-                            goto continueSequelWhileLoop;
-                        }
-
-                        if (string.IsNullOrEmpty(adjustedSequelMainTitle))
-                            continue;
-
-                        if (string.Equals(adjustedMainTitle, adjustedSequelMainTitle, StringComparison.InvariantCultureIgnoreCase)) {
-                            extraIds.Add(sequelSeries.Id);
-                            currentDate = sequelDate;
-                            currentRelations = await ApiClient.GetRelationsForShokoSeries(sequelSeries.Id).ConfigureAwait(false);
-                            goto continueSequelWhileLoop;
-                        }
+                        break;
+                        continueSequelWhileLoop: continue;
                     }
-                    break;
-                    continueSequelWhileLoop: continue;
                 }
 
                 logAndReturn:

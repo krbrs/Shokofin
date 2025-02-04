@@ -9,4 +9,5 @@ public enum SeriesMergingOverride {
     NoMerge = 1,
     MergeForward = 2,
     MergeBackward = 4,
+    MergeWithMainStory = 8,
 }
