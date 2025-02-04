@@ -1395,6 +1395,16 @@ public partial class ShokoApiManager : IDisposable {
                             if (sequelSeries.AniDB.AirDate is not { } sequelDate || (sequelRelation.Type is RelationType.Sequel && sequelDate < currentDate))
                                 continue;
 
+                            if (sequelRelation.Type is RelationType.SideStory) {
+                                var sequelRelations = await ApiClient.GetRelationsForShokoSeries(sequelSeries.Id).ConfigureAwait(false);
+                                sequelRelations = sequelRelations
+                                    .Where(relation => relation.Type is RelationType.MainStory && relation.RelatedIDs.Shoko.HasValue)
+                                    .OrderBy(relation => relation.RelatedIDs.AniDB)
+                                    .ToList();
+                                if (sequelRelations.Count == 0 || sequelRelations[0].RelatedIDs.AniDB != sequelRelation.IDs.AniDB)
+                                    continue;
+                            }
+
                             var mergeOverride = (
                                 sequelRelation.Type is RelationType.Sequel && (currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward) || sequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward))
                             ) || (
