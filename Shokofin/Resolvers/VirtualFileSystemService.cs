@@ -8,6 +8,7 @@ using System.Threading.Tasks;
 using Emby.Naming.Common;
 using Emby.Naming.ExternalFiles;
 using Jellyfin.Data.Enums;
+using MediaBrowser.Controller.Configuration;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Model.Entities;
@@ -32,6 +33,8 @@ public class VirtualFileSystemService {
     private readonly ShokoApiClient ApiClient;
 
     private readonly ILibraryManager LibraryManager;
+
+    private readonly IServerConfigurationManager ConfigurationManager;
 
     private readonly IFileSystem FileSystem;
 
@@ -68,6 +71,7 @@ public class VirtualFileSystemService {
         ShokoApiClient apiClient,
         MediaFolderConfigurationService configurationService,
         ILibraryManager libraryManager,
+        IServerConfigurationManager configurationManager,
         IFileSystem fileSystem,
         ILogger<VirtualFileSystemService> logger,
         ILocalizationManager localizationManager,
@@ -77,6 +81,7 @@ public class VirtualFileSystemService {
         ApiClient = apiClient;
         ConfigurationService = configurationService;
         LibraryManager = libraryManager;
+        ConfigurationManager = configurationManager;
         FileSystem = fileSystem;
         Logger = logger;
         DataCache = new(logger, new() { ExpirationScanFrequency = TimeSpan.FromMinutes(25) }, new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1), SlidingExpiration = TimeSpan.FromMinutes(15) });
@@ -690,7 +695,11 @@ public class VirtualFileSystemService {
         var failedSeries = new HashSet<string>();
         var failedExceptions = new List<Exception>();
         var cancelTokenSource = new CancellationTokenSource();
-        var threadCount = Plugin.Instance.Configuration.VFS_Threads is > 0 ? Plugin.Instance.Configuration.VFS_Threads :  Environment.ProcessorCount;
+        var threadCount = Plugin.Instance.Configuration.VFS_Threads is > 0
+            ? Plugin.Instance.Configuration.VFS_Threads
+            : Plugin.Instance.Configuration.VFS_Threads is -1
+                ? ConfigurationManager.Configuration.LibraryScanFanoutConcurrency
+                : Environment.ProcessorCount;
         var semaphore = new SemaphoreSlim(threadCount);
         await Task.WhenAll(allFiles.Select(async (tuple) => {
             await semaphore.WaitAsync().ConfigureAwait(false);
