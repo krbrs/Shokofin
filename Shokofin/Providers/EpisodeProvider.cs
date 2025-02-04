@@ -111,7 +111,15 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                     // Movies
                     (seasonInfo.Type == SeriesType.Movie && eI.Type is EpisodeType.Normal or EpisodeType.Special) ||
                     // All other ignored types.
-                    (eI.Type is EpisodeType.Normal && eI.EpisodeNumber == 1 && eI.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } mainTitle && Text.IgnoredSubTitles.Contains(mainTitle))
+                    (
+                        eI.Type is EpisodeType.Normal &&
+                        eI.EpisodeNumber == 1 &&
+                        eI.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } mainTitle &&
+                        Text.IgnoredSubTitles.Contains(mainTitle) &&
+                        Text.GetEpisodeTitles(eI, seasonInfo, metadataLanguage) is { } episodeTitles && (
+                            string.IsNullOrEmpty(episodeTitles.displayTitle) || Text.IgnoredSubTitles.Contains(episodeTitles.displayTitle)
+                        )
+                    )
                 ) {
                     var (dTitle, aTitle) = Text.GetMovieTitles(eI, seasonInfo, metadataLanguage);
                     displayTitles.Add(dTitle);
@@ -133,7 +141,15 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                 // Movies
                 (seasonInfo.Type == SeriesType.Movie && episodeInfo.Type is EpisodeType.Normal or EpisodeType.Special) ||
                 // All other ignored types.
-                (episodeInfo.Type is EpisodeType.Normal && episodeInfo.EpisodeNumber == 1 && episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } mainTitle && Text.IgnoredSubTitles.Contains(mainTitle))
+                (
+                    episodeInfo.Type is EpisodeType.Normal &&
+                    episodeInfo.EpisodeNumber == 1 &&
+                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } mainTitle &&
+                    Text.IgnoredSubTitles.Contains(mainTitle) &&
+                    Text.GetEpisodeTitles(episodeInfo, seasonInfo, metadataLanguage) is { } episodeTitles && (
+                        string.IsNullOrEmpty(episodeTitles.displayTitle) || Text.IgnoredSubTitles.Contains(episodeTitles.displayTitle)
+                    )
+                )
             ) {
                 (displayTitle, alternateTitle) = Text.GetMovieTitles(episodeInfo, seasonInfo, metadataLanguage);
             }

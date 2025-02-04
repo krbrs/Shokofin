@@ -260,16 +260,16 @@ public static partial class Text {
         return outputText;
     }
 
-    public static (string?, string?) GetEpisodeTitles(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
+    public static (string? displayTitle, string? alternateTitle) GetEpisodeTitles(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
         => (
             GetEpisodeTitleByType(episodeInfo, seasonInfo, TitleProviderType.Main, metadataLanguage),
             GetEpisodeTitleByType(episodeInfo, seasonInfo, TitleProviderType.Alternate, metadataLanguage)
         );
 
-    public static (string?, string?) GetSeasonTitles(SeasonInfo seasonInfo, string? metadataLanguage)
+    public static (string? displayTitle, string? alternateTitle) GetSeasonTitles(SeasonInfo seasonInfo, string? metadataLanguage)
         => GetSeasonTitles(seasonInfo, 0, metadataLanguage);
 
-    public static (string?, string?) GetSeasonTitles(SeasonInfo seasonInfo, int baseSeasonOffset, string? metadataLanguage) {
+    public static (string? displayTitle, string? alternateTitle) GetSeasonTitles(SeasonInfo seasonInfo, int baseSeasonOffset, string? metadataLanguage) {
         var displayTitle = GetSeriesTitleByType(seasonInfo, TitleProviderType.Main, metadataLanguage);
         var alternateTitle = GetSeriesTitleByType(seasonInfo, TitleProviderType.Alternate, metadataLanguage);
         if (baseSeasonOffset > 0) {
@@ -289,13 +289,13 @@ public static partial class Text {
         return (displayTitle, alternateTitle);
     }
 
-    public static (string?, string?) GetShowTitles(IBaseItemInfo showInfo, string? metadataLanguage)
+    public static (string? displayTitle, string? alternateTitle) GetShowTitles(IBaseItemInfo showInfo, string? metadataLanguage)
         => (
             GetSeriesTitleByType(showInfo, TitleProviderType.Main, metadataLanguage),
             GetSeriesTitleByType(showInfo, TitleProviderType.Alternate, metadataLanguage)
         );
 
-    public static (string?, string?) GetMovieTitles(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
+    public static (string? displayTitle, string? alternateTitle) GetMovieTitles(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
         => (
             GetMovieTitleByType(episodeInfo, seasonInfo, TitleProviderType.Main, metadataLanguage),
             GetMovieTitleByType(episodeInfo, seasonInfo, TitleProviderType.Alternate, metadataLanguage)
@@ -329,9 +329,9 @@ public static partial class Text {
         foreach (var provider in GetOrderedTitleProvidersByType(type)) {
             var title = provider switch {
                 TitleProvider.Shoko_Default =>
-                    episodeInfo.Title,
+                    IgnoredSubTitles.Contains(episodeInfo.Title) ? null : episodeInfo.Title,
                 TitleProvider.AniDB_Default =>
-                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value,
+                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } anidbDefault && !IgnoredSubTitles.Contains(anidbDefault) ? anidbDefault : null,
                 TitleProvider.AniDB_LibraryLanguage =>
                     GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, metadataLanguage),
                 TitleProvider.AniDB_CountryOfOrigin =>
@@ -404,7 +404,7 @@ public static partial class Text {
             else {
                 title = titles.FirstOrDefault()?.Value;
             }
-            if (!string.IsNullOrWhiteSpace(title) && !EpisodeNameRegex().IsMatch(title))
+            if (!string.IsNullOrWhiteSpace(title) && !EpisodeNameRegex().IsMatch(title) && !IgnoredSubTitles.Contains(title))
                 return title;
         }
         return null;
