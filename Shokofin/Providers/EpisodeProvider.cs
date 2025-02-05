@@ -169,35 +169,11 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
             description = Text.GetDescription(episodeInfo, metadataLanguage);
         }
 
-        if (isSpecial && config.MarkSpecialsWhenGrouped) switch (episodeInfo.Type) {
-            case EpisodeType.Other:
-            case EpisodeType.Normal:
-                break;
-            case EpisodeType.Special: {
-                // We're guaranteed to find the index, because otherwise it would've thrown when getting the episode number.
-                var index = seasonInfo.SpecialsList.FindIndex(ep => ep == episodeInfo);
-                displayTitle = $"S{index + 1} {displayTitle}";
-                alternateTitle = $"S{index + 1} {alternateTitle}";
-                break;
-            }
-            case EpisodeType.ThemeSong:
-            case EpisodeType.EndingSong:
-            case EpisodeType.OpeningSong:
-                displayTitle = $"C{episodeInfo.EpisodeNumber} {displayTitle}";
-                alternateTitle = $"C{episodeInfo.EpisodeNumber} {alternateTitle}";
-                break;
-            case EpisodeType.Trailer:
-                displayTitle = $"T{episodeInfo.EpisodeNumber} {displayTitle}";
-                alternateTitle = $"T{episodeInfo.EpisodeNumber} {alternateTitle}";
-                break;
-            case EpisodeType.Parody:
-                displayTitle = $"P{episodeInfo.EpisodeNumber} {displayTitle}";
-                alternateTitle = $"P{episodeInfo.EpisodeNumber} {alternateTitle}";
-                break;
-            default:
-                displayTitle = $"U{episodeInfo.EpisodeNumber} {displayTitle}";
-                alternateTitle = $"U{episodeInfo.EpisodeNumber} {alternateTitle}";
-                break;
+        if (isSpecial && config.MarkSpecialsWhenGrouped) {
+            // We're guaranteed to find the index, because otherwise it would've thrown when getting the episode number.
+            var index = seasonInfo.SpecialsList.FindIndex(ep => ep == episodeInfo);
+            displayTitle = $"S{index + 1} {displayTitle}";
+            alternateTitle = $"S{index + 1} {alternateTitle}";
         }
 
         Episode result;
