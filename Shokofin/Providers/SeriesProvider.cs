@@ -47,6 +47,9 @@ public class SeriesProvider(IHttpClientFactory _httpClientFactory, ILogger<Serie
             }
 
             var (displayTitle, alternateTitle) = Text.GetShowTitles(showInfo, info.MetadataLanguage);
+            if (string.IsNullOrEmpty(displayTitle))
+                displayTitle = showInfo.Title;
+
             var premiereDate = showInfo.PremiereDate;
             var endDate = showInfo.EndDate;
             result.Item = new Series {

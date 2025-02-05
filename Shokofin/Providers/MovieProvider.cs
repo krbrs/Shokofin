@@ -32,6 +32,13 @@ public class MovieProvider(IHttpClientFactory _httpClientFactory, ILogger<MovieP
             }
 
             var (displayTitle, alternateTitle) = Text.GetMovieTitles(episodeInfo, seasonInfo, info.MetadataLanguage);
+            if (string.IsNullOrEmpty(displayTitle))
+                displayTitle = episodeInfo.Id[0] == IdPrefix.TmdbMovie
+                    ? episodeInfo.Title
+                    : Text.IgnoredSubTitles.Contains(episodeInfo.Title)
+                        ? seasonInfo.Title
+                        : $"{seasonInfo.Title}: {episodeInfo.Title}";
+
             var rating = seasonInfo.IsMultiEntry
                 ? episodeInfo.CommunityRating.ToFloat(10)
                 : seasonInfo.CommunityRating.ToFloat(10);

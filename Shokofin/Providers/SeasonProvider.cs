@@ -93,6 +93,9 @@ public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<Seaso
 
     private static Season CreateMetadata(Info.SeasonInfo seasonInfo, int seasonNumber, int offset, string metadataLanguage, string metadataCountryCode, Series? series, Guid seasonId) {
         var (displayTitle, alternateTitle) = Text.GetSeasonTitles(seasonInfo, offset, metadataLanguage);
+        if (string.IsNullOrEmpty(displayTitle))
+            displayTitle = $"Season {seasonNumber}";
+
         var sortTitle = $"S{seasonNumber} - {seasonInfo.Title}";
         Season season;
         if (series != null) {

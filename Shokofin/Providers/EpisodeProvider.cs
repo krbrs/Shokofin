@@ -101,12 +101,16 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
 
     private static Episode CreateMetadata(Info.ShowInfo showInfo, Info.SeasonInfo seasonInfo, Info.EpisodeInfo episodeInfo, Info.FileInfo? file, string metadataLanguage, string metadataCountryCode, Season? season, Guid episodeId) {
         var config = Plugin.Instance.Configuration;
+        var episodeNumber = Ordering.GetEpisodeNumber(showInfo, seasonInfo, episodeInfo);
+        var seasonNumber = Ordering.GetSeasonNumber(showInfo, seasonInfo, episodeInfo);
+        var (airsBeforeEpisodeNumber, airsBeforeSeasonNumber, airsAfterSeasonNumber, isSpecial) = Ordering.GetSpecialPlacement(showInfo, seasonInfo, episodeInfo);
         string? displayTitle, alternateTitle, description;
         if (file != null && file.EpisodeList.Count > 1) {
             var displayTitles = new List<string?>();
             var alternateTitles = new List<string?>();
             foreach (var (eI, _, _) in file.EpisodeList) {
                 string defaultEpisodeTitle = eI.Title;
+                string? dTitle, aTitle;
                 if (
                     // Movies
                     (seasonInfo.Type == SeriesType.Movie && eI.Type is EpisodeType.Normal or EpisodeType.Special) ||
@@ -116,20 +120,22 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                         eI.EpisodeNumber == 1 &&
                         eI.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } mainTitle &&
                         Text.IgnoredSubTitles.Contains(mainTitle) &&
-                        Text.GetEpisodeTitles(eI, seasonInfo, metadataLanguage) is { } episodeTitles && (
-                            string.IsNullOrEmpty(episodeTitles.displayTitle) || Text.IgnoredSubTitles.Contains(episodeTitles.displayTitle)
-                        )
+                        Text.GetEpisodeTitles(eI, seasonInfo, metadataLanguage) is { } episodeTitles &&
+                        string.IsNullOrEmpty(episodeTitles.displayTitle)
                     )
-                ) {
-                    var (dTitle, aTitle) = Text.GetMovieTitles(eI, seasonInfo, metadataLanguage);
-                    displayTitles.Add(dTitle);
-                    alternateTitles.Add(aTitle);
-                }
-                else {
-                    var (dTitle, aTitle) = Text.GetEpisodeTitles(eI, seasonInfo, metadataLanguage);
-                    displayTitles.Add(dTitle);
-                    alternateTitles.Add(aTitle);
-                }
+                )
+                    (dTitle, aTitle) = Text.GetMovieTitles(eI, seasonInfo, metadataLanguage);
+                else
+                    (dTitle, aTitle) = Text.GetEpisodeTitles(eI, seasonInfo, metadataLanguage);
+
+                if (string.IsNullOrEmpty(dTitle))
+                    dTitle = eI.Type switch {
+                        EpisodeType.Special => $"Special {Ordering.GetEpisodeNumber(showInfo, seasonInfo, eI)}",
+                        _ => $"Episode {Ordering.GetEpisodeNumber(showInfo, seasonInfo, eI)}",
+                    };
+
+                displayTitles.Add(dTitle);
+                alternateTitles.Add(aTitle);
             }
             displayTitle = Text.JoinText(displayTitles);
             alternateTitle = Text.JoinText(alternateTitles);
@@ -146,22 +152,22 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                     episodeInfo.EpisodeNumber == 1 &&
                     episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } mainTitle &&
                     Text.IgnoredSubTitles.Contains(mainTitle) &&
-                    Text.GetEpisodeTitles(episodeInfo, seasonInfo, metadataLanguage) is { } episodeTitles && (
-                        string.IsNullOrEmpty(episodeTitles.displayTitle) || Text.IgnoredSubTitles.Contains(episodeTitles.displayTitle)
-                    )
+                    Text.GetEpisodeTitles(episodeInfo, seasonInfo, metadataLanguage) is { } episodeTitles &&
+                    string.IsNullOrEmpty(episodeTitles.displayTitle)
                 )
-            ) {
+            )
                 (displayTitle, alternateTitle) = Text.GetMovieTitles(episodeInfo, seasonInfo, metadataLanguage);
-            }
-            else {
+            else
                 (displayTitle, alternateTitle) = Text.GetEpisodeTitles(episodeInfo, seasonInfo, metadataLanguage);
-            }
+
+            if (string.IsNullOrEmpty(displayTitle))
+                displayTitle = episodeInfo.Type switch {
+                    EpisodeType.Special => $"Special {episodeNumber}",
+                    _ => $"Episode {episodeNumber}",
+                };
+
             description = Text.GetDescription(episodeInfo, metadataLanguage);
         }
-
-        var episodeNumber = Ordering.GetEpisodeNumber(showInfo, seasonInfo, episodeInfo);
-        var seasonNumber = Ordering.GetSeasonNumber(showInfo, seasonInfo, episodeInfo);
-        var (airsBeforeEpisodeNumber, airsBeforeSeasonNumber, airsAfterSeasonNumber, isSpecial) = Ordering.GetSpecialPlacement(showInfo, seasonInfo, episodeInfo);
 
         if (isSpecial && config.MarkSpecialsWhenGrouped) switch (episodeInfo.Type) {
             case EpisodeType.Other:
