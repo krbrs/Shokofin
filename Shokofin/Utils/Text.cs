@@ -320,8 +320,10 @@ public static partial class Text {
         var mainTitle = GetSeriesTitleByType(seasonInfo, type, metadataLanguage);
         var subTitle = GetEpisodeTitleByType(episodeInfo, seasonInfo, type, metadataLanguage);
 
-        if (!(string.IsNullOrEmpty(subTitle) || IgnoredSubTitles.Contains(subTitle)))
+        if (!string.IsNullOrEmpty(subTitle))
             return $"{mainTitle}: {subTitle}".Trim();
+        else if (episodeInfo.EpisodeNumber > 1)
+            return $"{mainTitle} {NumericToRoman(episodeInfo.EpisodeNumber)}".Trim();
         return mainTitle?.Trim();
     }
 
@@ -429,5 +431,34 @@ public static partial class Text {
             "x-jat" => ["ja"],
             "x-zht" => ["zn-hans", "zn-hant", "zn-c-mcm", "zn"],
             _ => [langCode],
+        };
+    
+    private static string NumericToRoman(int number) =>
+        number switch {
+            1 => "I",
+            2 => "II",
+            3 => "III",
+            4 => "IV",
+            5 => "V",
+            6 => "VI",
+            7 => "VII",
+            8 => "VIII",
+            9 => "IX",
+            10 => "X",
+            11 => "XI",
+            12 => "XII",
+            13 => "XIII",
+            14 => "XIV",
+            15 => "XV",
+            16 => "XVI",
+            17 => "XVII",
+            18 => "XVIII",
+            19 => "XIX",
+            20 => "XX",
+            21 => "XXI",
+            22 => "XXII",
+            23 => "XXIII",
+            24 => "XXIV",
+            _ => number.ToString(),
         };
 }
