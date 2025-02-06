@@ -318,6 +318,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   GenreMinimumWeight: TagWeight;
  *   GenreMaximumDepth: TagDepth;
  *   HideUnverifiedTags: boolean;
+ *   Metadata_StudioOnlyAnimationWorks: boolean;
  *   ContentRatingList: GenericProvider[];
  *   ContentRatingOrder: GenericProvider[];
  *   ProductionLocationList: GenericProvider[];

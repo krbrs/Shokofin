@@ -390,6 +390,7 @@ function applyFormToConfig(form, config) {
             config.GenreIncludeFilters = retrieveCheckboxList(form, "GenreIncludeFilters").join(", ");
             config.GenreMinimumWeight = form.querySelector("#GenreMinimumWeight").value;
             config.GenreMaximumDepth = parseInt(form.querySelector("#GenreMaximumDepth").value, 10);
+            config.Metadata_StudioOnlyAnimationWorks = form.querySelector("#Metadata_StudioOnlyAnimationWorks").checked;
             ([config.ContentRatingList, config.ContentRatingOrder] = retrieveSortableCheckboxList(form, "ContentRatingList"));
             ([config.ProductionLocationList, config.ProductionLocationOrder] = retrieveSortableCheckboxList(form, "ProductionLocationList"));
             config.ThirdPartyIdProviderList = retrieveCheckboxList(form, "ThirdPartyIdProviderList");
@@ -547,6 +548,7 @@ async function applyConfigToForm(form, config) {
             renderCheckboxList(form, "GenreIncludeFilters", config.GenreIncludeFilters.split(",").map(s => s.trim()).filter(s => s));
             form.querySelector("#GenreMinimumWeight").value = config.GenreMinimumWeight;
             form.querySelector("#GenreMaximumDepth").value = config.GenreMaximumDepth.toString();
+            form.querySelector("#Metadata_StudioOnlyAnimationWorks").checked = config.Metadata_StudioOnlyAnimationWorks;
             renderSortableCheckboxList(form, "ContentRatingList", config.ContentRatingList, config.ContentRatingOrder);
             renderSortableCheckboxList(form, "ProductionLocationList", config.ProductionLocationList, config.ProductionLocationOrder);
             renderCheckboxList(form, "ThirdPartyIdProviderList", config.ThirdPartyIdProviderList.map(s => s.trim()).filter(s => s));

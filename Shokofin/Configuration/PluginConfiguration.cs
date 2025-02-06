@@ -235,6 +235,12 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// </summary>
     public SeriesStructureType[] RespectPreferredImagePerStructureType { get; set; }
 
+    /// <summary>
+    /// Only select studios responsible for the animation for entities. Only
+    /// applies to AniDB.
+    /// </summary>
+    public bool Metadata_StudioOnlyAnimationWorks { get; set; }
+
     #endregion
 
     #region Tags
@@ -699,6 +705,7 @@ public class PluginConfiguration : BasePluginConfiguration {
             SeriesStructureType.AniDB_Anime,
             SeriesStructureType.Shoko_Groups,
         ];
+        Metadata_StudioOnlyAnimationWorks = false;
 
         VFS_Enabled = true;
         VFS_Threads = 4;

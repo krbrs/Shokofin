@@ -209,6 +209,8 @@ public class EpisodeInfo : IExtendedItemInfo {
             }
         }
         else {
+            var onlyAnimationWorks = Plugin.Instance.Configuration.Metadata_StudioOnlyAnimationWorks;
+
             Runtime = episode.AniDB.Duration;
             AiredAt = episode.AniDB.AirDate;
             CommunityRating = episode.AniDB.Rating;
@@ -222,7 +224,8 @@ public class EpisodeInfo : IExtendedItemInfo {
                     !string.IsNullOrEmpty(role.Staff.Name) &&
                     role.Type is CreatorRoleType.Studio &&
                     role.Staff.Type is null or "Company" &&
-                    !_invalidPhrases.Any(p => role.Staff.Name.Contains(p, StringComparison.OrdinalIgnoreCase))
+                    !_invalidPhrases.Any(p => role.Staff.Name.Contains(p, StringComparison.OrdinalIgnoreCase)) &&
+                    (!onlyAnimationWorks || role.Name is "Animation Works")
                 )
                 .Select(r => r.Staff.Name)
                 .ToArray();

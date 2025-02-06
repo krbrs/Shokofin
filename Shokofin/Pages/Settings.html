@@ -1211,6 +1211,13 @@ form:not(.expert-mode) .expert-only {
                         <legend>
                             <h3>Miscellaneous Settings</h3>
                         </legend>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="Metadata_StudioOnlyAnimationWorks" />
+                                <span>Only Animation Studios</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">Only select studios responsible for the animation for entities. Only applies to AniDB.</div>
+                        </div>
                         <div id="ContentRatingList" is="sortable-checkbox-list" class="expert-only" style="margin-bottom: 2em;">
                             <h3 class="checkboxListLabel">Content Rating Sources</h3>
                             <div class="checkboxList paperList checkboxList-paperList">
