@@ -19,6 +19,10 @@ using Shokofin.Utils;
 namespace Shokofin.API.Info;
 
 public class EpisodeInfo : IExtendedItemInfo {
+    private static readonly HashSet<string> _invalidPhrases = [
+        "seisaku iinkai", // Production Committee
+    ];
+
     private readonly ShokoApiClient _client;
 
     public string Id { get; init; }
@@ -214,7 +218,12 @@ public class EpisodeInfo : IExtendedItemInfo {
                 .OfType<PersonInfo>()
                 .ToArray();
             Studios = cast
-                .Where(r => r.Type == CreatorRoleType.Studio)
+                .Where(role =>
+                    !string.IsNullOrEmpty(role.Staff.Name) &&
+                    role.Type is CreatorRoleType.Studio &&
+                    role.Staff.Type is null or "Company" &&
+                    !_invalidPhrases.Any(p => role.Staff.Name.Contains(p, StringComparison.OrdinalIgnoreCase))
+                )
                 .Select(r => r.Staff.Name)
                 .ToArray();
         }

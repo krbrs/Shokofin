@@ -55,6 +55,11 @@ public class Role : IEquatable<Role> {
         public int? Id { get; set; }
 
         /// <summary>
+        /// Whether the object is a person, company or collab. Only set for AniDB creators.
+        /// </summary>
+        public string? Type { get; set; }
+
+        /// <summary>
         /// Main Name, romanized if needed
         /// ex. John Smith
         /// </summary>
