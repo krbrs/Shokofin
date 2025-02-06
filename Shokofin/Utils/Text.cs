@@ -329,9 +329,9 @@ public static partial class Text {
         foreach (var provider in GetOrderedTitleProvidersByType(type)) {
             var title = provider switch {
                 TitleProvider.Shoko_Default =>
-                    IgnoredSubTitles.Contains(episodeInfo.Title) ? null : episodeInfo.Title,
+                    episodeInfo.Title,
                 TitleProvider.AniDB_Default =>
-                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } anidbDefault && !IgnoredSubTitles.Contains(anidbDefault) ? anidbDefault : null,
+                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value,
                 TitleProvider.AniDB_LibraryLanguage =>
                     GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, metadataLanguage),
                 TitleProvider.AniDB_CountryOfOrigin =>
@@ -344,7 +344,7 @@ public static partial class Text {
                     GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "TMDB").ToList(), false, episodeInfo.OriginalLanguageCode),
                 _ => null,
             };
-            if (!string.IsNullOrEmpty(title))
+            if (!string.IsNullOrEmpty(title) && !InvalidEpisodeTitleRegex().IsMatch(title))
                 return title.Trim();
         }
         return null;
@@ -376,7 +376,7 @@ public static partial class Text {
     }
 
     [GeneratedRegex(@"^(?:Special|Episode|Volume|OVA|OAD|Web) \d+$|^Part \d+ of \d+$|^(?:OVA|OAD|Movie|Complete Movie|Short Movie|TV Special|Music Video|Web|Volume)$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
-    private static partial Regex EpisodeNameRegex();
+    private static partial Regex InvalidEpisodeTitleRegex();
 
     /// <summary>
     /// Get the first title available for the language, optionally using types
@@ -404,7 +404,7 @@ public static partial class Text {
             else {
                 title = titles.FirstOrDefault()?.Value;
             }
-            if (!string.IsNullOrWhiteSpace(title) && !EpisodeNameRegex().IsMatch(title) && !IgnoredSubTitles.Contains(title))
+            if (!string.IsNullOrWhiteSpace(title) && !InvalidEpisodeTitleRegex().IsMatch(title))
                 return title;
         }
         return null;
