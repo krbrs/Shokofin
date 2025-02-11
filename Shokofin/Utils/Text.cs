@@ -377,7 +377,7 @@ public static partial class Text {
         return null;
     }
 
-    [GeneratedRegex(@"^(?:Special|Episode|Volume|OVA|OAD|Web) \d+$|^Part \d+ of \d+$|^(?:OVA|OAD|Movie|Complete Movie|Short Movie|TV Special|Music Video|Web|Volume)$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+    [GeneratedRegex(@"^(?:Special|Episode|Volume|OVA|OAD|Web) \d+$|^Part \d+ of \d+$|^Episode [COPRST]\d+$|^(?:OVA|OAD|Movie|Complete Movie|Short Movie|TV Special|Music Video|Web|Volume)$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
     private static partial Regex InvalidEpisodeTitleRegex();
 
     /// <summary>
