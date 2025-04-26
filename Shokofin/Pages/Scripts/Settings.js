@@ -23,6 +23,7 @@ promise.then(({
     State,
     createControllerFactory,
     handleError,
+    overrideSortableCheckboxList,
     renderCheckboxList,
     renderReadonlyList,
     renderSortableCheckboxList,
@@ -77,6 +78,8 @@ const Messages = {
     InvalidCredentials: "An error occurred while trying to authenticating the user using the provided credentials.",
 };
 
+let alternateTitleListTemplate = "";
+
 //#endregion
 
 //#region Controller Logic
@@ -88,6 +91,11 @@ createControllerFactory({
         onInit() {
             const view = this;
             const form = view.querySelector("form");
+
+            if (alternateTitleListTemplate === "") {
+                alternateTitleListTemplate = form.querySelector("#TitleAlternateListContainer").innerHTML;
+                form.querySelector("#TitleAlternateListContainer").innerHTML = "";
+            }
 
             form.querySelector("#ServerVersion").addEventListener("click", async function () {
                 if (++State.expertPresses === MaxDebugPresses) {
@@ -149,6 +157,16 @@ createControllerFactory({
                         break;
                     case "unlink-user":
                         removeUserConfig(form)
+                            .then((config) => updateView(view, form, config))
+                            .catch(handleError);
+                        break;
+                    case "remove-alternate-title":
+                        removeAlternateTitle(form, parseInt(event.submitter.dataset.index, 10))
+                            .then((config) => updateView(view, form, config))
+                            .catch(handleError);
+                        break;
+                    case "add-alternate-title":
+                        addAlternateTitle(form)
                             .then((config) => updateView(view, form, config))
                             .catch(handleError);
                         break;
@@ -283,6 +301,12 @@ async function updateView(view, form, config) {
 
         case "metadata":
             activeSections.push("Metadata_Title", "Metadata_Description", "Metadata_TagGenre", "Metadata_Image", "Metadata_Misc", "Metadata_ThirdPartyIntegration");
+            if (form.querySelectorAll("#TitleAlternateListContainer > fieldset").length >= 5) {
+                form.querySelector("button[name=\"add-alternate-title\"]").setAttribute("disabled", "");
+            }
+            else {
+                form.querySelector("button[name=\"add-alternate-title\"]").removeAttribute("disabled");
+            }
             break;
 
         case "library":
@@ -367,9 +391,20 @@ function updateSignalrStatus(form, status) {
 function applyFormToConfig(form, config) {
     switch (State.currentTab) {
         case "metadata": {
-            ([config.TitleMainList, config.TitleMainOrder] = retrieveSortableCheckboxList(form, "TitleMainList"));
-            ([config.TitleAlternateList, config.TitleAlternateOrder] = retrieveSortableCheckboxList(form, "TitleAlternateList"));
-            config.TitleAllowAny = form.querySelector("#TitleAllowAny").checked;
+            ([config.MainTitle.List, config.MainTitle.Order] = retrieveSortableCheckboxList(form, "TitleMainList"));
+            config.MainTitle.AllowAny = form.querySelector("#TitleMainAllowAny").checked;
+
+            const alternateTitles = form.querySelectorAll("#TitleAlternateListContainer > fieldset");
+            config.AlternateTitles = [];
+            for (let i = 1; i <= alternateTitles.length; i++) {
+                const [list, order] = retrieveSortableCheckboxList(form, `TitleAlternateList_${i}`);
+                config.AlternateTitles.push({
+                    List: list,
+                    Order: order,
+                    AllowAny: form.querySelector(`#TitleAlternateAllowAny_${i}`).checked,
+                });
+            }
+
             config.MarkSpecialsWhenGrouped = form.querySelector("#MarkSpecialsWhenGrouped").checked;
             ([config.DescriptionSourceList, config.DescriptionSourceOrder] = retrieveSortableCheckboxList(form, "DescriptionSourceList"));
             config.SynopsisCleanLinks = form.querySelector("#CleanupAniDBDescriptions").checked;
@@ -523,9 +558,34 @@ async function applyConfigToForm(form, config) {
         }
 
         case "metadata": {
-            renderSortableCheckboxList(form, "TitleMainList", config.TitleMainList, config.TitleMainOrder);
-            renderSortableCheckboxList(form, "TitleAlternateList", config.TitleAlternateList, config.TitleAlternateOrder);
-            form.querySelector("#TitleAllowAny").checked = config.TitleAllowAny;
+            renderSortableCheckboxList(form, "TitleMainList", config.MainTitle.List, config.MainTitle.Order);
+            form.querySelector("#TitleMainAllowAny").checked = config.MainTitle.AllowAny;
+
+            const configAlternateTitles = [...config.AlternateTitles];
+            if (configAlternateTitles.length === 0) {
+                configAlternateTitles.push({ List: [], Order: [], AllowAny: false });
+            }
+
+            if (form.querySelectorAll("#TitleAlternateListContainer > fieldset").length !== configAlternateTitles.length) {
+                const container = form.querySelector("#TitleAlternateListContainer");
+                container.innerHTML = "";
+                for (let i = 1; i <= configAlternateTitles.length; i++) {
+                    const html = alternateTitleListTemplate
+                        .replace(/%number%/g, i)
+                        .replace(/%number_formatted%/g, i === 1 ? "1st" : i === 2 ? "2nd" : i === 3 ? "3rd" : `${i}th`);
+                    container.insertAdjacentHTML("beforeend", html);
+                    if (i === 1) {
+                        container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
+                    }
+                    overrideSortableCheckboxList(container.querySelector(`#TitleAlternateList_${i}`));
+                }
+            }
+            for (let i = 1; i <= configAlternateTitles.length; i++) {
+                const j = i - 1;
+                renderSortableCheckboxList(form, `TitleAlternateList_${i}`, configAlternateTitles[j].List, configAlternateTitles[j].Order);
+                form.querySelector(`#TitleAlternateAllowAny_${i}`).checked = configAlternateTitles[j].AllowAny;
+            }
+
             form.querySelector("#MarkSpecialsWhenGrouped").checked = config.MarkSpecialsWhenGrouped;
             renderSortableCheckboxList(form, "DescriptionSourceList", config.DescriptionSourceList, config.DescriptionSourceOrder);
             form.querySelector("#CleanupAniDBDescriptions").checked = (
@@ -1038,6 +1098,100 @@ async function removeLibraryConfig(form) {
 
     await ShokoApiClient.updateConfiguration(config);
     Dashboard.processPluginConfigurationUpdateResult();
+
+    return config;
+}
+
+/**
+ * Remove an alternate/original title from the view.
+ *
+ * @param {HTMLFormElement} form - The form element.
+ * @param {number} index - The index of the alternate title to remove.
+ * @returns {Promise<PluginConfiguration>} The updated plugin configuration.
+ */
+async function removeAlternateTitle(form, index) {
+    const config = State.config || await ShokoApiClient.getConfiguration();
+
+    const alternateTitles = form.querySelectorAll("#TitleAlternateListContainer > fieldset");
+    const configAlternateTitles = [];
+    let j = 0;
+    for (let i = 1; i <= alternateTitles.length; i++) {
+        const [list, order] = retrieveSortableCheckboxList(form, `TitleAlternateList_${i}`);
+        if (i !== index) {
+            configAlternateTitles[j] = { List: list, Order: order };
+            configAlternateTitles[j].AllowAny = form.querySelector(`#TitleAlternateAllowAny_${i}`).checked;
+            j++;
+        }
+    }
+
+    if (configAlternateTitles.length === 0) {
+        configAlternateTitles.push({ List: [], Order: [], AllowAny: false });
+    }
+
+    const container = form.querySelector("#TitleAlternateListContainer");
+    container.innerHTML = "";
+    for (let i = 1; i <= configAlternateTitles.length; i++) {
+        const html = alternateTitleListTemplate
+            .replace(/%number%/g, i)
+            .replace(/%number_formatted%/g, i === 1 ? "1st" : i === 2 ? "2nd" : i === 3 ? "3rd" : `${i}th`);
+        container.insertAdjacentHTML("beforeend", html);
+        if (i === 1) {
+            container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
+        }
+        overrideSortableCheckboxList(container.querySelector(`#TitleAlternateList_${i}`));
+    }
+
+    for (let i = 1; i <= configAlternateTitles.length; i++) {
+        const j = i - 1;
+        renderSortableCheckboxList(form, `TitleAlternateList_${i}`, configAlternateTitles[j].List, configAlternateTitles[j].Order);
+        form.querySelector(`#TitleAlternateAllowAny_${i}`).checked = configAlternateTitles[j].AllowAny;
+    }
+
+    return config;
+}
+
+/**
+ * Add a new alternate/original title to the view.
+ *
+ * @param {HTMLFormElement} form - The form element.
+ */
+async function addAlternateTitle(form) {
+    const config = State.config || await ShokoApiClient.getConfiguration();
+
+    const alternateTitles = form.querySelectorAll("#TitleAlternateListContainer > fieldset");
+    if (alternateTitles.length >= 5) {
+        return config;
+    }
+
+    const configAlternateTitles = [];
+    let j = 0;
+    for (let i = 1; i <= alternateTitles.length; i++) {
+        const [list, order] = retrieveSortableCheckboxList(form, `TitleAlternateList_${i}`);
+        configAlternateTitles[j] = { List: list, Order: order };
+        configAlternateTitles[j].AllowAny = form.querySelector(`#TitleAlternateAllowAny_${i}`).checked;
+        j++;
+    }
+
+    configAlternateTitles.push({ List: [], Order: [], AllowAny: false });
+
+    const container = form.querySelector("#TitleAlternateListContainer");
+    container.innerHTML = "";
+    for (let i = 1; i <= configAlternateTitles.length; i++) {
+        const html = alternateTitleListTemplate
+            .replace(/%number%/g, i)
+            .replace(/%number_formatted%/g, i === 1 ? "1st" : i === 2 ? "2nd" : i === 3 ? "3rd" : `${i}th`);
+        container.insertAdjacentHTML("beforeend", html);
+        if (i === 1) {
+            container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
+        }
+        overrideSortableCheckboxList(container.querySelector(`#TitleAlternateList_${i}`));
+    }
+
+    for (let i = 1; i <= configAlternateTitles.length; i++) {
+        const j = i - 1;
+        renderSortableCheckboxList(form, `TitleAlternateList_${i}`, configAlternateTitles[j].List, configAlternateTitles[j].Order);
+        form.querySelector(`#TitleAlternateAllowAny_${i}`).checked = configAlternateTitles[j].AllowAny;
+    }
 
     return config;
 }

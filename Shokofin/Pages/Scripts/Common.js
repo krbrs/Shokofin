@@ -289,6 +289,13 @@ export const LibraryMenu = globalThis.LibraryMenu;
 
 /**
  * @typedef {{
+ *   List: TitleProvider[];
+ *   Order: TitleProvider[];
+ * }} TitleConfiguration
+ */
+
+/**
+ * @typedef {{
  *   CanCreateSymbolicLinks: boolean;
  *   Url: string;
  *   PublicUrl: string;
@@ -296,11 +303,8 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   Username: string;
  *   ApiKey: string;
  *   ThirdPartyIdProviderList: Except<DescriptionProvider, "Shoko">[];
- *   TitleMainList: TitleProvider[];
- *   TitleMainOrder: TitleProvider[];
- *   TitleAlternateList: TitleProvider[];
- *   TitleAlternateOrder: TitleProvider[];
- *   TitleAllowAny: boolean;
+ *   MainTitle: TitleConfiguration;
+ *   AlternateTitles: TitleConfiguration[];
  *   MarkSpecialsWhenGrouped: boolean;
  *   DescriptionSourceOverride: boolean;
  *   DescriptionSourceList: DescriptionProvider[];
@@ -1081,7 +1085,7 @@ function onSortableContainerClick(event) {
  *
  * @param {HTMLDivElement} element
  */
-function overrideSortableCheckboxList(element) {
+export function overrideSortableCheckboxList(element) {
     element.addEventListener("click", onSortableContainerClick);
 }
 
@@ -1146,6 +1150,9 @@ export function renderSortableCheckboxList(form, name, enabled, order) {
             isSortable,
             option: checkbox.dataset.option,
         }));
+    if (order.length === 0) {
+        order = listItems.map((item) => item.option);
+    }
     list.innerHTML = "";
     for (const option of order) {
         const { item, checkbox, isSortable } = listItems.find((item) => item.option === option) || {};

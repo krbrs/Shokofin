@@ -273,6 +273,28 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             config.GenreSources |= TagFilter.TagSource.TmdbGenres;
             changed = true;
         }
+        if (config.TitleAllowAny is not null || config.TitleMainList is not null || config.TitleAlternateList is not null) {
+            if (config.TitleMainList is not null) {
+                config.MainTitle.List = config.TitleMainList;
+                if (config.TitleMainOrder is not null)
+                    config.MainTitle.Order = config.TitleMainOrder;
+                if (config.TitleAllowAny is not null)
+                    config.MainTitle.AllowAny = config.TitleAllowAny.Value;
+            }
+            if (config.TitleAlternateList is not null) {
+                config.AlternateTitles[0].List = config.TitleAlternateList;
+                if (config.TitleAlternateOrder is not null)
+                    config.AlternateTitles[0].Order = config.TitleAlternateOrder;
+                if (config.TitleAllowAny is not null)
+                    config.AlternateTitles[0].AllowAny = config.TitleAllowAny.Value;
+            }
+            config.TitleMainList = null;
+            config.TitleMainOrder = null;
+            config.TitleAlternateList = null;
+            config.TitleAlternateOrder = null;
+            config.TitleAllowAny = null;
+            changed = true;
+        }
 
         if (changed)
             SaveConfiguration(config);

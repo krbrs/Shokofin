@@ -123,30 +123,41 @@ public class PluginConfiguration : BasePluginConfiguration {
     #region Metadata
 
     /// <summary>
+    /// The main title configuration.
+    /// </summary>
+    public TitleConfiguration MainTitle { get; set; }
+
+    /// <summary>
+    /// The alternate title configurations.
+    /// </summary>
+    [MaxLength(5, ErrorMessage = "Maximum of 5 alternate titles allowed.")]
+    public TitleConfiguration[] AlternateTitles { get; set; }
+
+    /// <summary>
     /// Determines how we'll be selecting our main title for entries.
     /// </summary>
-    public TitleProvider[] TitleMainList { get; set; }
+    public TitleProvider[]? TitleMainList { get; set; }
 
     /// <summary>
     /// The order of which we will be selecting our main title for entries.
     /// </summary>
-    public TitleProvider[] TitleMainOrder { get; set; }
+    public TitleProvider[]? TitleMainOrder { get; set; }
 
     /// <summary>
     /// Determines how we'll be selecting our alternate title for entries.
     /// </summary>
-    public TitleProvider[] TitleAlternateList { get; set; }
+    public TitleProvider[]? TitleAlternateList { get; set; }
 
     /// <summary>
     /// The order of which we will be selecting our alternate title for entries.
     /// </summary>
-    public TitleProvider[] TitleAlternateOrder { get; set; }
+    public TitleProvider[]? TitleAlternateOrder { get; set; }
 
     /// <summary>
     /// Allow choosing any title in the selected language if no official
     /// title is available.
     /// </summary>
-    public bool TitleAllowAny { get; set; }
+    public bool? TitleAllowAny { get; set; }
 
     /// <summary>
     /// Mark any episode that is not considered a normal season episode with a
@@ -639,21 +650,12 @@ public class PluginConfiguration : BasePluginConfiguration {
         ApiKey = string.Empty;
         ServerVersion = null;
 
-        TitleMainList = [
-            TitleProvider.Shoko_Default,
-        ];
-        TitleMainOrder = [
-            TitleProvider.Shoko_Default,
-            TitleProvider.AniDB_Default,
-            TitleProvider.AniDB_LibraryLanguage,
-            TitleProvider.AniDB_CountryOfOrigin,
-            TitleProvider.TMDB_Default,
-            TitleProvider.TMDB_LibraryLanguage,
-            TitleProvider.TMDB_CountryOfOrigin,
-        ];
-        TitleAlternateList = [];
-        TitleAlternateOrder = [.. TitleMainOrder];
-        TitleAllowAny = false;
+        MainTitle = new() {
+            List = [
+                TitleProvider.Shoko_Default,
+            ],
+        };
+        AlternateTitles = [new()];
         MarkSpecialsWhenGrouped = true;
         SynopsisCleanLinks = true;
         SynopsisCleanMiscLines = true;
