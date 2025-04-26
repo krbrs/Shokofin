@@ -1847,7 +1847,7 @@ form:not(.expert-mode) .expert-only {
                         </div>
                         <div class="inputContainer inputContainer-withDescription expert-only">
                             <input is="emby-input" type="text" id="SignalRAutoReconnectIntervals" label="Auto Reconnect Intervals" />
-                            <div class="fieldDescription">A comma separated list of intervals given in seconds to try to reconnect to your running Shoko instance if we ever gets disconnected. The provided list will have duplicates removed and will be performed in sorted order starting from the shortest time span when reconnecting. Once the longest interval has been reached and fails to reconnect, we will stop attempting to reconnect and leave the SignalR connection in a disconnected state until it is manually or otherwise reconnected.</div>
+                            <div class="fieldDescription">A comma separated list of intervals given in seconds to try to reconnect to your running Shoko instance if we ever gets disconnected. The last value in the list will be retried forever until a successful connection is made. Can be left empty to disable auto reconnect.</div>
                         </div>
                         <div id="SignalREventSources" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
                             <h3 class="checkboxListLabel">Event Sources</h3>

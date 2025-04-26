@@ -1238,23 +1238,15 @@ function filterIgnoredFolders(value) {
 }
 
 /**
- * Filter out duplicate values and sanitize list.
+ * Filter out non-integer values and sanitize list.
  * @param {string} value - Stringified list of values to filter.
  * @returns {number[]} An array of sanitized and filtered values.
  */
 function filterReconnectIntervals(value) {
-    // We convert to a set to filter out duplicate values.
-    const filteredSet = new Set(
-        value
-            // Split the values at every comma.
-            .split(",")
-            // Sanitize inputs.
-            .map(str => parseInt(str.trim().toLowerCase(), 10))
-            .filter(int => !Number.isNaN(int)),
-    );
-
-    // Convert it back into an array.
-    return Array.from(filteredSet).sort((a, b) => a - b);
+    return value
+        .split(",")
+        .map(str => parseInt(str.trim().toLowerCase(), 10))
+        .filter(int => !Number.isNaN(int) || !Number.isInteger(int));
 }
 
 //#endregion
