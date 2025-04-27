@@ -37,8 +37,6 @@ public class EpisodeInfo : IExtendedItemInfo {
 
     public string? TvdbEpisodeId { get; init; }
 
-    public SeriesStructureType StructureType { get; init; }
-
     public EpisodeType Type { get; init; }
 
     public bool IsHidden { get; init; }
@@ -120,7 +118,6 @@ public class EpisodeInfo : IExtendedItemInfo {
         Id = episode.Id;
         SeasonId = episode.IDs.ParentSeries.ToString();
         AnidbId = episode.AniDB.Id.ToString();
-        StructureType = SeriesStructureType.Shoko_Groups;
         Type = episode.AniDB.Type;
         IsHidden = episode.IsHidden;
         IsMainEntry = isMainEntry;
@@ -256,7 +253,6 @@ public class EpisodeInfo : IExtendedItemInfo {
         SeasonId = IdPrefix.TmdbShow + tmdbEpisode.SeasonId;
         TmdbEpisodeId = tmdbEpisode.Id.ToString();
         TvdbEpisodeId = tmdbEpisode.TvdbEpisodeId?.ToString();
-        StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
         Type = tmdbEpisode.SeasonNumber is 0 ? EpisodeType.Special : EpisodeType.Normal;
         IsHidden = false;
         IsMainEntry = false;
@@ -310,7 +306,6 @@ public class EpisodeInfo : IExtendedItemInfo {
             ? IdPrefix.TmdbMovieCollection + tmdbMovie.CollectionId.Value.ToString()
             : IdPrefix.TmdbMovie + tmdbMovie.Id.ToString();
         TmdbMovieId = tmdbMovie.Id.ToString();
-        StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
         Type = EpisodeType.Normal;
         IsHidden = false;
         IsMainEntry = false;

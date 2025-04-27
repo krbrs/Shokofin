@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
+
 using TitleProvider = Shokofin.Utils.Text.TitleProvider;
 
 namespace Shokofin.Configuration;

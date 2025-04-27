@@ -262,17 +262,55 @@ public static partial class Text {
     }
 
     public static (string? displayTitle, string? alternateTitle) GetEpisodeTitles(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
-        => (
-            GetEpisodeTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
-            JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetEpisodeTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
-        );
-
-    public static (string? displayTitle, string? alternateTitle) GetSeasonTitles(SeasonInfo seasonInfo, string? metadataLanguage)
-        => GetSeasonTitles(seasonInfo, 0, metadataLanguage);
+        => seasonInfo.StructureType switch {
+            SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbEpisode.Enabled ? (
+                GetEpisodeTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbEpisode.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbEpisode.AlternateTitles.Select(t => GetEpisodeTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetEpisodeTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetEpisodeTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ),
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbEpisode.Enabled ? (
+                GetEpisodeTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbEpisode.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbEpisode.AlternateTitles.Select(t => GetEpisodeTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetEpisodeTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetEpisodeTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ),
+            _ => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoEpisode.Enabled ? (
+                GetEpisodeTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoEpisode.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoEpisode.AlternateTitles.Select(t => GetEpisodeTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetEpisodeTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetEpisodeTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ),
+        };
 
     public static (string? displayTitle, string? alternateTitle) GetSeasonTitles(SeasonInfo seasonInfo, int baseSeasonOffset, string? metadataLanguage) {
-        var displayTitle = GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage);
-        var alternateTitle = JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)));
+        var (displayTitle, alternateTitle) = seasonInfo.StructureType switch {
+            SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbSeason.Enabled ? (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbSeason.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbSeason.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ),
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbSeason.Enabled ? (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbSeason.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbSeason.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ),
+            _ => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeason.Enabled ? (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeason.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeason.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ),
+        };
+
         if (baseSeasonOffset > 0) {
             string type = string.Empty;
             switch (baseSeasonOffset) {
@@ -283,24 +321,92 @@ public static partial class Text {
                     break;
             }
             if (!string.IsNullOrEmpty(type)) {
-                displayTitle += $" ({type})";
-                alternateTitle += $" ({type})";
+                if (!string.IsNullOrEmpty(displayTitle))
+                    displayTitle += $" ({type})";
+                if (!string.IsNullOrEmpty(alternateTitle))
+                    alternateTitle += $" ({type})";
             }
         }
+
         return (displayTitle, alternateTitle);
     }
 
-    public static (string? displayTitle, string? alternateTitle) GetShowTitles(IBaseItemInfo showInfo, string? metadataLanguage)
-        => (
-            GetSeriesTitleByType(showInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
-            JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(showInfo, t, metadataLanguage)))
-        );
+    public static (string? displayTitle, string? alternateTitle) GetShowTitles(ShowInfo showInfo, string? metadataLanguage)
+        => showInfo.DefaultSeason.StructureType switch {
+            SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbAnime.Enabled ? (
+                GetSeriesTitleByType(showInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbAnime.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbAnime.AlternateTitles.Select(t => GetSeriesTitleByType(showInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(showInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(showInfo, t, metadataLanguage)))
+            ),
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbShow.Enabled ? (
+                GetSeriesTitleByType(showInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbShow.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbShow.AlternateTitles.Select(t => GetSeriesTitleByType(showInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(showInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(showInfo, t, metadataLanguage)))
+            ),
+            _ => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeries.Enabled ? (
+                GetSeriesTitleByType(showInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeries.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeries.AlternateTitles.Select(t => GetSeriesTitleByType(showInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(showInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(showInfo, t, metadataLanguage)))
+            ),
+        };
 
     public static (string? displayTitle, string? alternateTitle) GetMovieTitles(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
-        => (
-            GetMovieTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
-            JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetMovieTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
-        );
+        => seasonInfo.StructureType switch {
+            SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbSeason.Enabled ? (
+                GetMovieTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbSeason.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbSeason.AlternateTitles.Select(t => GetMovieTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetMovieTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetMovieTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ),
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbSeason.Enabled ? (
+                GetMovieTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbSeason.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbSeason.AlternateTitles.Select(t => GetMovieTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetMovieTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetMovieTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ),
+            _ => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeason.Enabled ? (
+                GetMovieTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeason.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoSeason.AlternateTitles.Select(t => GetMovieTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetMovieTitleByType(episodeInfo, seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetMovieTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
+            ),
+        };
+
+    public static (string? displayTitle, string? alternateTitle) GetCollectionTitles(SeasonInfo seasonInfo, string? metadataLanguage)
+        => seasonInfo.StructureType switch {
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbCollection.Enabled ? (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbCollection.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.TmdbCollection.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ),
+            _ => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoCollection.Enabled ? (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoCollection.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoCollection.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(seasonInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(seasonInfo, t, metadataLanguage)))
+            ),
+        };
+
+    public static (string? displayTitle, string? alternateTitle) GetCollectionTitles(CollectionInfo collectionInfo, string? metadataLanguage)
+        =>  Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoCollection.Enabled ? (
+                GetSeriesTitleByType(collectionInfo, Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoCollection.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AdvancedTitlesConfiguration.ShokoCollection.AlternateTitles.Select(t => GetSeriesTitleByType(collectionInfo, t, metadataLanguage)))
+            ) : (
+                GetSeriesTitleByType(collectionInfo, Plugin.Instance.Configuration.MainTitle, metadataLanguage),
+                JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(collectionInfo, t, metadataLanguage)))
+            );
 
     private static string? GetMovieTitleByType(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, TitleConfiguration configuration, string? metadataLanguage) {
         if (episodeInfo.Id[0] is IdPrefix.TmdbMovie)

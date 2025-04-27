@@ -51,7 +51,7 @@ public class BoxSetProvider(IHttpClientFactory _httpClientFactory, ILogger<BoxSe
             return result;
         }
 
-        var (displayTitle, alternateTitle) = Text.GetSeasonTitles(seasonInfo, info.MetadataLanguage);
+        var (displayTitle, alternateTitle) = Text.GetCollectionTitles(seasonInfo, info.MetadataLanguage);
 
         _logger.LogInformation("Found collection {CollectionName} (Season={SeasonId},ExtraSeasons={ExtraIds})", displayTitle, seasonInfo.Id, seasonInfo.ExtraIds);
 
@@ -80,7 +80,7 @@ public class BoxSetProvider(IHttpClientFactory _httpClientFactory, ILogger<BoxSe
             return result;
         }
 
-        var (displayTitle, alternateTitle) = Text.GetShowTitles(collectionInfo, info.MetadataLanguage);
+        var (displayTitle, alternateTitle) = Text.GetCollectionTitles(collectionInfo, info.MetadataLanguage);
         displayTitle ??= collectionInfo.Title;
 
         _logger.LogInformation("Found collection {CollectionName} (Collection={CollectionId})", displayTitle, collectionInfo.Id);

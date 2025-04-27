@@ -171,7 +171,7 @@ public class CollectionManager(
             var updated = false;
             var seasonInfo = seasonDict[seasonId];
             var metadataLanguage = _libraryManager.GetLibraryOptions(collection)?.PreferredMetadataLanguage;
-            var (displayName, alternateTitle) = Text.GetSeasonTitles(seasonInfo, metadataLanguage);
+            var (displayName, alternateTitle) = Text.GetCollectionTitles(seasonInfo, metadataLanguage);
             if (!string.Equals(collection.Name, displayName)) {
                 collection.Name = displayName;
                 updated = true;

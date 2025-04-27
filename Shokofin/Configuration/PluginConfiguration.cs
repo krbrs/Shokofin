@@ -134,6 +134,12 @@ public class PluginConfiguration : BasePluginConfiguration {
     public TitleConfiguration[] AlternateTitles { get; set; }
 
     /// <summary>
+    /// The advanced title configuration if you need more control of how to
+    /// handle titles on a per type basis.
+    /// </summary>
+    public AdvancedTitlesConfiguration AdvancedTitlesConfiguration { get; set; }
+
+    /// <summary>
     /// Determines how we'll be selecting our main title for entries.
     /// </summary>
     public TitleProvider[]? TitleMainList { get; set; }
@@ -656,6 +662,7 @@ public class PluginConfiguration : BasePluginConfiguration {
             ],
         };
         AlternateTitles = [new()];
+        AdvancedTitlesConfiguration = new();
         MarkSpecialsWhenGrouped = true;
         SynopsisCleanLinks = true;
         SynopsisCleanMiscLines = true;

@@ -77,7 +77,7 @@ public class CustomBoxSetProvider(ILogger<CustomBoxSetProvider> _logger, ShokoAp
 
         var updated = EnsureNoTmdbIdIsSet(collection);
         var metadataLanguage = _libraryManager.GetLibraryOptions(collection)?.PreferredMetadataLanguage;
-        var (displayName, alternateTitle) = Text.GetSeasonTitles(seasonInfo, metadataLanguage);
+        var (displayName, alternateTitle) = Text.GetCollectionTitles(seasonInfo, metadataLanguage);
         if (!string.Equals(collection.Name, displayName)) {
             collection.Name = displayName;
             updated = true;
@@ -102,7 +102,7 @@ public class CustomBoxSetProvider(ILogger<CustomBoxSetProvider> _logger, ShokoAp
 
         var updated = EnsureNoTmdbIdIsSet(collection);
         var parent = collectionInfo.IsTopLevel ? collectionRoot : await GetCollectionByCollectionId(collectionRoot, collectionInfo.ParentId).ConfigureAwait(false);
-        var (displayTitle, alternateTitle) = Text.GetShowTitles(collectionInfo, collection.GetPreferredMetadataLanguage());
+        var (displayTitle, alternateTitle) = Text.GetCollectionTitles(collectionInfo, collection.GetPreferredMetadataLanguage());
         displayTitle ??= collectionInfo.Title;
         if (collection.ParentId != parent.Id) {
             collection.SetParent(parent);
