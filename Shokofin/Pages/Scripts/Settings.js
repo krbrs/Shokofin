@@ -572,7 +572,7 @@ async function applyConfigToForm(form, config) {
                 for (let i = 1; i <= configAlternateTitles.length; i++) {
                     const html = alternateTitleListTemplate
                         .replace(/%number%/g, i)
-                        .replace(/%number_formatted%/g, i === 1 ? "1st" : i === 2 ? "2nd" : i === 3 ? "3rd" : `${i}th`);
+                        .replace(/%number_formatted%/g, configAlternateTitles.length === 1 ? "" : i === 1 ? "1st " : i === 2 ? "2nd " : i === 3 ? "3rd " : `${i}th `);
                     container.insertAdjacentHTML("beforeend", html);
                     if (i === 1) {
                         container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
@@ -1133,7 +1133,7 @@ async function removeAlternateTitle(form, index) {
     for (let i = 1; i <= configAlternateTitles.length; i++) {
         const html = alternateTitleListTemplate
             .replace(/%number%/g, i)
-            .replace(/%number_formatted%/g, i === 1 ? "1st" : i === 2 ? "2nd" : i === 3 ? "3rd" : `${i}th`);
+            .replace(/%number_formatted%/g, configAlternateTitles.length === 1 ? "" : i === 1 ? "1st " : i === 2 ? "2nd " : i === 3 ? "3rd " : `${i}th `);
         container.insertAdjacentHTML("beforeend", html);
         if (i === 1) {
             container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
@@ -1179,7 +1179,7 @@ async function addAlternateTitle(form) {
     for (let i = 1; i <= configAlternateTitles.length; i++) {
         const html = alternateTitleListTemplate
             .replace(/%number%/g, i)
-            .replace(/%number_formatted%/g, i === 1 ? "1st" : i === 2 ? "2nd" : i === 3 ? "3rd" : `${i}th`);
+            .replace(/%number_formatted%/g, configAlternateTitles.length === 1 ? "" : i === 1 ? "1st " : i === 2 ? "2nd " : i === 3 ? "3rd " : `${i}th `);
         container.insertAdjacentHTML("beforeend", html);
         if (i === 1) {
             container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
