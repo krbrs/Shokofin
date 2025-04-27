@@ -38,6 +38,7 @@ public enum SeriesType {
     /// All movies, regardless of source (e.g. web or theater)
     /// </summary>
     Movie,
+
     /// <summary>
     /// Original Video Animations, AKA standalone releases that don't air on TV or the web.
     /// </summary>

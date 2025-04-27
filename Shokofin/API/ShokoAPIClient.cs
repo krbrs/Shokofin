@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Security.Cryptography;
@@ -9,8 +10,10 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using Shokofin.API.Models;
+using Shokofin.API.Models.AniDB;
 using Shokofin.API.Models.Shoko;
 using Shokofin.API.Models.TMDB;
+using Shokofin.Extensions;
 using Shokofin.Utils;
 
 namespace Shokofin.API;
@@ -380,6 +383,9 @@ public class ShokoApiClient : IDisposable {
 
     #region Shoko Series
 
+    public Task<IReadOnlyList<int>> GetShokoSeriesIdsForFilter(string filter, bool skipCache = true, CancellationToken cancellationToken = default)
+        => Post<JsonDocument, IReadOnlyList<int>>($"/api/v3/Filter/Preview/Series/OnlyIDs", HttpMethod.Post, JsonDocument.Parse(filter), skipCache: skipCache, cancellationToken: cancellationToken);
+
     public Task<ShokoSeries?> GetShokoSeries(string seriesId)
         => GetOrNull<ShokoSeries>($"/api/v3/Series/{seriesId}?includeDataFrom=AniDB");
 
@@ -431,6 +437,13 @@ public class ShokoApiClient : IDisposable {
 
     public async Task<IReadOnlyList<ShokoGroup>> GetShokoGroupsInShokoGroup(string groupId)
         => await GetOrNull<IReadOnlyList<ShokoGroup>>($"/api/v3/Group/{groupId}/Group?includeEmpty=true").ConfigureAwait(false) ?? [];
+
+    #endregion
+
+    #region AniDB Anime
+
+    public Task<ListResult<AnidbAnime>> GetAllAnidbAnime(int page = 1, int pageSize = 100)
+        => Get<ListResult<AnidbAnime>>($"/api/v3/Series/AniDB?pageSize={pageSize}&page={page}&includeDataFrom=AniDB");
 
     #endregion
 
@@ -519,11 +532,83 @@ public class ShokoApiClient : IDisposable {
 
     #region Custom Tags
 
-    public Task<List<Tag>> GetCustomTags()
-        => Get<List<Tag>>($"/api/v3/Tag/User");
+    /// <summary>
+    /// Gets a list of all custom tags in Shoko.
+    /// </summary>
+    /// <returns>A list of custom tags.</returns>
+    public async Task<IReadOnlyList<Tag>> GetCustomTags()
+        => (await Get<ListResult<Tag>>($"/api/v3/Tag/User?pageSize=0").ConfigureAwait(false))?.List ?? [];
 
+    private const string CustomTagByIdFilter = """
+        {
+            "ApplyAtSeriesLevel": true,
+            "Expression": {
+                "Type": "SetOverlaps",
+                "Left": "CustomTagIDsSelector",
+                "Parameter": [%tagIds%],
+            }
+        }
+    """;
+
+    public async Task<IReadOnlyList<int>> GetSeriesIdsWithCustomTag(IEnumerable<int> tagIds)
+        => tagIds.Select(x => x.ToString()).ToList() is { Count: > 0 } tagIdList ? await GetShokoSeriesIdsForFilter(CustomTagByIdFilter.Replace("%tagIds%", $"\"{tagIdList.Join("\", \"")}\"")).ConfigureAwait(false) : [];
+
+    /// <summary>
+    /// Creates a custom tag in Shoko.
+    /// </summary>
+    /// <param name="name">The name of the tag.</param>
+    /// <param name="description">The description of the tag.</param>
+    /// <returns>The custom tag that was created.</returns>
     public Task<Tag> CreateCustomTag(string name, string? description = null)
         => Post<Dictionary<string, string?>, Tag>($"/api/v3/Tag/User", HttpMethod.Post, new() { { "name", name }, { "description", description } });
+
+    /// <summary>
+    /// Updates an existing custom tag in Shoko.
+    /// </summary>
+    /// <param name="tagId">The ID of the tag to update.</param>
+    /// <param name="name">The new name of the tag.</param>
+    /// <param name="description">The new description of the tag.</param>
+    /// <returns>The custom tag that was updated.</returns>
+    public Task<Tag> UpdateCustomTag(int tagId, string? name = null, string? description = null)
+        => Post<Dictionary<string, string?>, Tag>($"/api/v3/Tag/User/{tagId}", HttpMethod.Put, new() { { "name", name }, { "description", description } });
+
+    /// <summary>
+    /// Removes a custom tag from Shoko.
+    /// </summary>
+    /// <param name="tagId">The ID of the tag to remove.</param>
+    /// <returns><c>true</c> if the tag was removed; <c>false</c> otherwise.</returns>
+    public async Task<bool> RemoveCustomTag(int tagId)
+        => (await Get($"/api/v3/Tag/User/{tagId}", HttpMethod.Delete).ConfigureAwait(false)).StatusCode is HttpStatusCode.OK or HttpStatusCode.NoContent;
+
+    #region Custom Tags on Series
+
+    /// <summary>
+    /// Gets a list of custom tags for a Shoko Series.
+    /// </summary>
+    /// <param name="seriesId">The ID of the Shoko Series.</param>
+    /// <returns>A list of custom tags.</returns>
+    public async Task<IReadOnlyList<Tag>> GetCustomTagsForShokoSeries(int seriesId)
+        => await GetOrNull<IReadOnlyList<Tag>>($"/api/v3/Series/{seriesId}/Tags/User?excludeDescriptions=true", skipCache: true).ConfigureAwait(false) ?? [];
+
+    /// <summary>
+    /// Adds a custom tag to a Shoko Series.
+    /// </summary>
+    /// <param name="seriesId">The ID of the Shoko Series.</param>
+    /// <param name="tagId">The ID of the custom tag to add.</param>
+    /// <returns><c>true</c> if the tag was added; <c>false</c> otherwise.</returns>
+    public async Task<bool> AddCustomTagToShokoSeries(int seriesId, int tagId)
+        => (await Post($"/api/v3/Series/{seriesId}/Tags/User", HttpMethod.Post, new Dictionary<string, int[]> { { "IDs", [tagId] } }).ConfigureAwait(false)).StatusCode is HttpStatusCode.OK or HttpStatusCode.NoContent;
+
+    /// <summary>
+    /// Removes a custom tag from a Shoko Series.
+    /// </summary>
+    /// <param name="seriesId">The ID of the Shoko Series.</param>
+    /// <param name="tagId">The ID of the custom tag to remove.</param>
+    /// <returns><c>true</c> if the tag was removed; <c>false</c> otherwise.</returns>
+    public async Task<bool> RemoveCustomTagFromShokoSeries(int seriesId, int tagId)
+        => (await Post($"/api/v3/Series/{seriesId}/Tags/User", HttpMethod.Delete, new Dictionary<string, int[]> { { "IDs", [tagId] } }).ConfigureAwait(false)).StatusCode is HttpStatusCode.OK or HttpStatusCode.NoContent;
+
+    #endregion
 
     #endregion
 }

@@ -4,6 +4,9 @@ using TitleProvider = Shokofin.Utils.Text.TitleProvider;
 
 namespace Shokofin.Configuration;
 
+/// <summary>
+/// Titles configuration.
+/// </summary>
 public class TitlesConfiguration {
     /// <summary>
     /// Whether or not to use this titles configuration.

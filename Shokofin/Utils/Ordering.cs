@@ -59,6 +59,11 @@ public class Ordering {
     /// </summary>
     public enum OrderType {
         /// <summary>
+        /// No ordering.
+        /// </summary>
+        None = -1,
+
+        /// <summary>
         /// Let Shoko decide the order.
         /// </summary>
         Default = 0,

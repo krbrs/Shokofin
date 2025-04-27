@@ -143,23 +143,22 @@ public partial class ShokoApiManager : IDisposable {
 
     #region Series Settings
 
-    private Task<SeriesConfiguration> GetSeriesConfiguration(string id)
-        => DataCache.GetOrCreateAsync($"series-settings:{id}", async () => {
+    internal Task<SeriesConfiguration> GetInternalSeriesConfiguration(string id)
+        => DataCache.GetOrCreateAsync($"series-settings-raw:{id}", async () => {
+            var tags = await GetNamespacedTagsForSeries(id).ConfigureAwait(false);
             var seriesSettings = new SeriesConfiguration() {
-                TypeOverride = null,
-                StructureType = Plugin.Instance.Configuration.DefaultLibraryStructure,
+                Type = SeriesType.None,
+                StructureType = SeriesStructureType.None,
                 MergeOverride = SeriesMergingOverride.None,
-                EpisodesAsSpecials = false,
-                SpecialsAsEpisodes = false,
+                EpisodeConversion = SeriesEpisodeConversion.None,
                 OrderByAirdate = false,
             };
-            var tags = await GetNamespacedTagsForSeries(id).ConfigureAwait(false);
             if (tags.TryGetValue("/custom user tags/series type", out var seriesTypeTag) &&
-                seriesTypeTag.Children.Count is > 1 &&
+                seriesTypeTag.Children.Count is >= 1 &&
                 Enum.TryParse<SeriesType>(NormalizeCustomSeriesType(seriesTypeTag.Children.Keys.First()), out var seriesType) &&
-                seriesType is not SeriesType.Unknown
+                seriesType is not SeriesType.None
             )
-                seriesSettings.TypeOverride = seriesType;
+                seriesSettings.Type = seriesType;
 
             if (!tags.TryGetValue("/custom user tags/shokofin", out var customTags))
                 return seriesSettings;
@@ -183,17 +182,27 @@ public partial class ShokoApiManager : IDisposable {
             else if (tags.ContainsKey("/merge backward"))
                 seriesSettings.MergeOverride = SeriesMergingOverride.MergeBackward;
 
-            if (tags.ContainsKey("/episodes as specials")) {
-                seriesSettings.EpisodesAsSpecials = true;
-            }
-            else {
-                if (tags.ContainsKey("/specials as episodes"))
-                    seriesSettings.SpecialsAsEpisodes = true;
-            }
+            if (tags.ContainsKey("/episodes as specials"))
+                seriesSettings.EpisodeConversion = SeriesEpisodeConversion.EpisodesAsSpecials;
+            else if (tags.ContainsKey("/specials as episodes"))
+                seriesSettings.EpisodeConversion = SeriesEpisodeConversion.SpecialsAsEpisodes;
 
             if (tags.ContainsKey("/order by airdate"))
                 seriesSettings.OrderByAirdate = true;
 
+            return seriesSettings;
+        });
+
+    private Task<SeriesConfiguration> GetSeriesConfiguration(string id)
+        => DataCache.GetOrCreateAsync($"series-settings:{id}", async () => {
+            var seriesSettings = await GetInternalSeriesConfiguration(id).ConfigureAwait(false);
+            if (seriesSettings.Type is SeriesType.None) {
+                var series = await ApiClient.GetShokoSeries(id).ConfigureAwait(false);
+                seriesSettings.Type = series?.AniDB.Type ?? SeriesType.Other;
+            }
+            if (seriesSettings.StructureType is SeriesStructureType.None) {
+                seriesSettings.StructureType = Plugin.Instance.Configuration.DefaultLibraryStructure;
+            }
             return seriesSettings;
         });
 
@@ -209,7 +218,7 @@ public partial class ShokoApiManager : IDisposable {
     #region Tags, Genres, And Content Ratings
 
     public Task<IReadOnlyDictionary<string, ResolvedTag>> GetNamespacedTagsForSeries(string seriesId)
-        => DataCache.GetOrCreateAsync(
+        => DataCache.GetOrCreateAsync<IReadOnlyDictionary<string, ResolvedTag>>(
             $"series-linked-tags:{seriesId}",
             async () => {
                 var nextUserTagId = 1;
@@ -325,7 +334,7 @@ public partial class ShokoApiManager : IDisposable {
                         .SelectMany(childTag => childTag.RecursiveNamespacedChildren.Values.Prepend(childTag))
                         .ToDictionary(childTag => childTag.FullName[nsTag.FullName.Length..], StringComparer.InvariantCultureIgnoreCase);
                 }
-                return allResolvedTags as IReadOnlyDictionary<string, ResolvedTag>;
+                return allResolvedTags;
             }
         );
 
@@ -1253,7 +1262,7 @@ public partial class ShokoApiManager : IDisposable {
                 if (seriesConfig.MergeOverride is SeriesMergingOverride.NoMerge)
                     return (primaryId, extraIds);
 
-                if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(seriesConfig.TypeOverride ?? series.AniDB.Type))
+                if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(seriesConfig.Type))
                     return (primaryId, extraIds);
 
                 if (series.AniDB.AirDate is null)
@@ -1290,7 +1299,7 @@ public partial class ShokoApiManager : IDisposable {
                         if (prequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
                             continue;
 
-                        if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(prequelConfig.TypeOverride ?? prequelSeries.AniDB.Type))
+                        if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(prequelConfig.Type))
                             continue;
 
                         if (prequelSeries.AniDB.AirDate is not { } prequelDate || (prequelRelation.Type is RelationType.Prequel && prequelDate > currentDate))
@@ -1389,7 +1398,7 @@ public partial class ShokoApiManager : IDisposable {
                             if (sequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
                                 continue;
 
-                            if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(sequelConfig.TypeOverride ?? sequelSeries.AniDB.Type))
+                            if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(sequelConfig.Type))
                                 continue;
 
                             if (sequelSeries.AniDB.AirDate is not { } sequelDate || (sequelRelation.Type is RelationType.Sequel && sequelDate < currentDate))

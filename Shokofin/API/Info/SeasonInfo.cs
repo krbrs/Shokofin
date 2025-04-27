@@ -175,7 +175,7 @@ public class SeasonInfo : IExtendedItemInfo {
                 continue;
 
             var seriesConfiguration = seriesConfigurationMap[episode.SeasonId];
-            var episodeType = episode.Type is EpisodeType.Normal && seriesConfiguration.EpisodesAsSpecials ? EpisodeType.Special : episode.Type;
+            var episodeType = episode.Type is EpisodeType.Normal && seriesConfiguration.EpisodeConversion is SeriesEpisodeConversion.EpisodesAsSpecials ? EpisodeType.Special : episode.Type;
             switch (episodeType) {
                 case EpisodeType.Normal:
                     episodesList.Add(episode);
@@ -191,7 +191,7 @@ public class SeasonInfo : IExtendedItemInfo {
                     if (episode.ExtraType != null) {
                         extrasList.Add(episode);
                     }
-                    else if (episodeType is EpisodeType.Special && seriesConfiguration.SpecialsAsEpisodes) {
+                    else if (episodeType is EpisodeType.Special && seriesConfiguration.EpisodeConversion is SeriesEpisodeConversion.SpecialsAsEpisodes) {
                         episodesList.Add(episode);
                         lastNormalEpisode = index;
                     }
@@ -203,7 +203,7 @@ public class SeasonInfo : IExtendedItemInfo {
                         else {
                             var previousEpisode = episodes
                                 .GetRange(lastNormalEpisode, index - lastNormalEpisode)
-                                .FirstOrDefault(e => e.Type is EpisodeType.Normal && !seriesConfiguration.EpisodesAsSpecials);
+                                .FirstOrDefault(e => e.Type is EpisodeType.Normal && seriesConfiguration.EpisodeConversion is not SeriesEpisodeConversion.EpisodesAsSpecials);
                             if (previousEpisode != null)
                                 specialsAnchorDictionary[episode] = previousEpisode;
                         }
@@ -236,11 +236,11 @@ public class SeasonInfo : IExtendedItemInfo {
 
         // Replace the normal episodes if we've hidden all the normal episodes and we have at least one
         // alternate episode locally.
-        var customType = seriesConfigurationMap[seasonId].TypeOverride;
-        var type = customType ?? series.AniDB.Type;
+        var type = seriesConfigurationMap[seasonId].Type;
+        var isCustomType = type != series.AniDB.Type;
         if (episodesList.Count == 0 && altEpisodesList.Count > 0) {
             // Switch the type from movie to web if we've hidden the main movie, and we have some of the parts.
-            if (!customType.HasValue && type == SeriesType.Movie)
+            if (!isCustomType && type == SeriesType.Movie)
                 type = SeriesType.Web;
 
             episodesList = altEpisodesList;
@@ -271,7 +271,7 @@ public class SeasonInfo : IExtendedItemInfo {
             }
         }
         // Also switch the type from movie to web if we're hidden the main movies, but the parts are normal episodes.
-        else if (!customType.HasValue && type == SeriesType.Movie && episodes.Any(episodeInfo => episodeInfo.IsMainEntry && episodeInfo.IsHidden)) {
+        else if (!isCustomType && type == SeriesType.Movie && episodes.Any(episodeInfo => episodeInfo.IsMainEntry && episodeInfo.IsHidden)) {
             type = SeriesType.Web;
         }
 

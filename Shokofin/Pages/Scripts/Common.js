@@ -244,6 +244,22 @@ export const LibraryMenu = globalThis.LibraryMenu;
  */
 
 /**
+ * @typedef {"Unknown" | "Other" | "TV" | "TVSpecial" | "Web" | "Movie" | "OVA" | "MusicVideo"} SeriesType
+ */
+
+/**
+ * @typedef {"AniDB_Anime" | "Shoko_Groups" | "TMDB_SeriesAndMovies"} SeriesStructureType
+ */
+
+/**
+ * @typedef {"None" | "NoMerge" | "MergeForward" | "MergeBackward" | "MergeForward,MergeBackward" | "MergeWithMainStory"} SeriesMergingOverride
+ */
+
+/**
+ * @typedef {"None" | "EpisodesAsSpecials" | "SpecialsAsEpisodes"} SeriesEpisodeConversion
+ */
+
+/**
 * @typedef {{
 *   UserId: string;
 *   EnableSynchronization: boolean;
@@ -296,6 +312,17 @@ export const LibraryMenu = globalThis.LibraryMenu;
 
 /**
  * @typedef {{
+ *   Type: SeriesType | "None";
+ *   StructureType: SeriesStructureType | "None";
+ *   MergeOverride: SeriesMergingOverride;
+ *   EpisodeConversion: SeriesEpisodeConversion;
+ *   SeasonOrderType: SeasonOrderType | "None";
+ *   OrderByAirdate: boolean;
+ * }} SeriesConfiguration
+ */
+
+/**
+ * @typedef {{
  *   CanCreateSymbolicLinks: boolean;
  *   Url: string;
  *   PublicUrl: string;
@@ -342,6 +369,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   AddCreditsAsThemeVideos: boolean;
  *   AddCreditsAsSpecialFeatures: boolean;
  *   CollectionGrouping: CollectionCreationType;
+ *   DefaultLibraryStructure: SeriesStructureType;
  *   SeasonOrdering: SeasonOrderType;
  *   SpecialsPlacement: SpecialOrderType;
  *   AddMissingMetadata: boolean;
@@ -371,103 +399,154 @@ export const LibraryMenu = globalThis.LibraryMenu;
 * Shoko API client.
 */
 export const ShokoApiClient = {
-   /**
-    * The plugin ID.
-    *
-    * @private
-    */
-   pluginId: "5216ccbf-d24a-4eb3-8a7e-7da4230b7052",
+    /**
+     * The plugin ID.
+     *
+     * @private
+     */
+    pluginId: "5216ccbf-d24a-4eb3-8a7e-7da4230b7052",
 
-   /**
-    * Get the plugin configuration.
-    *
-    * @public
-    * @returns {Promise<PluginConfiguration>} The plugin configuration.
-    */
-   getConfiguration() {
-       return ApiClient.getPluginConfiguration(ShokoApiClient.pluginId);
-   },
+    /**
+     * Get the plugin configuration.
+     *
+     * @public
+     * @returns {Promise<PluginConfiguration>} The plugin configuration.
+     */
+    getConfiguration() {
+        return ApiClient.getPluginConfiguration(ShokoApiClient.pluginId);
+    },
 
-   /**
-    * Update the plugin configuration.
-    *
-    * @public
-    * @param {PluginConfiguration} config - The plugin configuration to update.
-    * @returns {Promise<any>} Some sort of result we don't really care about.
-    */
-   updateConfiguration(config) {
-       return ApiClient.updatePluginConfiguration(ShokoApiClient.pluginId, config);
-   },
+    /**
+     * Update the plugin configuration.
+     *
+     * @public
+     * @param {PluginConfiguration} config - The plugin configuration to update.
+     * @returns {Promise<any>} Some sort of result we don't really care about.
+     */
+    updateConfiguration(config) {
+        return ApiClient.updatePluginConfiguration(ShokoApiClient.pluginId, config);
+    },
 
-   /**
-    * Get an API key for the username and password combo. Optionally get an
-    * user key instead of a plugin key.
-    *
-    * @public
-    * @param {string} username - The username.
-    * @param {string} password - The password.
-    * @param {boolean?} userKey - Optional. Whether to get a user key or a plugin key.
-    * @returns {Promise<{ apikey: string; }>} The API key.
-    */
-   getApiKey(username, password, userKey = false) {
-       return ApiClient.fetch({
-           dataType: "json",
-           data: JSON.stringify({
-               username,
-               password,
-               userKey,
-           }),
-           headers: {
-               "Content-Type": "application/json",
-               "Accept": "application/json",
-           },
-           type: "POST",
-           url: ApiClient.getUrl("Plugin/Shokofin/Host/GetApiKey"),
-       });
-   },
+    /**
+     * Get an API key for the username and password combo. Optionally get an
+     * user key instead of a plugin key.
+     *
+     * @public
+     * @param {string} username - The username.
+     * @param {string} password - The password.
+     * @param {boolean?} userKey - Optional. Whether to get a user key or a plugin key.
+     * @returns {Promise<{ apikey: string; }>} The API key.
+     */
+    getApiKey(username, password, userKey = false) {
+        return ApiClient.fetch({
+            dataType: "json",
+            data: JSON.stringify({
+                username,
+                password,
+                userKey,
+            }),
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            type: "POST",
+            url: ApiClient.getUrl("Plugin/Shokofin/Host/GetApiKey"),
+        });
+    },
 
-   /**
-    * Check the status of the SignalR connection.
-    *
-    * @private
-    * @returns {Promise<SignalRStatus>} The SignalR status.
-    */
-   getSignalrStatus() {
-       return ApiClient.fetch({
-           dataType: "json",
-           type: "GET",
-           url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Status"),
-       });
-   },
+    /**
+     * Get the list of series.
+     *
+     * @public
+     * @returns {Promise<({ Id: string; Title: string; })[]>} The list of series.
+     */
+    getSeriesList() {
+        return ApiClient.fetch({
+            dataType: "json",
+            type: "GET",
+            url: ApiClient.getUrl("Plugin/Shokofin/Utility/Series"),
+        });
+    },
 
-   /**
-    * Connects to the SignalR stream on the server.
-    *
-    * @public
-    * @returns {Promise<SignalRStatus>} The SignalR status.
-    */
-   async signalrConnect() {
-       await ApiClient.fetch({
-           type: "POST",
-           url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Connect"),
-       });
-       return ShokoApiClient.getSignalrStatus();
-   },
+    /**
+     * Get the configuration for a series.
+     *
+     * @public
+     * @param {string} seriesId - The series ID.
+     * @returns {Promise<SeriesConfiguration>} The API key.
+     */
+    getSeriesConfiguration(seriesId) {
+        return ApiClient.fetch({
+            dataType: "json",
+            type: "GET",
+            url: ApiClient.getUrl(`Plugin/Shokofin/Utility/Series/${seriesId}/Configuration`),
+        });
+    },
 
-   /**
-    * Disconnects from the SignalR stream on the server.
-    *
-    * @public
-    * @returns {Promise<SignalRStatus>} The SignalR status.
-    */
-   async signalrDisconnect() {
-       await ApiClient.fetch({
-           type: "POST",
-           url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Disconnect"),
-       });
-       return ShokoApiClient.getSignalrStatus();
-   },
+    /**
+     * Get the configuration for a series.
+     *
+     * @public
+     * @param {string} seriesId - The series ID.
+     * @param {Partial<SeriesConfiguration>} partialSeriesConfiguration - The series configuration.
+     * @returns {Promise<SeriesConfiguration>} The API key.
+     */
+    updateSeriesConfiguration(seriesId, partialSeriesConfiguration = { }) {
+        return ApiClient.fetch({
+            dataType: "json",
+            data: JSON.stringify(partialSeriesConfiguration),
+            headers: {
+                "Content-Type": "application/json",
+                "Accept": "application/json",
+            },
+            type: "POST",
+            url: ApiClient.getUrl(`Plugin/Shokofin/Utility/Series/${seriesId}/Configuration`),
+        });
+    },
+
+    /**
+     * Check the status of the SignalR connection.
+     *
+     * @private
+     * @returns {Promise<SignalRStatus>} The SignalR status.
+     */
+    getSignalrStatus() {
+        return ApiClient.fetch({
+            dataType: "json",
+            type: "GET",
+            url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Status"),
+        });
+    },
+
+    /**
+     * Connects to the SignalR stream on the server.
+     *
+     * @public
+     * @returns {Promise<SignalRStatus>} The SignalR status.
+     */
+    async signalrConnect() {
+        await ApiClient.fetch({
+            type: "POST",
+            url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Connect"),
+        });
+        return ShokoApiClient.getSignalrStatus();
+    },
+
+    /**
+     * Disconnects from the SignalR stream on the server.
+     *
+     * @public
+     * @returns {Promise<SignalRStatus>} The SignalR status.
+     */
+    async signalrDisconnect() {
+        await ApiClient.fetch({
+            type: "POST",
+            url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Disconnect"),
+        });
+        return ShokoApiClient.getSignalrStatus();
+    },
 };
+globalThis.ShokoApiClient = ShokoApiClient;
 
 //#endregion
 

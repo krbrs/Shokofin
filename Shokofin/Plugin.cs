@@ -296,6 +296,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             changed = true;
         }
 
+        // Disallow setting the default library structure to none.
+        if (config.DefaultLibraryStructure is SeriesStructureType.None) {
+            config.DefaultLibraryStructure = SeriesStructureType.AniDB_Anime;
+            changed = true;
+        }
+
         if (changed)
             SaveConfiguration(config);
     }
