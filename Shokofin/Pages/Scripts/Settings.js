@@ -566,25 +566,7 @@ async function applyConfigToForm(form, config) {
                 configAlternateTitles.push({ List: [], Order: [], AllowAny: false });
             }
 
-            if (form.querySelectorAll("#TitleAlternateListContainer > fieldset").length !== configAlternateTitles.length) {
-                const container = form.querySelector("#TitleAlternateListContainer");
-                container.innerHTML = "";
-                for (let i = 1; i <= configAlternateTitles.length; i++) {
-                    const html = alternateTitleListTemplate
-                        .replace(/%number%/g, i)
-                        .replace(/%number_formatted%/g, configAlternateTitles.length === 1 ? "" : i === 1 ? "1st " : i === 2 ? "2nd " : i === 3 ? "3rd " : `${i}th `);
-                    container.insertAdjacentHTML("beforeend", html);
-                    if (i === 1) {
-                        container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
-                    }
-                    overrideSortableCheckboxList(container.querySelector(`#TitleAlternateList_${i}`));
-                }
-            }
-            for (let i = 1; i <= configAlternateTitles.length; i++) {
-                const j = i - 1;
-                renderSortableCheckboxList(form, `TitleAlternateList_${i}`, configAlternateTitles[j].List, configAlternateTitles[j].Order);
-                form.querySelector(`#TitleAlternateAllowAny_${i}`).checked = configAlternateTitles[j].AllowAny;
-            }
+            renderAlternateTitles(form, configAlternateTitles);
 
             form.querySelector("#MarkSpecialsWhenGrouped").checked = config.MarkSpecialsWhenGrouped;
             renderSortableCheckboxList(form, "DescriptionSourceList", config.DescriptionSourceList, config.DescriptionSourceOrder);
@@ -1128,24 +1110,7 @@ async function removeAlternateTitle(form, index) {
         configAlternateTitles.push({ List: [], Order: [], AllowAny: false });
     }
 
-    const container = form.querySelector("#TitleAlternateListContainer");
-    container.innerHTML = "";
-    for (let i = 1; i <= configAlternateTitles.length; i++) {
-        const html = alternateTitleListTemplate
-            .replace(/%number%/g, i)
-            .replace(/%number_formatted%/g, configAlternateTitles.length === 1 ? "" : i === 1 ? "1st " : i === 2 ? "2nd " : i === 3 ? "3rd " : `${i}th `);
-        container.insertAdjacentHTML("beforeend", html);
-        if (i === 1) {
-            container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
-        }
-        overrideSortableCheckboxList(container.querySelector(`#TitleAlternateList_${i}`));
-    }
-
-    for (let i = 1; i <= configAlternateTitles.length; i++) {
-        const j = i - 1;
-        renderSortableCheckboxList(form, `TitleAlternateList_${i}`, configAlternateTitles[j].List, configAlternateTitles[j].Order);
-        form.querySelector(`#TitleAlternateAllowAny_${i}`).checked = configAlternateTitles[j].AllowAny;
-    }
+    renderAlternateTitles(form, configAlternateTitles);
 
     return config;
 }
@@ -1173,27 +1138,47 @@ async function addAlternateTitle(form) {
     }
 
     configAlternateTitles.push({ List: [], Order: [], AllowAny: false });
+    renderAlternateTitles(form, configAlternateTitles);
 
-    const container = form.querySelector("#TitleAlternateListContainer");
-    container.innerHTML = "";
-    for (let i = 1; i <= configAlternateTitles.length; i++) {
-        const html = alternateTitleListTemplate
-            .replace(/%number%/g, i)
-            .replace(/%number_formatted%/g, configAlternateTitles.length === 1 ? "" : i === 1 ? "1st " : i === 2 ? "2nd " : i === 3 ? "3rd " : `${i}th `);
-        container.insertAdjacentHTML("beforeend", html);
-        if (i === 1) {
-            container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
+    return config;
+}
+
+/**
+ * Render the alternate titles.
+ *
+ * @param {HTMLFormElement} form
+ * @param {TitleConfiguration[]} configAlternateTitles
+ * @returns {void}
+ */
+function renderAlternateTitles(form, configAlternateTitles) {
+    if (form.querySelectorAll("#TitleAlternateListContainer > fieldset").length !== configAlternateTitles.length) {
+        const container = form.querySelector("#TitleAlternateListContainer");
+        container.innerHTML = "";
+        const remaining = Math.max(0, 5 - configAlternateTitles.length);
+        for (let i = 1; i <= configAlternateTitles.length; i++) {
+            const html = alternateTitleListTemplate
+                .replace(/%number%/g, i)
+                .replace(/%number_formatted%/g, configAlternateTitles.length === 1 ? "" : i === 1 ? "1st " : i === 2 ? "2nd " : i === 3 ? "3rd " : `${i}th `)
+                .replace(/%remaining%/g, remaining);
+            container.insertAdjacentHTML("beforeend", html);
+            if (i === 1) {
+                container.querySelector(`#TitleAlternateRemoveButton_${i}`).setAttribute("hidden", "");
+                if (remaining === 0) {
+                    container.querySelector(`#TitleAlternateAddButton_${i}>button`).className = "raised button-alt block emby-button";
+                    container.querySelector(`#TitleAlternateAddButton_${i}>button`).setAttribute("disabled", "");
+                }
+            }
+            else {
+                container.querySelector(`#TitleAlternateAddButton_${i}`).setAttribute("hidden", "");
+            }
+            overrideSortableCheckboxList(container.querySelector(`#TitleAlternateList_${i}`));
         }
-        overrideSortableCheckboxList(container.querySelector(`#TitleAlternateList_${i}`));
     }
-
     for (let i = 1; i <= configAlternateTitles.length; i++) {
         const j = i - 1;
         renderSortableCheckboxList(form, `TitleAlternateList_${i}`, configAlternateTitles[j].List, configAlternateTitles[j].Order);
         form.querySelector(`#TitleAlternateAllowAny_${i}`).checked = configAlternateTitles[j].AllowAny;
     }
-
-    return config;
 }
 
 /**

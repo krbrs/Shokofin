@@ -295,6 +295,12 @@ form:not(.expert-mode) .expert-only {
                                     <span class="checkboxOutline"><span class="material-icons checkboxIcon checkboxIcon-checked check" aria-hidden="true"></span><span class="material-icons checkboxIcon checkboxIcon-unchecked " aria-hidden="true"></span></span></label>
                                     <div class="fieldDescription checkboxFieldDescription">Allows for any titles to be utilized if an official title is not present in the given language. Only applies to the AniDB title selectors above.</div>
                                 </div>
+                                <div id="TitleAlternateAddButton_%number%" class="inputContainer inputContainer-withDescription">
+                                    <button is="emby-button" type="submit" name="add-alternate-title" class="raised button-submit block emby-button">
+                                        <span>${Add}</span>
+                                    </button>
+                                    <div class="fieldDescription">This will add a new alternate/original title. You can add %remaining% more titles.</div>
+                                </div>
                                 <div id="TitleAlternateRemoveButton_%number%" class="inputContainer inputContainer-withDescription">
                                     <button is="emby-button" type="submit" name="remove-alternate-title" data-index="%number%" class="raised button-delete block emby-button">
                                         <span>${ButtonRemove}</span>
@@ -302,12 +308,6 @@ form:not(.expert-mode) .expert-only {
                                     <div class="fieldDescription">This will remove the %number_formatted%alternate/original title.</div>
                                 </div>
                             </fieldset>
-                        </div>
-                        <div class="inputContainer inputContainer-withDescription">
-                            <button is="emby-button" type="submit" name="add-alternate-title" class="raised button-submit block emby-button">
-                                <span>${Add}</span>
-                            </button>
-                            <div class="fieldDescription">This will add a new alternate/original title. A total of 5 titles are allowed.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>${Save}</span>
