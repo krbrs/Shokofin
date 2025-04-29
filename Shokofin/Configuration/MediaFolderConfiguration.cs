@@ -37,35 +37,38 @@ public class MediaFolderConfiguration {
     public string MediaFolderPath { get; set; } = string.Empty;
 
     /// <summary>
-    /// The shoko import folder id the jellyfin media folder is linked to.
+    /// The shoko managed folder id the jellyfin media folder is linked to.
     /// </summary>
-    public int ImportFolderId { get; set; }
+    [XmlElement("ImportFolderId")]
+    public int ManagedFolderId { get; set; }
 
     /// <summary>
-    /// The friendly name of the import folder, if any. Stored only for showing
+    /// The friendly name of the managed folder, if any. Stored only for showing
     /// in the settings page of the plugin… since it's very hard to get in
     /// there otherwise.
     /// </summary>
-    public string? ImportFolderName { get; set; }
+    [XmlElement("ImportFolderName")]
+    public string? ManagedFolderName { get; set; }
 
     /// <summary>
-    /// The relative path from the root of the import folder the media folder is located at.
+    /// The relative path from the root of the managed folder the media folder is located at.
     /// </summary>
-    public string ImportFolderRelativePath  { get; set; } = string.Empty;
+    [XmlElement("ImportFolderRelativePath")]
+    public string ManagedFolderRelativePath  { get; set; } = string.Empty;
 
     /// <summary>
     /// Indicates the Jellyfin Media Folder is a virtual file system folder.
     /// </summary>
     [XmlIgnore]
     [JsonInclude]
-    public bool IsVirtualRoot => ImportFolderId < 0;
+    public bool IsVirtualRoot => ManagedFolderId < 0;
 
     /// <summary>
-    /// Indicates the Jellyfin Media Folder is mapped to a Shoko Import Folder.
+    /// Indicates the Jellyfin Media Folder is mapped to a Shoko Managed Folder.
     /// </summary>
     [XmlIgnore]
     [JsonInclude]
-    public bool IsMapped => ImportFolderId != 0;
+    public bool IsMapped => ManagedFolderId != 0;
 
     /// <summary>
     /// Indicates that SignalR file events is enabled for the folder.
@@ -89,10 +92,10 @@ public class MediaFolderConfiguration {
     public LibraryFilteringMode LibraryFilteringMode { get; set; } = LibraryFilteringMode.Auto;
 
     /// <summary>
-    /// Check if a relative path within the import folder is potentially available in this media folder.
+    /// Check if a relative path within the managed folder is potentially available in this media folder.
     /// </summary>
     /// <param name="relativePath"></param>
     /// <returns></returns>
     public bool IsEnabledForPath(string relativePath)
-        => string.IsNullOrEmpty(ImportFolderRelativePath) || relativePath.StartsWith(ImportFolderRelativePath + Path.DirectorySeparatorChar);
+        => string.IsNullOrEmpty(ManagedFolderRelativePath) || relativePath.StartsWith(ManagedFolderRelativePath + Path.DirectorySeparatorChar);
 }

@@ -30,7 +30,7 @@ public class MediaFolderConfigurationService {
 
     private readonly LibraryScanWatcher LibraryScanWatcher;
 
-    private readonly IIdLookup Lookup;
+    private readonly ShokoIdLookup Lookup;
 
     private readonly UsageTracker UsageTracker;
 
@@ -58,7 +58,7 @@ public class MediaFolderConfigurationService {
         IFileSystem fileSystem,
         IDirectoryService directoryService,
         LibraryScanWatcher libraryScanWatcher,
-        IIdLookup lookup,
+        ShokoIdLookup lookup,
         UsageTracker usageTracker,
         ShokoApiClient apiClient,
         NamingOptions namingOptions
@@ -166,10 +166,10 @@ public class MediaFolderConfigurationService {
                     .ToList();
                 foreach (var mediaFolderConfig in mediaFolderConfigs) {
                     Logger.LogDebug(
-                        "Removing stored configuration for folder at {Path} (ImportFolder={ImportFolderId},RelativePath={RelativePath})",
+                        "Removing stored configuration for folder at {Path} (ManagedFolder={ManagedFolderId},RelativePath={RelativePath})",
                         folder.Path,
-                        mediaFolderConfig.ImportFolderId,
-                        mediaFolderConfig.ImportFolderRelativePath
+                        mediaFolderConfig.ManagedFolderId,
+                        mediaFolderConfig.ManagedFolderRelativePath
                     );
                     Plugin.Instance.Configuration.MediaFolders.Remove(mediaFolderConfig);
                     Plugin.Instance.UpdateConfiguration();
@@ -366,9 +366,9 @@ public class MediaFolderConfigurationService {
         var attempts = 0;
         if (mediaFolder.Path.StartsWith(Plugin.Instance.VirtualRoot)) {
             Logger.LogDebug("Not asking remote server because {Path} is a VFS root. (Library={LibraryId})", mediaFolder.Path, libraryId);
-            mediaFolderConfig.ImportFolderId = -1;
-            mediaFolderConfig.ImportFolderName = "VFS Root";
-            mediaFolderConfig.ImportFolderRelativePath = string.Empty;
+            mediaFolderConfig.ManagedFolderId = -1;
+            mediaFolderConfig.ManagedFolderName = "VFS Root";
+            mediaFolderConfig.ManagedFolderRelativePath = string.Empty;
         }
         else {
             var foundLocations = new List<(int, string)>();
@@ -391,25 +391,25 @@ public class MediaFolderConfigurationService {
                     continue;
 
                 var fileLocation = fileLocations[0];
-                foundLocations.Add((fileLocation.ImportFolderId, fileLocation.RelativePath[..^partialPath.Length]));
+                foundLocations.Add((fileLocation.ManagedFolderId, fileLocation.RelativePath[..^partialPath.Length]));
             }
 
             if (foundLocations.Count > 0) {
                 var groupedLocations = foundLocations
                     .GroupBy(x => x)
                     .ToDictionary(x => x.Key, x => x.Count());
-                foreach (var ((importFolderId, relativePath), count) in groupedLocations) {
-                    Logger.LogDebug("Found {Count} hits for import folder {Id} at relative path {RelativePath}. (Library={LibraryId})", count, importFolderId, relativePath, libraryId);
+                foreach (var ((managedFolderId, relativePath), count) in groupedLocations) {
+                    Logger.LogDebug("Found {Count} hits for managed folder {Id} at relative path {RelativePath}. (Library={LibraryId})", count, managedFolderId, relativePath, libraryId);
                 }
-                (mediaFolderConfig.ImportFolderId, mediaFolderConfig.ImportFolderRelativePath) = groupedLocations
+                (mediaFolderConfig.ManagedFolderId, mediaFolderConfig.ManagedFolderRelativePath) = groupedLocations
                     .MaxBy(x => x.Value)!
                     .Key;
             }
 
             try {
-                var importFolder = await ApiClient.GetImportFolder(mediaFolderConfig.ImportFolderId).ConfigureAwait(false);
-                if (importFolder != null)
-                    mediaFolderConfig.ImportFolderName = importFolder.Name;
+                var managedFolder = await ApiClient.GetManagedFolder(mediaFolderConfig.ManagedFolderId).ConfigureAwait(false);
+                if (managedFolder != null)
+                    mediaFolderConfig.ManagedFolderName = managedFolder.Name;
             }
             catch { }
         }
@@ -420,11 +420,11 @@ public class MediaFolderConfigurationService {
         Plugin.Instance.UpdateConfiguration(config);
         if (mediaFolderConfig.IsMapped) {
             Logger.LogInformation(
-                "Found a match for media folder at {Path} in {TimeSpan}. (ImportFolder={FolderId},RelativePath={RelativePath},MediaLibrary={Path},Attempts={Attempts},Library={LibraryId})",
+                "Found a match for media folder at {Path} in {TimeSpan}. (ManagedFolder={FolderId},RelativePath={RelativePath},MediaLibrary={Path},Attempts={Attempts},Library={LibraryId})",
                 mediaFolder.Path,
                 DateTime.UtcNow - start,
-                mediaFolderConfig.ImportFolderId,
-                mediaFolderConfig.ImportFolderRelativePath,
+                mediaFolderConfig.ManagedFolderId,
+                mediaFolderConfig.ManagedFolderRelativePath,
                 mediaFolder.Path,
                 attempts,
                 libraryId

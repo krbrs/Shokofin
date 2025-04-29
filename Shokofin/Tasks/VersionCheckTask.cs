@@ -58,27 +58,37 @@ public class VersionCheckTask(ILogger<VersionCheckTask> _logger, ILibraryManager
             updated = true;
         }
 
+        var prefix = await _apiClient.GetWebPrefix().ConfigureAwait(false);
+        if (prefix != null && (
+            Plugin.Instance.Configuration.WebPrefix == null ||
+            !string.Equals(prefix, Plugin.Instance.Configuration.WebPrefix)
+        )) {
+            _logger.LogDebug("Found new Shoko Server web prefix; {prefix}", prefix);
+            Plugin.Instance.Configuration.WebPrefix = prefix;
+            updated = true;
+        }
+
         if (string.IsNullOrEmpty(Plugin.Instance.Configuration.ApiKey))
             return;
 
         var mediaFolders = Plugin.Instance.Configuration.MediaFolders.ToList();
-        var importFolderNameMap = await Task
+        var managedFolderNameMap = await Task
             .WhenAll(
                 mediaFolders
-                    .Select(m => m.ImportFolderId)
+                    .Select(m => m.ManagedFolderId)
                     .Distinct()
                     .Except([0, -1])
-                    .Select(id => _apiClient.GetImportFolder(id))
+                    .Select(id => _apiClient.GetManagedFolder(id))
                     .ToList()
             )
-            .ContinueWith(task => task.Result.OfType<ImportFolder>().ToDictionary(i => i.Id, i => i.Name))
+            .ContinueWith(task => task.Result.OfType<ManagedFolder>().ToDictionary(i => i.Id, i => i.Name))
             .ConfigureAwait(false);
         foreach (var mediaFolderConfig in mediaFolders) {
             if (mediaFolderConfig.IsVirtualRoot)
                 continue;
 
-            if (!importFolderNameMap.TryGetValue(mediaFolderConfig.ImportFolderId, out var importFolderName))
-                importFolderName = null;
+            if (!managedFolderNameMap.TryGetValue(mediaFolderConfig.ManagedFolderId, out var managedFolderName))
+                managedFolderName = null;
 
             if (mediaFolderConfig.LibraryId == Guid.Empty && _libraryManager.GetItemById(mediaFolderConfig.MediaFolderId) is Folder mediaFolder &&
                 _libraryManager.GetVirtualFolders().FirstOrDefault(p => p.Locations.Contains(mediaFolder.Path)) is { } library &&
@@ -88,9 +98,9 @@ public class VersionCheckTask(ILogger<VersionCheckTask> _logger, ILibraryManager
                 updated = true;
             }
 
-            if (!string.IsNullOrEmpty(importFolderName) && !string.Equals(mediaFolderConfig.ImportFolderName, importFolderName)) {
-                _logger.LogDebug("Found new name for import folder; {name} (ImportFolder={ImportFolderId})", importFolderName, mediaFolderConfig.ImportFolderId);
-                mediaFolderConfig.ImportFolderName = importFolderName;
+            if (!string.IsNullOrEmpty(managedFolderName) && !string.Equals(mediaFolderConfig.ManagedFolderName, managedFolderName)) {
+                _logger.LogDebug("Found new name for managed folder; {name} (ManagedFolder={ManagedFolderId})", managedFolderName, mediaFolderConfig.ManagedFolderId);
+                mediaFolderConfig.ManagedFolderName = managedFolderName;
                 updated = true;
             }
         }

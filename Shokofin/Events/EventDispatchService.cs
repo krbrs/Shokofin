@@ -64,7 +64,7 @@ public class EventDispatchService {
 
     private readonly Dictionary<string, (DateTime LastUpdated, List<IMetadataUpdatedEventArgs> List, Guid trackerId)> ChangesPerSeries = [];
 
-    private readonly Dictionary<int, (DateTime LastUpdated, List<(UpdateReason Reason, int ImportFolderId, string Path, IFileEventArgs Event)> List, Guid trackerId)> ChangesPerFile = [];
+    private readonly Dictionary<int, (DateTime LastUpdated, List<(UpdateReason Reason, int ManagedFolderId, string Path, IFileEventArgs Event)> List, Guid trackerId)> ChangesPerFile = [];
 
     private readonly Dictionary<string, (int refCount, DateTime delayEnd)> MediaFolderChangeMonitor = [];
 
@@ -79,10 +79,10 @@ public class EventDispatchService {
         ShokoApiManager apiManager,
         ShokoApiClient apiClient,
         ILibraryManager libraryManager,
-        VirtualFileSystemService resolveManager,
-        MediaFolderConfigurationService configurationService,
         ILibraryMonitor libraryMonitor,
         LibraryScanWatcher libraryScanWatcher,
+        MediaFolderConfigurationService configurationService,
+        VirtualFileSystemService resolveManager,
         IFileSystem fileSystem,
         IDirectoryService directoryService,
         ILogger<EventDispatchService> logger,
@@ -92,9 +92,9 @@ public class EventDispatchService {
         ApiClient = apiClient;
         LibraryManager = libraryManager;
         LibraryMonitor = libraryMonitor;
-        ResolveManager = resolveManager;
-        ConfigurationService = configurationService;
         LibraryScanWatcher = libraryScanWatcher;
+        ConfigurationService = configurationService;
+        ResolveManager = resolveManager;
         FileSystem = fileSystem;
         DirectoryService = directoryService;
         Logger = logger;
@@ -137,7 +137,7 @@ public class EventDispatchService {
     }
 
     private void OnIntervalElapsed(object? sender, ElapsedEventArgs eventArgs) {
-        var filesToProcess = new List<(int, List<(UpdateReason Reason, int ImportFolderId, string Path, IFileEventArgs Event)>, Guid trackerId)>();
+        var filesToProcess = new List<(int, List<(UpdateReason Reason, int ManagedFolderId, string Path, IFileEventArgs Event)>, Guid trackerId)>();
         var seriesToProcess = new List<(string, List<IMetadataUpdatedEventArgs>, Guid trackerId)>();
         lock (ChangesPerFile) {
             if (ChangesPerFile.Count > 0) {
@@ -170,7 +170,7 @@ public class EventDispatchService {
     }
 
     private void ClearFileEvents() {
-        var filesToProcess = new List<(int, List<(UpdateReason Reason, int ImportFolderId, string Path, IFileEventArgs Event)>, Guid trackerId)>();
+        var filesToProcess = new List<(int, List<(UpdateReason Reason, int ManagedFolderId, string Path, IFileEventArgs Event)>, Guid trackerId)>();
         lock (ChangesPerFile) {
             foreach (var (fileId, (lastUpdated, list, trackerId)) in ChangesPerFile) {
                 filesToProcess.Add((fileId, list, trackerId));
@@ -197,17 +197,17 @@ public class EventDispatchService {
 
     #region File Events
 
-    public void AddFileEvent(int fileId, UpdateReason reason, int importFolderId, string filePath, IFileEventArgs eventArgs) {
+    public void AddFileEvent(int fileId, UpdateReason reason, int managedFolderId, string filePath, IFileEventArgs eventArgs) {
         lock (ChangesPerFile) {
             if (ChangesPerFile.TryGetValue(fileId, out var tuple))
                 tuple.LastUpdated = DateTime.Now;
             else
-                ChangesPerFile.Add(fileId, tuple = (DateTime.Now, [], Plugin.Instance.Tracker.Add($"File event. (Reason=\"{reason}\",ImportFolder={eventArgs.ImportFolderId},RelativePath=\"{eventArgs.RelativePath}\")")));
-            tuple.List.Add((reason, importFolderId, filePath, eventArgs));
+                ChangesPerFile.Add(fileId, tuple = (DateTime.Now, [], Plugin.Instance.Tracker.Add($"File event. (Reason=\"{reason}\",ManagedFolder={eventArgs.ManagedFolderId},RelativePath=\"{eventArgs.RelativePath}\")")));
+            tuple.List.Add((reason, managedFolderId, filePath, eventArgs));
         }
     }
 
-    private async Task ProcessFileEvents(int fileId, List<(UpdateReason Reason, int ImportFolderId, string Path, IFileEventArgs Event)> changes, Guid trackerId) {
+    private async Task ProcessFileEvents(int fileId, List<(UpdateReason Reason, int ManagedFolderId, string Path, IFileEventArgs Event)> changes, Guid trackerId) {
         try {
             if (LibraryScanWatcher.IsScanRunning) {
                 Logger.LogInformation("Skipped processing {EventCount} file change events because a library scan is running. (File={FileId})", changes.Count, fileId);
@@ -221,13 +221,13 @@ public class EventDispatchService {
             var mediaFoldersToNotify = new Dictionary<string, (string pathToReport, Folder mediaFolder)>();
             var seriesIds = await GetSeriesIdsForFile(fileId, changes.Select(t => t.Event).LastOrDefault(e => e.HasCrossReferences)).ConfigureAwait(false);
             var libraries = await ConfigurationService.GetAvailableMediaFoldersForLibraries(c => c.IsFileEventsEnabled).ConfigureAwait(false);
-            var (reason, importFolderId, relativePath, lastEvent) = changes.Last();
+            var (reason, managedFolderId, relativePath, lastEvent) = changes.Last();
             if (reason is not UpdateReason.Removed) {
                 Logger.LogTrace("Processing file changed. (File={FileId})", fileId);
                 foreach (var (vfsPath, mainMediaFolderPath, collectionType, mediaConfigs) in libraries) {
-                    foreach (var (importFolderSubPath, vfsEnabled, mediaFolderPaths) in mediaConfigs.ToImportFolderList(importFolderId, relativePath)) {
+                    foreach (var (managedFolderSubPath, vfsEnabled, mediaFolderPaths) in mediaConfigs.ToManagedFolderList(managedFolderId, relativePath)) {
                         foreach (var mediaFolderPath in mediaFolderPaths) {
-                            var sourceLocation = Path.Join(mediaFolderPath, relativePath[importFolderSubPath.Length..]);
+                            var sourceLocation = Path.Join(mediaFolderPath, relativePath[managedFolderSubPath.Length..]);
                             if (!File.Exists(sourceLocation))
                                 continue;
 
@@ -254,7 +254,7 @@ public class EventDispatchService {
                                     new() {
                                         SourceTypes = [SourceType.Library],
                                         AncestorIds = mediaConfigs.Select(c => c.MediaFolderId).ToArray(),
-                                        HasAnyProviderId = new Dictionary<string, string> { { ShokoFileId.Name, fileId.ToString() } },
+                                        HasAnyProviderId = new Dictionary<string, string> { { ProviderNames.ShokoFile, fileId.ToString() } },
                                         DtoOptions = new(true),
                                     },
                                     true
@@ -306,13 +306,13 @@ public class EventDispatchService {
 
                 Logger.LogTrace("Processing file removed. (File={FileId})", fileId);
                 relativePath = firstRemovedEvent.RelativePath;
-                importFolderId = firstRemovedEvent.ImportFolderId;
+                managedFolderId = firstRemovedEvent.ManagedFolderId;
                 foreach (var (vfsPath, mainMediaFolderPath, collectionType, mediaConfigs) in libraries) {
-                    foreach (var (importFolderSubPath, vfsEnabled, mediaFolderPaths) in mediaConfigs.ToImportFolderList(importFolderId, relativePath)) {
+                    foreach (var (managedFolderSubPath, vfsEnabled, mediaFolderPaths) in mediaConfigs.ToManagedFolderList(managedFolderId, relativePath)) {
                         foreach (var mediaFolderPath in mediaFolderPaths) {
                             // Let the core logic handle the rest.
                             if (!vfsEnabled) {
-                                var sourceLocation = Path.Join(mediaFolderPath, relativePath[importFolderSubPath.Length..]);
+                                var sourceLocation = Path.Join(mediaFolderPath, relativePath[managedFolderSubPath.Length..]);
                                 locationsToNotify.Add(sourceLocation);
                                 break;
                             }
@@ -321,7 +321,7 @@ public class EventDispatchService {
                             var result = new LinkGenerationResult();
                             var vfsSymbolicLinks = new HashSet<string>();
                             var topFolders = new HashSet<string>();
-                            var newSourceLocation = await GetNewSourceLocation(importFolderId, importFolderSubPath, fileId, relativePath, mediaFolderPath).ConfigureAwait(false);
+                            var newSourceLocation = await GetNewSourceLocation(managedFolderId, managedFolderSubPath, fileId, relativePath, mediaFolderPath).ConfigureAwait(false);
                             if (!string.IsNullOrEmpty(newSourceLocation)) {
                                 var vfsLocations = (await Task.WhenAll(seriesIds.Select(seriesId => ResolveManager.GenerateLocationsForFile(collectionType, vfsPath, newSourceLocation, fileId.ToString(), seriesId))).ConfigureAwait(false))
                                 .Where(tuple => tuple.symbolicLinks.Length > 0 && tuple.importedAt.HasValue)
@@ -339,7 +339,7 @@ public class EventDispatchService {
                                 .GetItemList(
                                     new() {
                                         SourceTypes = [SourceType.Library],
-                                        HasAnyProviderId = new Dictionary<string, string> { { ShokoFileId.Name, fileId.ToString() } },
+                                        HasAnyProviderId = new Dictionary<string, string> { { ProviderNames.ShokoFile, fileId.ToString() } },
                                         DtoOptions = new(true),
                                     },
                                     true
@@ -442,19 +442,19 @@ public class EventDispatchService {
         return filteredSeriesIds.Count is 0 ? seriesIds : filteredSeriesIds;
     }
 
-    private async Task<string?> GetNewSourceLocation(int importFolderId, string importFolderSubPath, int fileId, string relativePath, string mediaFolderPath) {
+    private async Task<string?> GetNewSourceLocation(int managedFolderId, string managedFolderSubPath, int fileId, string relativePath, string mediaFolderPath) {
         // Check if the file still exists, and if it has any other locations we can use.
         var file = await ApiClient.GetFile(fileId.ToString()).ConfigureAwait(false);
         if (file is null)
             return null;
 
         var usableLocation = file.Locations
-            .Where(loc => loc.ImportFolderId == importFolderId && (string.IsNullOrEmpty(importFolderSubPath) || relativePath.StartsWith(importFolderSubPath + Path.DirectorySeparatorChar)) && loc.RelativePath != relativePath)
+            .Where(loc => loc.ManagedFolderId == managedFolderId && (string.IsNullOrEmpty(managedFolderSubPath) || relativePath.StartsWith(managedFolderSubPath + Path.DirectorySeparatorChar)) && loc.RelativePath != relativePath)
             .FirstOrDefault();
         if (usableLocation is null)
             return null;
 
-        var sourceLocation = Path.Join(mediaFolderPath, usableLocation.RelativePath[importFolderSubPath.Length..]);
+        var sourceLocation = Path.Join(mediaFolderPath, usableLocation.RelativePath[managedFolderSubPath.Length..]);
         if (!File.Exists(sourceLocation))
             return null;
 
@@ -648,8 +648,8 @@ public class EventDispatchService {
                 .Where(e => e.EpisodeId.HasValue && e.Reason is not UpdateReason.Removed)
                 .SelectMany(e => new List<string>([
                     ..e.EpisodeIds.Select(eI => eI.ToString()),
-                    ..((e.Kind is BaseItemKind.Movie && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbMovie + e.ProviderId.ToString()] : Array.Empty<string>()),
-                    ..((e.Kind is BaseItemKind.Episode && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbShow + e.ProviderId.ToString()] : Array.Empty<string>()),
+                    ..(e.Kind is BaseItemKind.Movie && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbMovie + e.ProviderId.ToString()] : Array.Empty<string>(),
+                    ..(e.Kind is BaseItemKind.Episode && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbShow + e.ProviderId.ToString()] : Array.Empty<string>(),
                 ]))
                 .ToHashSet();
             var seasonIds = changes
@@ -706,7 +706,7 @@ public class EventDispatchService {
                     .GetItemList(new() {
                         IncludeItemTypes = [BaseItemKind.Episode],
                         SourceTypes = [SourceType.Library],
-                        HasAnyProviderId = new Dictionary<string, string> { { ShokoEpisodeId.Name, episodeInfo.Id } },
+                        HasAnyProviderId = new Dictionary<string, string> { { ProviderNames.ShokoEpisode, episodeInfo.Id } },
                         DtoOptions = new(true),
                     })
                     .DistinctBy(e => e.Id)
@@ -755,8 +755,8 @@ public class EventDispatchService {
             .Where(e => e.EpisodeId.HasValue && e.Reason is not UpdateReason.Removed)
             .SelectMany(e => new List<string>([
                 ..e.EpisodeIds.Select(eI => eI.ToString()),
-                ..((e.Kind is BaseItemKind.Movie && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbMovie + e.ProviderId.ToString()] : Array.Empty<string>()),
-                ..((e.Kind is BaseItemKind.Episode && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbShow + e.ProviderId.ToString()] : Array.Empty<string>()),
+                ..(e.Kind is BaseItemKind.Movie && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbMovie + e.ProviderId.ToString()] : Array.Empty<string>(),
+                ..(e.Kind is BaseItemKind.Episode && e.ProviderName is ProviderName.TMDB) ? [IdPrefix.TmdbShow + e.ProviderId.ToString()] : Array.Empty<string>(),
             ]))
             .ToHashSet();
         var episodeList = seasonInfo.EpisodeList
@@ -769,7 +769,7 @@ public class EventDispatchService {
                 .GetItemList(new() {
                     IncludeItemTypes = [BaseItemKind.Movie],
                     SourceTypes = [SourceType.Library],
-                    HasAnyProviderId = new Dictionary<string, string> { { ShokoEpisodeId.Name, episodeInfo.Id } },
+                    HasAnyProviderId = new Dictionary<string, string> { { ProviderNames.ShokoEpisode, episodeInfo.Id } },
                     DtoOptions = new(true),
                 })
                 .DistinctBy(e => e.Id)

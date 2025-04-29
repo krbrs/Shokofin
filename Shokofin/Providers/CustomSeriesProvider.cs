@@ -30,7 +30,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomSeriesProvider(ILogger<CustomSeriesProvider> _logger, ShokoApiManager _apiManager, IIdLookup _lookup, ILibraryManager _libraryManager, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Series> {
+public class CustomSeriesProvider(ILogger<CustomSeriesProvider> _logger, ShokoApiManager _apiManager, ShokoIdLookup _lookup, ILibraryManager _libraryManager, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Series> {
     private static bool ShouldAddMetadata => Plugin.Instance.Configuration.AddMissingMetadata;
 
     public string Name => Plugin.MetadataProviderName;

@@ -257,9 +257,9 @@ public class ShokoLibraryMonitor : IHostedService {
                 var relativePath = path[mediaConfig.MediaFolderPath.Length..];
                 using (Plugin.Instance.Tracker.Enter($"Library Monitor: Path=\"{path}\"")) {
                     var files = await ApiClient.GetFileByPath(relativePath).ConfigureAwait(false);
-                    var file0 = files.FirstOrDefault(file => file.Locations.Any(location => location.ImportFolderId == mediaConfig.ImportFolderId && location.RelativePath == mediaConfig.ImportFolderRelativePath + relativePath));
+                    var file0 = files.FirstOrDefault(file => file.Locations.Any(location => location.ManagedFolderId == mediaConfig.ManagedFolderId && location.RelativePath == mediaConfig.ManagedFolderRelativePath + relativePath));
                     if (file0 is not null) {
-                        var fileLocation = file0.Locations.First(location => location.ImportFolderId == mediaConfig.ImportFolderId && location.RelativePath == mediaConfig.ImportFolderRelativePath + relativePath);
+                        var fileLocation = file0.Locations.First(location => location.ManagedFolderId == mediaConfig.ManagedFolderId && location.RelativePath == mediaConfig.ManagedFolderRelativePath + relativePath);
                         eventArgs = new FileEventArgsStub(fileLocation, file0);
                     }
                     else if (reason is not UpdateReason.Removed) {
@@ -270,24 +270,24 @@ public class ShokoLibraryMonitor : IHostedService {
                         Logger.LogTrace("Skipped path because it is not a shoko managed file; {Path}", path);
                         return null;
                     }
-                    else if (!video.TryGetProviderId(ShokoFileId.Name, out fileId)) {
+                    else if (!video.TryGetProviderId(ProviderNames.ShokoFile, out fileId)) {
                         Logger.LogTrace("Skipped path because it is not a shoko managed file; {Path}", path);
                         return null;
                     }
                     else if (await ApiClient.GetFile(fileId).ConfigureAwait(false) is { } file1) {
-                        var fileLocation = file1.Locations.First(location => location.ImportFolderId == mediaConfig.ImportFolderId && location.RelativePath == mediaConfig.ImportFolderRelativePath + relativePath);
+                        var fileLocation = file1.Locations.First(location => location.ManagedFolderId == mediaConfig.ManagedFolderId && location.RelativePath == mediaConfig.ManagedFolderRelativePath + relativePath);
                         eventArgs = new FileEventArgsStub(fileLocation, file1);
                     }
                     else {
                         Logger.LogTrace("Failed to get file info from Shoko during a file deleted event. (File={FileId})", fileId);
-                        eventArgs = new FileEventArgsStub(int.Parse(fileId), null, mediaConfig.ImportFolderId, relativePath, []);
+                        eventArgs = new FileEventArgsStub(int.Parse(fileId), null, mediaConfig.ManagedFolderId, relativePath, []);
                     }
                 }
 
                 Logger.LogDebug(
-                    "File {EventName}; {ImportFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
+                    "File {EventName}; {ManagedFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
                     reason,
-                    eventArgs.ImportFolderId,
+                    eventArgs.ManagedFolderId,
                     relativePath,
                     eventArgs.FileId,
                     eventArgs.FileLocationId,
@@ -303,7 +303,7 @@ public class ShokoLibraryMonitor : IHostedService {
                     return null;
                 }
 
-                Events.AddFileEvent(eventArgs.FileId, reason, eventArgs.ImportFolderId, relativePath, eventArgs);
+                Events.AddFileEvent(eventArgs.FileId, reason, eventArgs.ManagedFolderId, relativePath, eventArgs);
                 return eventArgs;
             }
         ).ConfigureAwait(false);

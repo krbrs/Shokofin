@@ -27,7 +27,7 @@ namespace Shokofin.Resolvers;
 public class ShokoResolver : IItemResolver, IMultiItemResolver {
     private readonly ILogger<ShokoResolver> Logger;
 
-    private readonly IIdLookup Lookup;
+    private readonly ShokoIdLookup Lookup;
 
     private readonly ILibraryManager LibraryManager;
 
@@ -41,7 +41,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver {
 
     public ShokoResolver(
         ILogger<ShokoResolver> logger,
-        IIdLookup lookup,
+        ShokoIdLookup lookup,
         ILibraryManager libraryManager,
         IFileSystem fileSystem,
         ShokoApiManager apiManager,
@@ -83,7 +83,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver {
                 return null;
 
             if (parent.Id == mediaFolder.Id && fileInfo.IsDirectory) {
-                if (!fileInfo.Name.TryGetAttributeValue(ShokoSeriesId.Name, out var seasonId))
+                if (!fileInfo.Name.TryGetAttributeValue(ProviderNames.ShokoSeries, out var seasonId))
                     return null;
 
                 return new TvSeries() {
@@ -131,7 +131,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver {
                 var items = (FileSystem.DirectoryExists(vfsPath) ? FileSystem.GetDirectories(vfsPath) : [])
                     .AsParallel()
                     .SelectMany(dirInfo => {
-                        if (!dirInfo.Name.TryGetAttributeValue(ShokoSeriesId.Name, out var seasonId))
+                        if (!dirInfo.Name.TryGetAttributeValue(ProviderNames.ShokoSeries, out var seasonId))
                             return [];
 
                         var season = ApiManager.GetSeasonInfo(seasonId)

@@ -21,7 +21,7 @@ public class SeasonInfo : IExtendedItemInfo {
 
     public string Id { get; init; }
 
-    public string InternalId => ShokoInternalId.Namespace + Id;
+    public string InternalId => ShokoInternalId.SeriesNamespace + Id;
 
     public IReadOnlyList<string> ExtraIds { get; init; }
 

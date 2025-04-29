@@ -35,9 +35,9 @@ public class UserDataSyncManager {
 
     private readonly ShokoApiClient ApiClient;
 
-    private readonly IIdLookup Lookup;
+    private readonly ShokoIdLookup Lookup;
 
-    public UserDataSyncManager(IUserDataManager userDataManager, IUserManager userManager, ILibraryManager libraryManager, ISessionManager sessionManager, ILogger<UserDataSyncManager> logger, ShokoApiClient apiClient, IIdLookup lookup) {
+    public UserDataSyncManager(IUserDataManager userDataManager, IUserManager userManager, ILibraryManager libraryManager, ISessionManager sessionManager, ILogger<UserDataSyncManager> logger, ShokoApiClient apiClient, ShokoIdLookup lookup) {
         UserDataManager = userDataManager;
         UserManager = userManager;
         LibraryManager = libraryManager;
@@ -184,7 +184,7 @@ public class UserDataSyncManager {
                     TryGetUserConfiguration(e.UserId, out var userConfig) &&
                     (userConfig!.SyncRestrictedVideos || e.Item.CustomRating != "XXX") &&
                     Lookup.IsEnabledForItem(e.Item) &&
-                    Lookup.TryGetFileIdFor(e.Item, out var fileId, out var seriesId) &&
+                    Lookup.TryGetFileAndSeriesIdFor(e.Item, out var fileId, out var seriesId) &&
                     await ApiClient.GetFile(fileId).ConfigureAwait(false) is { } file &&
                     file.CrossReferences.FirstOrDefault(xref0 => xref0.Series.Shoko.HasValue && xref0.Series.Shoko.Value.ToString() == seriesId && xref0.Episodes.Any(xref1 => xref1.Shoko.HasValue)) is { } xref
                 ))
@@ -384,7 +384,7 @@ public class UserDataSyncManager {
         foreach (var video in videos) {
             cancellationToken.ThrowIfCancellationRequested();
 
-            if (!Lookup.IsEnabledForItem(video) || !Lookup.TryGetFileIdFor(video, out var fileId, out var seriesId))
+            if (!Lookup.IsEnabledForItem(video) || !Lookup.TryGetFileAndSeriesIdFor(video, out var fileId, out var seriesId))
                 continue;
 
             foreach (var userConfig in enabledUsers) {
@@ -406,7 +406,7 @@ public class UserDataSyncManager {
 
         switch (e.Item) {
             case Video video: {
-                if (!Lookup.IsEnabledForItem(video) || !Lookup.TryGetFileIdFor(video, out var fileId, out var seriesId))
+                if (!Lookup.IsEnabledForItem(video) || !Lookup.TryGetFileAndSeriesIdFor(video, out var fileId, out var seriesId))
                     return;
 
                 foreach (var userConfig in Plugin.Instance.Configuration.UserList) {

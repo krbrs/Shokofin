@@ -50,6 +50,19 @@ public class PluginConfiguration : BasePluginConfiguration {
     public virtual string PrettyUrl
         => string.IsNullOrEmpty(PublicUrl) ? Url : PublicUrl;
 
+    private string _webPrefix;
+
+    /// <summary>
+    /// The prefix for the web ui on the server.
+    /// </summary>
+    public string WebPrefix {
+        get => _webPrefix;
+        set => _webPrefix = value?.Trim(['/', ' ', '\t', '\r', '\n']) ?? string.Empty;
+    }
+
+    public virtual string WebUrl =>
+        string.IsNullOrEmpty(WebPrefix) ? PrettyUrl : $"{PrettyUrl}/{WebPrefix}";
+
     /// <summary>
     /// The last known user name we used to try and connect to the server.
     /// </summary>
@@ -652,6 +665,7 @@ public class PluginConfiguration : BasePluginConfiguration {
     public PluginConfiguration() {
         Url = "http://127.0.0.1:8111";
         PublicUrl = string.Empty;
+        WebPrefix = "webui";
         Username = "Default";
         ApiKey = string.Empty;
         ServerVersion = null;

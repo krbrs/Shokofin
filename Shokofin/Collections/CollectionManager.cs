@@ -23,7 +23,7 @@ public class CollectionManager(
     ILibraryManager _libraryManager,
     ICollectionManager _collection,
     ILogger<CollectionManager> _logger,
-    IIdLookup _lookup,
+    ShokoIdLookup _lookup,
     ShokoApiManager _apiManager
 ) {
     private static int MinCollectionSize => Plugin.Instance.Configuration.CollectionMinSizeOfTwo ? 1 : 0;
@@ -152,8 +152,8 @@ public class CollectionManager(
         foreach (var missingId in toAdd) {
             var seasonInfo = seasonDict[missingId];
             var collection = await _collection.CreateCollectionAsync(new() {
-                Name = $"{seasonInfo.Title.ForceASCII()} [{ShokoCollectionSeriesId.Name}={missingId}]",
-                ProviderIds = new() { { ShokoCollectionSeriesId.Name, missingId } },
+                Name = $"{seasonInfo.Title.ForceASCII()} [{ProviderNames.ShokoCollectionForSeries}={missingId}]",
+                ProviderIds = new() { { ProviderNames.ShokoCollectionForSeries, missingId } },
             }).ConfigureAwait(false);
 
             childDict.Add(collection.Id, []);
@@ -402,8 +402,8 @@ public class CollectionManager(
             var missingId = toAdd[index];
             var collectionInfo = finalGroups[missingId];
             var collection = await _collection.CreateCollectionAsync(new() {
-                Name = $"{collectionInfo.Title.ForceASCII()} [{ShokoCollectionGroupId.Name}={missingId}]",
-                ProviderIds = new() { { ShokoCollectionGroupId.Name, missingId } },
+                Name = $"{collectionInfo.Title.ForceASCII()} [{ProviderNames.ShokoCollectionForGroup}={missingId}]",
+                ProviderIds = new() { { ProviderNames.ShokoCollectionForGroup, missingId } },
             }).ConfigureAwait(false);
 
             childDict.Add(collection.Id, []);
@@ -600,7 +600,7 @@ public class CollectionManager(
         => _libraryManager.GetItemList(new() {
             IncludeItemTypes = [BaseItemKind.Movie],
             SourceTypes = [SourceType.Library],
-            HasAnyProviderId = new() { { ShokoFileId.Name, string.Empty } },
+            HasAnyProviderId = new() { { ShokoInternalId.Name, string.Empty } },
             IsVirtualItem = false,
             Recursive = true,
         })
@@ -624,12 +624,12 @@ public class CollectionManager(
         => _libraryManager.GetItemList(new() {
             IncludeItemTypes = [BaseItemKind.BoxSet],
             SourceTypes = [SourceType.Library],
-            HasAnyProviderId = new() { { ShokoCollectionSeriesId.Name, string.Empty } },
+            HasAnyProviderId = new() { { ProviderNames.ShokoCollectionForSeries, string.Empty } },
             IsVirtualItem = false,
             Recursive = true,
         })
             .Cast<BoxSet>()
-            .Select(x => x.TryGetProviderId(ShokoCollectionSeriesId.Name, out var seasonId) ? new { SeasonId = seasonId, BoxSet = x } : null)
+            .Select(x => x.TryGetProviderId(ProviderNames.ShokoCollectionForSeries, out var seasonId) ? new { SeasonId = seasonId, BoxSet = x } : null)
             .Where(x => x is not null)
             .GroupBy(x => x!.SeasonId, x => x!.BoxSet)
             .ToDictionary(x => x.Key, x => x.ToList() as IReadOnlyList<BoxSet>);
@@ -638,12 +638,12 @@ public class CollectionManager(
         => _libraryManager.GetItemList(new() {
             IncludeItemTypes = [BaseItemKind.BoxSet],
             SourceTypes = [SourceType.Library],
-            HasAnyProviderId = new() { { ShokoCollectionGroupId.Name, string.Empty } },
+            HasAnyProviderId = new() { { ProviderNames.ShokoCollectionForGroup, string.Empty } },
             IsVirtualItem = false,
             Recursive = true,
         })
             .Cast<BoxSet>()
-            .Select(x => x.TryGetProviderId(ShokoCollectionGroupId.Name, out var groupId) ? new { GroupId = groupId, BoxSet = x } : null)
+            .Select(x => x.TryGetProviderId(ProviderNames.ShokoCollectionForGroup, out var groupId) ? new { GroupId = groupId, BoxSet = x } : null)
             .Where(x => x != null)
             .GroupBy(x => x!.GroupId, x => x!.BoxSet)
             .ToDictionary(x => x.Key, x => x.ToList() as IReadOnlyList<BoxSet>);

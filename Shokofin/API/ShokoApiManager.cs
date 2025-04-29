@@ -461,9 +461,9 @@ public partial class ShokoApiManager : IDisposable {
         // Fast-path for VFS.
         if (path.StartsWith(Plugin.Instance.VirtualRoot + Path.DirectorySeparatorChar)) {
             var fileName = Path.GetFileNameWithoutExtension(path);
-            if (!fileName.TryGetAttributeValue(ShokoSeriesId.Name, out var sI) || !int.TryParse(sI, out _))
+            if (!fileName.TryGetAttributeValue(ProviderNames.ShokoSeries, out var sI) || !int.TryParse(sI, out _))
                 return (null, null, null);
-            if (!fileName.TryGetAttributeValue(ShokoFileId.Name, out var fI) || !int.TryParse(fI, out _))
+            if (!fileName.TryGetAttributeValue(ProviderNames.ShokoFile, out var fI) || !int.TryParse(fI, out _))
                 return (null, null, null);
 
             var fileInfo = await GetFileInfo(fI, sI).ConfigureAwait(false);
@@ -630,7 +630,7 @@ public partial class ShokoApiManager : IDisposable {
             }
         );
 
-    public bool TryGetFileIdForPath(string path, [NotNullWhen(true)] out string? fileId, [NotNullWhen(true)] out string? seriesId) {
+    public bool TryGetFileAndSeriesIdForPath(string path, [NotNullWhen(true)] out string? fileId, [NotNullWhen(true)] out string? seriesId) {
         if (string.IsNullOrEmpty(path)) {
             fileId = null;
             seriesId = null;
@@ -1555,7 +1555,7 @@ public partial class ShokoApiManager : IDisposable {
             if (seasonNumberResult.Success)
                 fileName = Path.GetFileName(Path.GetDirectoryName(path)!);
 
-            if (!fileName.TryGetAttributeValue(ShokoSeriesId.Name, out seasonId))
+            if (!fileName.TryGetAttributeValue(ProviderNames.ShokoSeries, out seasonId))
                 return null;
 
             if (seasonNumberResult.Success) {

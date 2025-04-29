@@ -38,7 +38,7 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
             Info.ShowInfo? showInfo = null;
             if (info.IsMissingEpisode || string.IsNullOrEmpty(info.Path)) {
                 // We're unable to fetch the latest metadata for the virtual episode.
-                if (!info.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId))
+                if (!info.TryGetProviderId(ProviderNames.ShokoEpisode, out var episodeId))
                     return result;
 
                 episodeInfo = await _apiManager.GetEpisodeInfo(episodeId).ConfigureAwait(false);
@@ -77,7 +77,7 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
         }
         catch (Exception ex) {
             if (info.IsMissingEpisode || string.IsNullOrEmpty(info.Path)) {
-                if (!info.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId))
+                if (!info.TryGetProviderId(ProviderNames.ShokoEpisode, out var episodeId))
                     episodeId = null;
 
                 _logger.LogError(ex, "Threw unexpectedly while refreshing a missing episode; {Message} (Episode={EpisodeId})", ex.Message, episodeId);
@@ -234,13 +234,13 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
 
     private static void AddProviderIds(IHasProviderIds item, string episodeId, string? fileId = null, string? seriesId = null, string? anidbId = null, string? tmdbId = null, string? tvdbId = null) {
         var config = Plugin.Instance.Configuration;
-        item.SetProviderId(ShokoEpisodeId.Name, episodeId);
+        item.SetProviderId(ProviderNames.ShokoEpisode, episodeId);
         if (!string.IsNullOrEmpty(fileId))
-            item.SetProviderId(ShokoFileId.Name, fileId);
+            item.SetProviderId(ProviderNames.ShokoFile, fileId);
         if (!string.IsNullOrEmpty(seriesId))
-            item.SetProviderId(ShokoSeriesId.Name, seriesId);
+            item.SetProviderId(ProviderNames.ShokoSeries, seriesId);
         if (config.AddAniDBId && !string.IsNullOrEmpty(anidbId))
-            item.SetProviderId(AnidbEpisodeId.Name, anidbId);
+            item.SetProviderId(ProviderNames.Anidb, anidbId);
         if (config.AddTMDBId && !string.IsNullOrEmpty(tmdbId))
             item.SetProviderId(MetadataProvider.Tmdb, tmdbId);
         if (config.AddTvDBId && !string.IsNullOrEmpty(tvdbId))

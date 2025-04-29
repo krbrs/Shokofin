@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using MediaBrowser.Controller.Entities;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
@@ -5,20 +6,30 @@ using MediaBrowser.Model.Providers;
 
 namespace Shokofin.ExternalIds;
 
-public class AnidbCreatorId : IExternalId {
-    public static string Name => "AniDB";
+public class AnidbCreatorId : IExternalId, IExternalUrlProvider {
+    #region IExternalId Implementation
 
-    public bool Supports(IHasProviderIds item)
-        => item is Person;
+    string IExternalId.ProviderName => ProviderNames.Anidb;
 
-    public string ProviderName
-        => Name;
+    string IExternalId.Key => ProviderNames.Anidb;
 
-    public string Key
-        => Name;
+    ExternalIdMediaType? IExternalId.Type => ExternalIdMediaType.Person;
 
-    public ExternalIdMediaType? Type
-        => null;
+    string? IExternalId.UrlFormatString => null;
 
-    public string? UrlFormatString => "https://anidb.net/creator/{0}";
+    public bool Supports(IHasProviderIds item) => item is Person;
+
+    #endregion
+
+    #region IExternalUrlProvider Implementation
+
+    string IExternalUrlProvider.Name => ProviderNames.Anidb;
+
+    IEnumerable<string> IExternalUrlProvider.GetExternalUrls(BaseItem item)
+    {
+        if (Supports(item) && item.TryGetProviderId(ProviderNames.Anidb, out var episodeId))
+            yield return $"https://anidb.net/creator/{episodeId}";
+    }
+
+    #endregion
 }

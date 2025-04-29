@@ -5,10 +5,11 @@ using Jellyfin.Data.Enums;
 using Microsoft.AspNetCore.SignalR.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Shokofin.API.Models;
+using Shokofin.API;
 using Shokofin.Configuration;
 using Shokofin.Events;
 using Shokofin.Events.Interfaces;
+using Shokofin.Events.Stub;
 using Shokofin.Extensions;
 using Shokofin.SignalR.Models;
 using Shokofin.Utils;
@@ -16,9 +17,11 @@ using Shokofin.Utils;
 namespace Shokofin.SignalR;
 
 public class SignalRConnectionManager {
-    private const string HubUrl = "/signalr/aggregate?feeds=shoko";
+    private const string HubUrl = "/signalr/aggregate?feeds=shoko,metadata,file,release";
 
     private readonly ILogger<SignalRConnectionManager> Logger;
+
+    private readonly ShokoApiClient ApiClient;
 
     private readonly EventDispatchService Events;
 
@@ -40,10 +43,12 @@ public class SignalRConnectionManager {
 
     public SignalRConnectionManager(
         ILogger<SignalRConnectionManager> logger,
+        ShokoApiClient apiClient,
         EventDispatchService events,
         LibraryScanWatcher libraryScanWatcher
     ) {
         Logger = logger;
+        ApiClient = apiClient;
         Events = events;
         LibraryScanWatcher = libraryScanWatcher;
     }
@@ -69,16 +74,37 @@ public class SignalRConnectionManager {
         connection.Reconnecting += OnReconnecting;
         connection.Reconnected += OnReconnected;
 
-        // Attach refresh events.
-        connection.On<EpisodeInfoUpdatedEventArgs>("ShokoEvent:EpisodeUpdated", OnInfoUpdated);
-        connection.On<SeriesInfoUpdatedEventArgs>("ShokoEvent:SeriesUpdated", OnInfoUpdated);
-        connection.On<MovieInfoUpdatedEventArgs>("ShokoEvent:MovieUpdated", OnInfoUpdated);
+        if (await ApiClient.HasPluginsExposed().ConfigureAwait(false)) {
+            // Attach metadata events.
+            connection.On<EpisodeInfoUpdatedEventArgs>("metadata:episode.added", OnInfoUpdated);
+            connection.On<EpisodeInfoUpdatedEventArgs>("metadata:episode.updated", OnInfoUpdated);
+            connection.On<EpisodeInfoUpdatedEventArgs>("metadata:episode.removed", OnInfoUpdated);
+            connection.On<SeriesInfoUpdatedEventArgs>("metadata:series.added", OnInfoUpdated);
+            connection.On<SeriesInfoUpdatedEventArgs>("metadata:series.updated", OnInfoUpdated);
+            connection.On<SeriesInfoUpdatedEventArgs>("metadata:series.removed", OnInfoUpdated);
+            connection.On<MovieInfoUpdatedEventArgs>("metadata:movie.added", OnInfoUpdated);
+            connection.On<MovieInfoUpdatedEventArgs>("metadata:movie.updated", OnInfoUpdated);
+            connection.On<MovieInfoUpdatedEventArgs>("metadata:movie.removed", OnInfoUpdated);
 
-        // Attach file events.
-        connection.On<FileEventArgs>("ShokoEvent:FileMatched", OnFileMatched);
-        connection.On<FileEventArgs>("ShokoEvent:FileDeleted", OnFileDeleted);
-        connection.On<FileMovedEventArgs>("ShokoEvent:FileMoved", OnFileRelocated);
-        connection.On<FileRenamedEventArgs>("ShokoEvent:FileRenamed", OnFileRelocated);
+            // Attach release events.
+            connection.On<ReleaseSavedEventArgs>("release:saved", OnReleaseSaved);
+
+            // Attach file events.
+            connection.On<FileEventArgs>("file:deleted", OnFileDeleted);
+            connection.On<FileMovedEventArgs>("file:relocated", OnFileRelocated);
+        }
+        else {
+            // Attach refresh events.
+            connection.On<EpisodeInfoUpdatedEventArgs>("ShokoEvent:EpisodeUpdated", OnInfoUpdated);
+            connection.On<SeriesInfoUpdatedEventArgs>("ShokoEvent:SeriesUpdated", OnInfoUpdated);
+            connection.On<MovieInfoUpdatedEventArgs>("ShokoEvent:MovieUpdated", OnInfoUpdated);
+
+            // Attach file events.
+            connection.On<FileEventArgs>("ShokoEvent:FileMatched", OnFileMatched);
+            connection.On<FileEventArgs>("ShokoEvent:FileDeleted", OnFileDeleted);
+            connection.On<FileMovedEventArgs>("ShokoEvent:FileMoved", OnFileRelocated);
+            connection.On<FileRenamedEventArgs>("ShokoEvent:FileRenamed", OnFileRelocated);
+        }
 
         EventSubmitterLease = Events.RegisterEventSubmitter();
         try {
@@ -177,8 +203,8 @@ public class SignalRConnectionManager {
 
     private void OnFileMatched(IFileEventArgs eventArgs) {
         Logger.LogDebug(
-            "File matched; {ImportFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
-            eventArgs.ImportFolderId,
+            "File matched; {ManagedFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
+            eventArgs.ManagedFolderId,
             eventArgs.RelativePath,
             eventArgs.FileId,
             eventArgs.FileLocationId,
@@ -194,15 +220,48 @@ public class SignalRConnectionManager {
             return;
         }
 
-        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Updated, eventArgs.ImportFolderId, eventArgs.RelativePath, eventArgs);
+        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Updated, eventArgs.ManagedFolderId, eventArgs.RelativePath, eventArgs);
+    }
+
+    private async Task OnReleaseSaved(IReleaseSavedEventArgs eventArgs0) {
+        if (await ApiClient.GetFile(eventArgs0.FileId.ToString()).ConfigureAwait(false) is not { } file) {
+            Logger.LogDebug("File not found; {VideoId}", eventArgs0.FileId);
+            return;
+        }
+        
+        if ((file.Locations.FirstOrDefault(location => location.IsAccessible) ?? file.Locations.FirstOrDefault()) is not { } fileLocation) {
+            Logger.LogDebug("File location not found; {VideoId}", eventArgs0.FileId);
+            return;
+        }
+
+        var eventArgs = new FileEventArgsStub(fileLocation, file);
+        Logger.LogDebug(
+            "Release saved; {ManagedFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
+            eventArgs.ManagedFolderId,
+            eventArgs.RelativePath,
+            eventArgs.FileId,
+            eventArgs.FileLocationId,
+            eventArgs.HasCrossReferences
+        );
+
+        if (LibraryScanWatcher.IsScanRunning) {
+            Logger.LogTrace(
+                "Library scan is running. Skipping emit of file event. (File={FileId},Location={LocationId})",
+                eventArgs.FileId,
+                eventArgs.FileLocationId
+            );
+            return;
+        }
+
+        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Updated, eventArgs.ManagedFolderId, eventArgs.RelativePath, eventArgs);
     }
 
     private void OnFileRelocated(IFileRelocationEventArgs eventArgs) {
         Logger.LogDebug(
-            "File relocated; {ImportFolderIdA} {PathA} → {ImportFolderIdB} {PathB} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
-            eventArgs.PreviousImportFolderId,
+            "File relocated; {ManagedFolderIdA} {PathA} → {ManagedFolderIdB} {PathB} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
+            eventArgs.PreviousManagedFolderId,
             eventArgs.PreviousRelativePath,
-            eventArgs.ImportFolderId,
+            eventArgs.ManagedFolderId,
             eventArgs.RelativePath,
             eventArgs.FileId,
             eventArgs.FileLocationId,
@@ -218,14 +277,14 @@ public class SignalRConnectionManager {
             return;
         }
 
-        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Removed, eventArgs.PreviousImportFolderId, eventArgs.PreviousRelativePath, eventArgs);
-        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Added, eventArgs.ImportFolderId, eventArgs.RelativePath, eventArgs);
+        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Removed, eventArgs.PreviousManagedFolderId, eventArgs.PreviousRelativePath, eventArgs);
+        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Added, eventArgs.ManagedFolderId, eventArgs.RelativePath, eventArgs);
     }
 
     private void OnFileDeleted(IFileEventArgs eventArgs) {
         Logger.LogDebug(
-            "File deleted; {ImportFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
-            eventArgs.ImportFolderId,
+            "File deleted; {ManagedFolderId} {Path} (File={FileId},Location={LocationId},CrossReferences={HasCrossReferences})",
+            eventArgs.ManagedFolderId,
             eventArgs.RelativePath,
             eventArgs.FileId,
             eventArgs.FileLocationId,
@@ -241,7 +300,7 @@ public class SignalRConnectionManager {
             return;
         }
 
-        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Removed, eventArgs.ImportFolderId, eventArgs.RelativePath, eventArgs);
+        Events.AddFileEvent(eventArgs.FileId, UpdateReason.Removed, eventArgs.ManagedFolderId, eventArgs.RelativePath, eventArgs);
     }
 
     #endregion

@@ -93,11 +93,11 @@ public class SeriesProvider(IHttpClientFactory _httpClientFactory, ILogger<Serie
 
         item.SetProviderId(ShokoInternalId.Name, internalId);
         if (!string.IsNullOrEmpty(seriesId))
-            item.SetProviderId(ShokoSeriesId.Name, seriesId);
+            item.SetProviderId(ProviderNames.ShokoSeries, seriesId);
         if (!string.IsNullOrEmpty(groupId))
-            item.SetProviderId(ShokoGroupId.Name, groupId);
+            item.SetProviderId(ProviderNames.ShokoGroup, groupId);
         if (config.AddAniDBId && !string.IsNullOrEmpty(anidbId))
-            item.SetProviderId(AnidbAnimeId.Name, anidbId);
+            item.SetProviderId(ProviderNames.Anidb, anidbId);
         if (config.AddTMDBId && !string.IsNullOrEmpty(tmdbId))
             item.SetProviderId(MetadataProvider.Tmdb, tmdbId);
         if (config.AddTvDBId && !string.IsNullOrEmpty(tvdbId))

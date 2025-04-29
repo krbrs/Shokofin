@@ -18,7 +18,7 @@ public class FileRenamedEventArgs : FileEventArgs, IFileRelocationEventArgs {
 
     /// <inheritdoc/>
     [JsonIgnore]
-    public int PreviousImportFolderId => ImportFolderId;
+    public int PreviousManagedFolderId => ManagedFolderId;
 
     /// <inheritdoc/>
     [JsonIgnore]

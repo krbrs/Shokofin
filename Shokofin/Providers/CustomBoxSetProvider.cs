@@ -39,11 +39,11 @@ public class CustomBoxSetProvider(ILogger<CustomBoxSetProvider> _logger, ShokoAp
             return false;
 
         // Try to read the shoko group id.
-        if (collection.TryGetProviderId(ShokoCollectionGroupId.Name, out var collectionId) || collection.Path.TryGetAttributeValue(ShokoCollectionGroupId.Name, out collectionId))
+        if (collection.TryGetProviderId(ProviderNames.ShokoCollectionForGroup, out var collectionId) || collection.Path.TryGetAttributeValue(ProviderNames.ShokoCollectionForGroup, out collectionId))
             return true;
 
         // Try to read the shoko series id.
-        if (collection.TryGetProviderId(ShokoCollectionSeriesId.Name, out var seasonId) || collection.Path.TryGetAttributeValue(ShokoCollectionSeriesId.Name, out seasonId))
+        if (collection.TryGetProviderId(ProviderNames.ShokoCollectionForSeries, out var seasonId) || collection.Path.TryGetAttributeValue(ProviderNames.ShokoCollectionForSeries, out seasonId))
             return true;
 
         return false;
@@ -56,13 +56,13 @@ public class CustomBoxSetProvider(ILogger<CustomBoxSetProvider> _logger, ShokoAp
             return ItemUpdateType.None;
 
         // Try to read the shoko group id.
-        if (collection.TryGetProviderId(ShokoCollectionGroupId.Name, out var collectionId) || collection.Path.TryGetAttributeValue(ShokoCollectionGroupId.Name, out collectionId))
+        if (collection.TryGetProviderId(ProviderNames.ShokoCollectionForGroup, out var collectionId) || collection.Path.TryGetAttributeValue(ProviderNames.ShokoCollectionForGroup, out collectionId))
             using (Plugin.Instance.Tracker.Enter($"Providing custom info for Collection \"{collection.Name}\". (Path=\"{collection.Path}\",Collection=\"{collectionId}\")"))
                 if (await EnsureGroupCollectionIsCorrect(collectionRoot, collection, collectionId, cancellationToken).ConfigureAwait(false))
                     return ItemUpdateType.MetadataEdit;
 
         // Try to read the shoko series id.
-        if (collection.TryGetProviderId(ShokoCollectionSeriesId.Name, out var seasonId) || collection.Path.TryGetAttributeValue(ShokoCollectionSeriesId.Name, out seasonId))
+        if (collection.TryGetProviderId(ProviderNames.ShokoCollectionForSeries, out var seasonId) || collection.Path.TryGetAttributeValue(ProviderNames.ShokoCollectionForSeries, out seasonId))
             using (Plugin.Instance.Tracker.Enter($"Providing custom info for Collection \"{collection.Name}\". (Path=\"{collection.Path}\",Season=\"{seasonId}\")"))
                 if (await EnsureSeriesCollectionIsCorrect(collection, seasonId, cancellationToken).ConfigureAwait(false))
                     return ItemUpdateType.MetadataEdit;
@@ -137,7 +137,7 @@ public class CustomBoxSetProvider(ILogger<CustomBoxSetProvider> _logger, ShokoAp
 
         var list = _libraryManager.GetItemList(new() {
             IncludeItemTypes = [BaseItemKind.BoxSet],
-            HasAnyProviderId = new() { { ShokoCollectionGroupId.Name, collectionId } },
+            HasAnyProviderId = new() { { ProviderNames.ShokoCollectionForGroup, collectionId } },
             IsVirtualItem = false,
             Recursive = true,
         })
@@ -153,7 +153,7 @@ public class CustomBoxSetProvider(ILogger<CustomBoxSetProvider> _logger, ShokoAp
     }
 
     private BoxSet? GetCollectionByPath(Folder collectionRoot, CollectionInfo collectionInfo) {
-        var baseName = $"{collectionInfo.Title.ForceASCII()} [{ShokoCollectionGroupId.Name}={collectionInfo.Id}]";
+        var baseName = $"{collectionInfo.Title.ForceASCII()} [{ProviderNames.ShokoCollectionForGroup}={collectionInfo.Id}]";
         var folderName = BaseItem.FileSystem.GetValidFilename(baseName) + " [boxset]";
         var path = Path.Combine(collectionRoot.Path, folderName);
         return _libraryManager.FindByPath(path, true) as BoxSet;

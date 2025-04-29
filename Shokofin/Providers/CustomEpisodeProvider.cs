@@ -7,6 +7,7 @@ using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using Microsoft.Extensions.Logging;
+using Shokofin.API;
 using Shokofin.ExternalIds;
 using Shokofin.MergeVersions;
 
@@ -24,7 +25,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibraryManager _libraryManager, IIdLookup _lookup, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Episode> {
+public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibraryManager _libraryManager, ShokoIdLookup _lookup, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Episode> {
     public string Name => Plugin.MetadataProviderName;
 
     public bool HasChanged(BaseItem item, IDirectoryService directoryService) {
@@ -33,7 +34,7 @@ public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibr
             return false;
 
         // Abort if we're unable to get the shoko episode id.
-        if (!episode.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId))
+        if (!episode.TryGetProviderId(ProviderNames.ShokoEpisode, out var episodeId))
             return false;
 
         return true;
@@ -68,7 +69,7 @@ public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibr
         var searchList = libraryManager.GetItemList(
             new() {
                 ExcludeItemIds = [episode.Id],
-                HasAnyProviderId = new() { { ShokoEpisodeId.Name, episodeId } },
+                HasAnyProviderId = new() { { ProviderNames.ShokoEpisode, episodeId } },
                 IncludeItemTypes = [Jellyfin.Data.Enums.BaseItemKind.Episode],
                 GroupByPresentationUniqueKey = false,
                 GroupBySeriesPresentationUniqueKey = true,
@@ -96,7 +97,7 @@ public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibr
         var searchList = libraryManager.GetItemList(
             new() {
                 IncludeItemTypes = [Jellyfin.Data.Enums.BaseItemKind.Episode],
-                HasAnyProviderId = new() { { ShokoEpisodeId.Name, episodeId } },
+                HasAnyProviderId = new() { { ProviderNames.ShokoEpisode, episodeId } },
                 GroupByPresentationUniqueKey = false,
                 GroupBySeriesPresentationUniqueKey = true,
                 SeriesPresentationUniqueKey = seriesPresentationUniqueKey,

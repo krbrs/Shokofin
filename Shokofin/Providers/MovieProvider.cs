@@ -59,11 +59,11 @@ public class MovieProvider(IHttpClientFactory _httpClientFactory, ILogger<MovieP
                 CommunityRating = rating,
             };
 
-            result.Item.SetProviderId(ShokoFileId.Name, fileInfo.Id);
-            result.Item.SetProviderId(ShokoEpisodeId.Name, episodeInfo.Id);
-            result.Item.SetProviderId(ShokoSeriesId.Name, fileInfo.SeriesId);
+            result.Item.SetProviderId(ProviderNames.ShokoFile, fileInfo.Id);
+            result.Item.SetProviderId(ProviderNames.ShokoEpisode, episodeInfo.Id);
+            result.Item.SetProviderId(ProviderNames.ShokoSeries, fileInfo.SeriesId);
             if (Plugin.Instance.Configuration.AddAniDBId && !string.IsNullOrEmpty(seasonInfo.AnidbId))
-                result.Item.SetProviderId(AnidbAnimeId.Name, seasonInfo.AnidbId);
+                result.Item.SetProviderId(ProviderNames.Anidb, seasonInfo.AnidbId);
             if (Plugin.Instance.Configuration.AddTMDBId && !string.IsNullOrEmpty(episodeInfo.TmdbMovieId))
                 result.Item.SetProviderId(MetadataProvider.Tmdb, episodeInfo.TmdbMovieId);
 

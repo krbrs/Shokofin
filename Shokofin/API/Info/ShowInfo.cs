@@ -23,7 +23,7 @@ public class ShowInfo : IExtendedItemInfo {
 
     public string Id { get; init; }
 
-    public string InternalId => ShokoInternalId.Namespace + Id;
+    public string InternalId => ShokoInternalId.SeriesNamespace + Id;
 
     public string? AnidbId { get; init; }
 

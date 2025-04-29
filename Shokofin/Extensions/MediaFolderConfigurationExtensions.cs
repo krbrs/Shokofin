@@ -11,16 +11,16 @@ public static class MediaFolderConfigurationExtensions {
         => BaseItem.LibraryManager.FindByPath(mediaFolderPath, true) as Folder ??
             throw new Exception($"Unable to find folder by path \"{mediaFolderPath}\".");
 
-    public static IReadOnlyList<(int importFolderId, string importFolderSubPath, IReadOnlyList<string> mediaFolderPaths)> ToImportFolderList(this IEnumerable<MediaFolderConfiguration> mediaConfigs)
+    public static IReadOnlyList<(int managedFolderId, string managedFolderSubPath, IReadOnlyList<string> mediaFolderPaths)> ToManagedFolderList(this IEnumerable<MediaFolderConfiguration> mediaConfigs)
         => mediaConfigs
-            .GroupBy(a => (a.ImportFolderId, a.ImportFolderRelativePath))
-            .Select(g => (g.Key.ImportFolderId, g.Key.ImportFolderRelativePath, g.Select(a => a.MediaFolderPath).ToList() as IReadOnlyList<string>))
+            .GroupBy(a => (a.ManagedFolderId, a.ManagedFolderRelativePath))
+            .Select(g => (g.Key.ManagedFolderId, g.Key.ManagedFolderRelativePath, g.Select(a => a.MediaFolderPath).ToList() as IReadOnlyList<string>))
             .ToList();
 
-    public static IReadOnlyList<(string importFolderSubPath, bool vfsEnabled, IReadOnlyList<string> mediaFolderPaths)> ToImportFolderList(this IEnumerable<MediaFolderConfiguration> mediaConfigs, int importFolderId, string relativePath)
+    public static IReadOnlyList<(string managedFolderSubPath, bool vfsEnabled, IReadOnlyList<string> mediaFolderPaths)> ToManagedFolderList(this IEnumerable<MediaFolderConfiguration> mediaConfigs, int managedFolderId, string relativePath)
         => mediaConfigs
-            .Where(a => a.ImportFolderId == importFolderId && a.IsEnabledForPath(relativePath))
-            .GroupBy(a => (a.ImportFolderId, a.ImportFolderRelativePath, a.IsVirtualFileSystemEnabled))
-            .Select(g => (g.Key.ImportFolderRelativePath, g.Key.IsVirtualFileSystemEnabled, g.Select(a => a.MediaFolderPath).ToList() as IReadOnlyList<string>))
+            .Where(a => a.ManagedFolderId == managedFolderId && a.IsEnabledForPath(relativePath))
+            .GroupBy(a => (a.ManagedFolderId, a.ManagedFolderRelativePath, a.IsVirtualFileSystemEnabled))
+            .Select(g => (g.Key.ManagedFolderRelativePath, g.Key.IsVirtualFileSystemEnabled, g.Select(a => a.MediaFolderPath).ToList() as IReadOnlyList<string>))
             .ToList();
 }

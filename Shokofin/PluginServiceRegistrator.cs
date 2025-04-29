@@ -12,9 +12,9 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator {
         serviceCollection.AddSingleton<Utils.LibraryScanWatcher>();
         serviceCollection.AddSingleton<API.ShokoApiClient>();
         serviceCollection.AddSingleton<API.ShokoApiManager>();
+        serviceCollection.AddSingleton<API.ShokoIdLookup>();
         serviceCollection.AddSingleton<Configuration.MediaFolderConfigurationService>();
         serviceCollection.AddSingleton<Configuration.SeriesConfigurationService>();
-        serviceCollection.AddSingleton<IIdLookup, IdLookup>();
         serviceCollection.AddSingleton<Sync.UserDataSyncManager>();
         serviceCollection.AddSingleton<MergeVersions.MergeVersionsManager>();
         serviceCollection.AddSingleton<Collections.CollectionManager>();

@@ -159,7 +159,7 @@ public class EpisodeInfo : IExtendedItemInfo {
             if (Staff.Count is 0)
                 Staff = cast
                     .GroupBy(role => (role.Type, role.Staff.Id))
-                    .Select(roles => RoleToPersonInfo(roles.ToList(), AnidbCreatorId.Name))
+                    .Select(roles => RoleToPersonInfo(roles.ToList(), ProviderNames.Anidb))
                     .OfType<PersonInfo>()
                     .ToArray();
             productionLocationDict[ProviderName.TMDB] = tmdbMovie.ProductionCountries.Values.ToArray();
@@ -188,7 +188,7 @@ public class EpisodeInfo : IExtendedItemInfo {
             if (Staff.Count is 0)
                 Staff = cast
                     .GroupBy(role => (role.Type, role.Staff.Id))
-                    .Select(roles => RoleToPersonInfo(roles.ToList(), AnidbCreatorId.Name))
+                    .Select(roles => RoleToPersonInfo(roles.ToList(), ProviderNames.Anidb))
                     .OfType<PersonInfo>()
                     .ToArray();
             if (tmdbParentEntity is not null) {
@@ -213,7 +213,7 @@ public class EpisodeInfo : IExtendedItemInfo {
             CommunityRating = episode.AniDB.Rating;
             Staff = cast
                 .GroupBy(role => (role.Type, role.Staff.Id))
-                .Select(roles => RoleToPersonInfo(roles.ToList(), AnidbCreatorId.Name))
+                .Select(roles => RoleToPersonInfo(roles.ToList(), ProviderNames.Anidb))
                 .OfType<PersonInfo>()
                 .ToArray();
             Studios = cast

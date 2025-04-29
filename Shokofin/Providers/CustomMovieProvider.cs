@@ -29,7 +29,7 @@ public class CustomMovieProvider(ILibraryManager _libraryManager, MergeVersionsM
             return false;
 
         // Abort if we're unable to get the shoko episode id.
-        if (!movie.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId))
+        if (!movie.TryGetProviderId(ProviderNames.ShokoEpisode, out var episodeId))
             return false;
 
         return true;
@@ -37,7 +37,7 @@ public class CustomMovieProvider(ILibraryManager _libraryManager, MergeVersionsM
 
     public async Task<ItemUpdateType> FetchAsync(Movie movie, MetadataRefreshOptions options, CancellationToken cancellationToken) {
         var itemUpdated = ItemUpdateType.None;
-        if (movie.TryGetProviderId(ShokoEpisodeId.Name, out var episodeId) && Plugin.Instance.Configuration.AutoMergeVersions && !_libraryManager.IsScanRunning && options.MetadataRefreshMode != MetadataRefreshMode.ValidationOnly) {
+        if (movie.TryGetProviderId(ProviderNames.ShokoEpisode, out var episodeId) && Plugin.Instance.Configuration.AutoMergeVersions && !_libraryManager.IsScanRunning && options.MetadataRefreshMode != MetadataRefreshMode.ValidationOnly) {
             await _mergeVersionsManager.SplitAndMergeMoviesByEpisodeId(episodeId).ConfigureAwait(false);
             itemUpdated |= ItemUpdateType.MetadataEdit;
         }

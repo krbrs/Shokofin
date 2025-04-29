@@ -15,7 +15,14 @@ public class FileEventArgs : IFileEventArgs {
 
     /// <inheritdoc/>
     [JsonInclude, JsonPropertyName("ImportFolderID")]
-    public int ImportFolderId { get; set; }
+    public int ImportFolderId {
+        get => ManagedFolderId;
+        set => ManagedFolderId = value;
+    }
+
+    /// <inheritdoc/>
+    [JsonInclude, JsonPropertyName("ManagedFolderID")]
+    public int ManagedFolderId { get; set; }
 
     /// <summary>
     /// The relative path with no leading slash and directory separators used on

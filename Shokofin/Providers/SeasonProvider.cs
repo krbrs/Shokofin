@@ -44,7 +44,7 @@ public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<Seaso
             return result;
         }
 
-        if (!info.SeriesProviderIds.TryGetValue(ShokoInternalId.Name, out var internalId) || !internalId.TryGetSeasonIdFromInternalId(out var seasonId)) {
+        if (!info.TryGetSeasonId(out var seasonId)) {
             _logger.LogDebug("Unable refresh Season {SeasonNumber} {SeasonName}", info.IndexNumber, info.Name);
             return result;
         }
@@ -146,9 +146,9 @@ public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<Seaso
 
         season.SetProviderId(ShokoInternalId.Name, seasonInfo.InternalId);
         if (!string.IsNullOrEmpty(seasonInfo.ShokoSeriesId))
-            season.SetProviderId(ShokoSeriesId.Name, seasonInfo.ShokoSeriesId);
+            season.SetProviderId(ProviderNames.ShokoSeries, seasonInfo.ShokoSeriesId);
         if (Plugin.Instance.Configuration.AddAniDBId && !string.IsNullOrEmpty(seasonInfo.AnidbId))
-            season.SetProviderId(AnidbAnimeId.Name, seasonInfo.AnidbId);
+            season.SetProviderId(ProviderNames.Anidb, seasonInfo.AnidbId);
 
         return season;
     }

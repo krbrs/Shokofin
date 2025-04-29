@@ -18,7 +18,7 @@ using Shokofin.ExternalIds;
 using Shokofin.Utils;
 
 using FileInfo = Shokofin.API.Info.FileInfo;
-using FileSource = Shokofin.API.Models.FileSource;
+using ReleaseSource = Shokofin.API.Models.ReleaseSource;
 
 namespace Shokofin.MergeVersions;
 
@@ -30,7 +30,7 @@ namespace Shokofin.MergeVersions;
 ///
 /// Based upon;
 /// https://github.com/danieladov/jellyfin-plugin-mergeversions
-public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibraryManager libraryManager, IIdLookup lookup, ShokoApiManager apiManager, UsageTracker usageTracker) {
+public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibraryManager libraryManager, ShokoIdLookup lookup, ShokoApiManager apiManager, UsageTracker usageTracker) {
     /// <summary>
     /// Logger.
     /// </summary>
@@ -44,7 +44,7 @@ public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibrary
     /// <summary>
     /// Shoko ID Lookup. Used to check if the plugin is enabled for the videos.
     /// </summary>
-    private readonly IIdLookup _lookup = lookup;
+    private readonly ShokoIdLookup _lookup = lookup;
 
     /// <summary>
     /// Used to lookup the file info for each video.
@@ -176,7 +176,7 @@ public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibrary
                 SourceTypes = [SourceType.Library],
                 IsVirtualItem = false,
                 Recursive = true,
-                HasAnyProviderId = new Dictionary<string, string> { {ShokoEpisodeId.Name, episodeId } },
+                HasAnyProviderId = new Dictionary<string, string> { {ProviderNames.ShokoEpisode, episodeId } },
             })
             .OfType<Movie>()
             .Where(_lookup.IsEnabledForItem)
@@ -192,7 +192,7 @@ public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibrary
             .GetItemList(new() {
                 IncludeItemTypes = [BaseItemKind.Episode],
                 SourceTypes = [SourceType.Library],
-                HasAnyProviderId = new Dictionary<string, string> { {ShokoEpisodeId.Name, episodeId } },
+                HasAnyProviderId = new Dictionary<string, string> { {ProviderNames.ShokoEpisode, episodeId } },
                 IsVirtualItem = false,
                 Recursive = true,
             })
@@ -237,7 +237,7 @@ public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibrary
 
         // Merge all videos with more than one version (again).
         var duplicationGroups = videos
-            .GroupBy(video => (video.GetTopParent()?.Path, video.GetProviderId(ShokoEpisodeId.Name)))
+            .GroupBy(video => (video.GetTopParent()?.Path, video.GetProviderId(ProviderNames.ShokoEpisode)))
             .Where(groupBy => groupBy.Count() > 1)
             .ToList();
         currentCount = 0d;
@@ -420,28 +420,28 @@ public class MergeVersionsManager(ILogger<MergeVersionsManager> logger, ILibrary
             MergeVersionSortSelector.Resolution => video.GetDefaultVideoStream() is { } videoStream
                 ? ((int)Math.Ceiling(((decimal)(videoStream.Width ?? 1) * (videoStream.Height ?? 1)) / 100)).ToString("00000000")
                 : "99999999",
-            MergeVersionSortSelector.ReleaseGroupName => fileInfo.Shoko.AniDBData is { } anidbData
+            MergeVersionSortSelector.ReleaseGroupName => fileInfo.Shoko.Release?.Group is { } releaseGroup
                 ? (
-                    !string.IsNullOrEmpty(anidbData.ReleaseGroup.ShortName)
-                        ? anidbData.ReleaseGroup.ShortName
-                        : !string.IsNullOrEmpty(anidbData.ReleaseGroup.Name)
-                            ? anidbData.ReleaseGroup.Name
-                            : $"_____Release group {anidbData.ReleaseGroup.Id}"
+                    !string.IsNullOrEmpty(releaseGroup.ShortName)
+                        ? releaseGroup.ShortName
+                        : !string.IsNullOrEmpty(releaseGroup.Name)
+                            ? releaseGroup.Name
+                            : $"_____Release group {releaseGroup.Id}"
                 ).ReplaceInvalidPathCharacters()
                 : "_____No Group",
-            MergeVersionSortSelector.FileSource => fileInfo.Shoko.AniDBData?.Source switch {
-                FileSource.BluRay => "01",
-                FileSource.Web => "02",
-                FileSource.DVD => "03",
-                FileSource.VCD => "04",
-                FileSource.LaserDisc => "05",
-                FileSource.TV => "06",
-                FileSource.VHS => "07",
-                FileSource.Camera => "08",
-                FileSource.Other => "09",
+            MergeVersionSortSelector.FileSource => fileInfo.Shoko.Release?.Source switch {
+                ReleaseSource.BluRay => "01",
+                ReleaseSource.Web => "02",
+                ReleaseSource.DVD => "03",
+                ReleaseSource.VCD => "04",
+                ReleaseSource.LaserDisc => "05",
+                ReleaseSource.TV => "06",
+                ReleaseSource.VHS => "07",
+                ReleaseSource.Camera => "08",
+                ReleaseSource.Other => "09",
                 _ => "FF",
             },
-            MergeVersionSortSelector.FileVersion => (10 - fileInfo.Shoko.AniDBData?.Version ?? 1).ToString("0"),
+            MergeVersionSortSelector.FileVersion => (10 - fileInfo.Shoko.Release?.Version ?? 1).ToString("0"),
             MergeVersionSortSelector.RelativeDepth => fileInfo.Shoko.Locations
                 .Select(i => i.RelativePath.Split(Path.DirectorySeparatorChar).Length)
                 .Max()

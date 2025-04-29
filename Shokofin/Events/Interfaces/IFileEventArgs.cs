@@ -15,13 +15,13 @@ public interface IFileEventArgs {
     int? FileLocationId { get; }
 
     /// <summary>
-    /// The ID of the new import folder the event was detected in.
+    /// The ID of the new managed folder the event was detected in.
     /// </summary>
     /// <value></value>
-    int ImportFolderId { get; }
+    int ManagedFolderId { get; }
 
     /// <summary>
-    /// The relative path from the base of the <see cref="ImportFolder"/> to
+    /// The relative path from the base of the <see cref="ManagedFolder"/> to
     /// where the <see cref="File"/> lies, with a leading slash applied at
     /// the start and normalized for the local system.
     /// </summary>

@@ -19,7 +19,7 @@ using RatingType = MediaBrowser.Model.Dto.RatingType;
 
 namespace Shokofin.Providers;
 
-public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageProvider> _logger, ShokoApiManager _apiManager, IIdLookup _lookup) : IRemoteImageProvider, IHasOrder {
+public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageProvider> _logger, ShokoApiManager _apiManager, ShokoIdLookup _lookup) : IRemoteImageProvider, IHasOrder {
     public string Name => Plugin.MetadataProviderName;
 
     public int Order => 0;
@@ -95,8 +95,8 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                 }
                 case BoxSet collection: {
                     string? collectionId = null;
-                    if (!collection.TryGetProviderId(ShokoCollectionSeriesId.Name, out var seasonId) &&
-                        collection.TryGetProviderId(ShokoCollectionGroupId.Name, out collectionId) &&
+                    if (!collection.TryGetProviderId(ProviderNames.ShokoCollectionForSeries, out var seasonId) &&
+                        collection.TryGetProviderId(ProviderNames.ShokoCollectionForGroup, out collectionId) &&
                         await _apiManager.GetCollectionInfo(collectionId).ConfigureAwait(false) is { } collectionInfo)
                         seasonId = collectionInfo.MainSeasonId;
 

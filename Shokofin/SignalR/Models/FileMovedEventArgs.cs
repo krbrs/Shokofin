@@ -6,7 +6,14 @@ namespace Shokofin.SignalR.Models;
 public class FileMovedEventArgs: FileEventArgs, IFileRelocationEventArgs {
     /// <inheritdoc/>
     [JsonInclude, JsonPropertyName("PreviousImportFolderID")]
-    public int PreviousImportFolderId { get; set; }
+    public int PreviousImportFolderId {
+        get => PreviousManagedFolderId;
+        set => PreviousManagedFolderId = value;
+    }
+
+    /// <inheritdoc/>
+    [JsonInclude, JsonPropertyName("PreviousManagedFolderID")]
+    public int PreviousManagedFolderId { get; set; }
 
     /// <summary>
     /// The previous relative path with no leading slash and directory

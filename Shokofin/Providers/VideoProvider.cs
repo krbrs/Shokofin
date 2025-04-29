@@ -53,9 +53,9 @@ public class VideoProvider(IHttpClientFactory _httpClientFactory, ILogger<VideoP
             };
             _logger.LogInformation("Found video {EpisodeName} (File={FileId},Episode={EpisodeId},Season={SeasonId},ExtraSeasons={ExtraIds},Group={GroupId})", result.Item.Name, fileInfo.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds, showInfo?.ShokoGroupId);
 
-            result.Item.SetProviderId(ShokoFileId.Name, fileInfo.Id);
-            result.Item.SetProviderId(ShokoEpisodeId.Name, episodeInfo.Id);
-            result.Item.SetProviderId(ShokoSeriesId.Name, fileInfo.SeriesId);
+            result.Item.SetProviderId(ProviderNames.ShokoFile, fileInfo.Id);
+            result.Item.SetProviderId(ProviderNames.ShokoEpisode, episodeInfo.Id);
+            result.Item.SetProviderId(ProviderNames.ShokoSeries, fileInfo.SeriesId);
 
             result.HasMetadata = true;
 

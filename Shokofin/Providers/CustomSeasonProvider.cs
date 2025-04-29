@@ -29,7 +29,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomSeasonProvider(ILogger<CustomSeasonProvider> _logger, ShokoApiManager _apiManager, IIdLookup _lookup, ILibraryManager _libraryManager, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Season> {
+public class CustomSeasonProvider(ILogger<CustomSeasonProvider> _logger, ShokoApiManager _apiManager, ShokoIdLookup _lookup, ILibraryManager _libraryManager, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Season> {
     private static bool ShouldAddMetadata => Plugin.Instance.Configuration.AddMissingMetadata;
 
     public string Name => Plugin.MetadataProviderName;

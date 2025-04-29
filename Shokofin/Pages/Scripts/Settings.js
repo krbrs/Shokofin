@@ -793,7 +793,7 @@ async function applyLibraryConfigToForm(form, libraryId, config = null) {
 
     const mediaFolders = State.config.MediaFolders.filter((c) => c.LibraryId === libraryId && !c.IsVirtualRoot);
     if (!mediaFolders.length) {
-        renderReadonlyList(form, "MediaFolderImportFolderMapping", []);
+        renderReadonlyList(form, "MediaFolderManagedFolderMapping", []);
 
         form.querySelector("#MediaFolderPerFolderSettingsContainer").setAttribute("hidden", "");
         if (shouldHide) {
@@ -802,9 +802,9 @@ async function applyLibraryConfigToForm(form, libraryId, config = null) {
         return;
     }
 
-    renderReadonlyList(form, "MediaFolderImportFolderMapping", mediaFolders.map((c) =>
+    renderReadonlyList(form, "MediaFolderManagedFolderMapping", mediaFolders.map((c) =>
         c.IsMapped
-            ? `${c.MediaFolderPath} | ${c.ImportFolderName} (${c.ImportFolderId}) ${c.ImportFolderRelativePath}`.trimEnd()
+            ? `${c.MediaFolderPath} | ${c.ManagedFolderName} (${c.ManagedFolderId}) ${c.ManagedFolderRelativePath}`.trimEnd()
             : `${c.MediaFolderPath} | Not Mapped`
     ));
 

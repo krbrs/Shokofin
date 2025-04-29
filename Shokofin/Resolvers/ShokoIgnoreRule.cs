@@ -20,7 +20,7 @@ namespace Shokofin.Resolvers;
 public class ShokoIgnoreRule : IResolverIgnoreRule {
     private readonly ILogger<ShokoIgnoreRule> Logger;
 
-    private readonly IIdLookup Lookup;
+    private readonly ShokoIdLookup Lookup;
 
     private readonly ILibraryManager LibraryManager;
 
@@ -34,7 +34,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
 
     public ShokoIgnoreRule(
         ILogger<ShokoIgnoreRule> logger,
-        IIdLookup lookup,
+        ShokoIdLookup lookup,
         ILibraryManager libraryManager,
         IFileSystem fileSystem,
         ShokoApiManager apiManager,

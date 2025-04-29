@@ -3,7 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Text.RegularExpressions;
+using System.Web;
 using MediaBrowser.Common.Providers;
+using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
 using Shokofin.ExternalIds;
 
@@ -153,7 +155,7 @@ public static partial class StringExtensions {
         value = GetAttributeValue(text, attribute);
 
         // Select the correct id for the part number in the stringified list of file ids.
-        if (!string.IsNullOrEmpty(value) && attribute == ShokoFileId.Name && GetPartRegex().Match(text) is { Success: true } regexResult) {
+        if (!string.IsNullOrEmpty(value) && attribute == ProviderNames.ShokoFile && GetPartRegex().Match(text) is { Success: true } regexResult) {
             var partNumber = int.Parse(regexResult.Groups["partNumber"].Value);
             var index = partNumber - 1;
             value = value.Split(',')[index];
@@ -168,20 +170,90 @@ public static partial class StringExtensions {
             return false;
         }
 
-        seasonId = internalId.StartsWith(ShokoInternalId.Namespace, StringComparison.OrdinalIgnoreCase)
-            ? internalId[ShokoInternalId.Namespace.Length..]
-            : null;
-
-        // Fix for dev users with the double namespace issue.
-        if (!string.IsNullOrEmpty(seasonId) && seasonId.StartsWith(ShokoInternalId.Namespace, StringComparison.OrdinalIgnoreCase))
-            seasonId = seasonId[ShokoInternalId.Namespace.Length..];
-
-        return !string.IsNullOrEmpty(seasonId);
+        return TryGetSeasonIdFromInternalId(internalId, out seasonId);
     }
 
-    public static bool TryGetSeasonIdFromInternalId(this string internalId, [NotNullWhen(true)] out string? seasonId)
-        => !string.IsNullOrEmpty(seasonId = internalId.StartsWith(ShokoInternalId.Namespace, StringComparison.OrdinalIgnoreCase)
-            ? internalId[ShokoInternalId.Namespace.Length..]
-            : null
-        );
+    public static bool TryGetSeasonId(this SeasonInfo seasonInfo, [NotNullWhen(true)] out string? seasonId) {
+        if (!seasonInfo.SeriesProviderIds.TryGetValue(ShokoInternalId.Name, out var internalId) || string.IsNullOrEmpty(internalId)) {
+            seasonId = null;
+            return false;
+        }
+
+        return TryGetSeasonIdFromInternalId(internalId, out seasonId);
+    }
+
+    public static bool TryGetSeasonIdFromInternalId(this string internalId, [NotNullWhen(true)] out string? seasonId) {
+        if (internalId.StartsWith(ShokoInternalId.SeriesNamespace, StringComparison.OrdinalIgnoreCase)) {
+            seasonId = internalId[ShokoInternalId.SeriesNamespace.Length..];
+
+            // Fix for dev users with the double namespace issue.
+            if (!string.IsNullOrEmpty(seasonId) && seasonId.StartsWith(ShokoInternalId.SeriesNamespace, StringComparison.OrdinalIgnoreCase))
+                seasonId = seasonId[ShokoInternalId.SeriesNamespace.Length..];
+
+            return !string.IsNullOrEmpty(seasonId);
+        }
+
+        if (internalId.StartsWith(ShokoInternalId.FileNamespace, StringComparison.OrdinalIgnoreCase)) {
+            var uri = new Uri(internalId);
+            var query = HttpUtility.ParseQueryString(uri.Query);
+            seasonId = query["seasonId"];
+            return !string.IsNullOrEmpty(seasonId);
+        }
+
+        seasonId = null;
+        return false;
+    }
+
+    public static bool TryGetEpisodeIds(this IHasProviderIds providerIds, [NotNullWhen(true)] out List<string>? episodeIds) {
+        if (!providerIds.TryGetProviderId(ShokoInternalId.Name, out var internalId) || string.IsNullOrEmpty(internalId)) {
+            // TODO: Remove this backwards compatibility in the next major version.
+            if (providerIds.TryGetProviderId(ProviderNames.ShokoEpisode, out var episodeId)) {
+                episodeIds = [episodeId];
+                return true;
+            }
+
+            episodeIds = null;
+            return false;
+        }
+
+        if (internalId.StartsWith(ShokoInternalId.FileNamespace, StringComparison.OrdinalIgnoreCase)) {
+            var uri = new Uri(internalId);
+            var query = HttpUtility.ParseQueryString(uri.Query);
+            episodeIds = query["episodeIds"]?.Split(',').ToList();
+            return episodeIds is { Count: > 0 };
+        }
+
+        if (internalId.StartsWith(ShokoInternalId.EpisodeNamespace, StringComparison.OrdinalIgnoreCase)) {
+            var episodeId = internalId[ShokoInternalId.EpisodeNamespace.Length..];
+            episodeIds = string.IsNullOrEmpty(episodeId) ? null : [episodeId];
+            return episodeIds is { Count: > 0 };
+        }
+
+        episodeIds = null;
+        return false;
+    }
+
+    public static bool TryGetFileAndSeriesId(this IHasProviderIds providerIds, [NotNullWhen(true)] out string? fileId, [NotNullWhen(true)] out string? seriesId) {
+        if (!providerIds.TryGetProviderId(ShokoInternalId.Name, out var internalId) || string.IsNullOrEmpty(internalId)) {
+            // TODO: Remove this backwards compatibility in the next major version.
+            if (providerIds.TryGetProviderId(ProviderNames.ShokoFile, out fileId) && providerIds.TryGetProviderId(ProviderNames.ShokoSeries, out seriesId))
+                return true;
+
+            fileId = null;
+            seriesId = null;
+            return false;
+        }
+        
+        if (internalId.StartsWith(ShokoInternalId.FileNamespace, StringComparison.OrdinalIgnoreCase)) {
+            var uri = new Uri(internalId);
+            var query = HttpUtility.ParseQueryString(uri.Query);
+            fileId = uri.Segments[^1];
+            seriesId = query["seriesId"];
+            return !string.IsNullOrEmpty(fileId) && !string.IsNullOrEmpty(seriesId);
+        }
+
+        fileId = null;
+        seriesId = null;
+        return false;
+        }
 }

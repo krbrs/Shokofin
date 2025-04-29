@@ -6,6 +6,7 @@ using System.Net.Http;
 using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
@@ -287,6 +288,28 @@ public class ShokoApiClient : IDisposable {
         return null;
     }
 
+    private bool? _hasPluginsExposed;
+
+    public async Task<bool> HasPluginsExposed(CancellationToken cancellationToken = default)
+        => _hasPluginsExposed ??= (await Get($"/api/v3/Plugin", HttpMethod.Get, cancellationToken: cancellationToken).ConfigureAwait(false)) is { StatusCode: HttpStatusCode.OK };
+
+    public async Task<string?> GetWebPrefix(CancellationToken cancellationToken = default)
+    {
+        try {
+            var settingsResponse = await Get("/api/v3/Settings", HttpMethod.Get, cancellationToken: cancellationToken).ConfigureAwait(false);
+            if (settingsResponse.StatusCode != HttpStatusCode.OK)
+                return null;
+            var settings = JsonNode.Parse(settingsResponse.Content.ReadAsStringAsync(cancellationToken).Result)!;
+            var value = settings["Web"]?["WebUIPrefix"]?.GetValue<string>();
+            if (string.IsNullOrEmpty(value))
+                return "webui";
+            return value;
+        }
+        catch (HttpRequestException httpEx) when (httpEx.Message.Contains("Shoko Server")) {
+            return null;
+        }
+    }
+
     #endregion
 
     #region Image
@@ -296,26 +319,36 @@ public class ShokoApiClient : IDisposable {
 
     #endregion
 
-    #region Import Folder
+    #region Managed Folder
 
-    public Task<ImportFolder?> GetImportFolder(int importFolderId)
-        => GetOrNull<ImportFolder>($"/api/v3/ImportFolder/{importFolderId}");
+    public async Task<ManagedFolder?> GetManagedFolder(int managedFolderId)
+    {
+        var hasPlugins = _hasPluginsExposed ?? await HasPluginsExposed().ConfigureAwait(false);
+        if (hasPlugins)
+            return await GetOrNull<ManagedFolder>($"/api/v3/ManagedFolder/{managedFolderId}").ConfigureAwait(false);
+        return await GetOrNull<ManagedFolder>($"/api/v3/ImportFolder/{managedFolderId}").ConfigureAwait(false);
+    }
 
-    public async Task<ListResult<File>> GetFilesInImportFolder(int importFolderId, string subPath, int page = 1)
-        => await GetOrNull<ListResult<File>>($"/api/v3/ImportFolder/{importFolderId}/File?pageSize=1000&page={page}&include=XRefs&folderPath={Uri.EscapeDataString(subPath)}").ConfigureAwait(false) ?? new();
+    public async Task<ListResult<File>> GetFilesInManagedFolder(int managedFolderId, string subPath, int page = 1)
+    {
+        var hasPlugins = _hasPluginsExposed ?? await HasPluginsExposed().ConfigureAwait(false);
+        if (hasPlugins)
+            return await GetOrNull<ListResult<File>>($"/api/v3/ManagedFolder/{managedFolderId}/File?pageSize=1000&page={page}&include=XRefs&folderPath={Uri.EscapeDataString(subPath)}").ConfigureAwait(false) ?? new();
+        return await GetOrNull<ListResult<File>>($"/api/v3/ImportFolder/{managedFolderId}/File?pageSize=1000&page={page}&include=XRefs&folderPath={Uri.EscapeDataString(subPath)}").ConfigureAwait(false) ?? new();
+    }
 
     #endregion
 
     #region File
 
     public Task<File?> GetFile(string fileId)
-        => GetOrNull<File>($"/api/v3/File/{fileId}?include=XRefs&includeDataFrom=AniDB");
+        => GetOrNull<File>($"/api/v3/File/{fileId}?include=XRefs,ReleaseInfo&includeDataFrom=AniDB");
 
     public Task<File?> GetFileByEd2kAndFileSize(string ed2k, long fileSize)
-        => GetOrNull<File>($"/api/v3/File/Hash/ED2K?hash={Uri.EscapeDataString(ed2k)}&size={fileSize}&includeDataFrom=AniDB");
+        => GetOrNull<File>($"/api/v3/File/Hash/ED2K?hash={Uri.EscapeDataString(ed2k)}&size={fileSize}");
 
     public Task<IReadOnlyList<File>> GetFileByPath(string relativePath)
-        => Get<IReadOnlyList<File>>($"/api/v3/File/PathEndsWith?path={Uri.EscapeDataString(relativePath)}&includeDataFrom=AniDB&limit=1");
+        => Get<IReadOnlyList<File>>($"/api/v3/File/PathEndsWith?path={Uri.EscapeDataString(relativePath)}&include=XRefs,ReleaseInfo&includeDataFrom=AniDB&limit=10");
 
     #region File User Stats
 
@@ -420,7 +453,7 @@ public class ShokoApiClient : IDisposable {
         => GetOrNull<Images>($"/api/v3/Series/{seriesId}/Images", cancellationToken: cancellationToken);
 
     public async Task<IReadOnlyList<File>> GetFilesForShokoSeries(string seriesId)
-        => (await GetOrNull<ListResult<File>>($"/api/v3/Series/{seriesId}/File?pageSize=0&include=XRefs&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
+        => (await GetOrNull<ListResult<File>>($"/api/v3/Series/{seriesId}/File?pageSize=0&include=XRefs,ReleaseInfo&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
 
     public async Task<IReadOnlyList<TmdbEpisodeCrossReference>> GetTmdbCrossReferencesForShokoSeries(string seriesId)
         => (await GetOrNull<ListResult<TmdbEpisodeCrossReference>>($"/api/v3/Series/{seriesId}/TMDB/Show/CrossReferences/Episode?pageSize=0").ConfigureAwait(false))?.List ?? [];
@@ -443,7 +476,7 @@ public class ShokoApiClient : IDisposable {
     #region AniDB Anime
 
     public Task<ListResult<AnidbAnime>> GetAllAnidbAnime(int page = 1, int pageSize = 100)
-        => Get<ListResult<AnidbAnime>>($"/api/v3/Series/AniDB?pageSize={pageSize}&page={page}&includeDataFrom=AniDB");
+        => Get<ListResult<AnidbAnime>>($"/api/v3/Series/AniDB?pageSize={pageSize}&page={page}");
 
     #endregion
 
@@ -462,7 +495,7 @@ public class ShokoApiClient : IDisposable {
         => GetOrNull<EpisodeImages>($"/api/v3/TMDB/Episode/{episodeId}/Images", cancellationToken: cancellationToken);
 
     public async Task<IReadOnlyList<File>> GetFilesForTmdbEpisode(string episodeId)
-        => (await GetOrNull<ListResult<File>>($"/api/v3/TMDB/Episode/{episodeId}/Shoko/File?pageSize=0&include=XRefs&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
+        => (await GetOrNull<ListResult<File>>($"/api/v3/TMDB/Episode/{episodeId}/Shoko/File?pageSize=0&include=XRefs,ReleaseInfo&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
 
     #endregion
 
@@ -481,7 +514,7 @@ public class ShokoApiClient : IDisposable {
         => GetOrNull<Images>($"/api/v3/TMDB/Season/{seasonId}/Images", cancellationToken: cancellationToken);
 
     public async Task<IReadOnlyList<File>> GetFilesForTmdbSeason(string seasonId)
-        => (await GetOrNull<ListResult<File>>($"/api/v3/TMDB/Season/{seasonId}/Shoko/File?pageSize=0&include=XRefs&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
+        => (await GetOrNull<ListResult<File>>($"/api/v3/TMDB/Season/{seasonId}/Shoko/File?pageSize=0&include=XRefs,ReleaseInfo&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
 
     #endregion
 
@@ -494,7 +527,7 @@ public class ShokoApiClient : IDisposable {
         => GetOrNull<Images>($"/api/v3/TMDB/Show/{showId}/Images", cancellationToken: cancellationToken);
 
     public async Task<IReadOnlyList<File>> GetFilesForTmdbShow(string showId)
-        => (await GetOrNull<ListResult<File>>($"/api/v3/TMDB/Show/{showId}/Shoko/File?pageSize=0&include=XRefs&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
+        => (await GetOrNull<ListResult<File>>($"/api/v3/TMDB/Show/{showId}/Shoko/File?pageSize=0&include=XRefs,ReleaseInfo&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
 
     public async Task<IReadOnlyList<TmdbEpisodeCrossReference>> GetTmdbCrossReferencesForTmdbShow(string showId)
         => (await GetOrNull<ListResult<TmdbEpisodeCrossReference>>($"/api/v3/TMDB/Show/{showId}/Episode/CrossReferences?pageSize=0").ConfigureAwait(false))?.List ?? [];
@@ -513,7 +546,7 @@ public class ShokoApiClient : IDisposable {
         => GetOrNull<EpisodeImages>($"/api/v3/TMDB/Movie/{movieId}/Images", cancellationToken: cancellationToken);
 
     public async Task<IReadOnlyList<File>> GetFilesForTmdbMovie(string movieId)
-        => (await GetOrNull<ListResult<File>>($"/api/v3/TMDB/Movie/{movieId}/Shoko/File?pageSize=0&include=XRefs&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
+        => (await GetOrNull<ListResult<File>>($"/api/v3/TMDB/Movie/{movieId}/Shoko/File?pageSize=0&include=XRefs,ReleaseInfo&includeDataFrom=AniDB").ConfigureAwait(false))?.List ?? [];
 
     public async Task<IReadOnlyList<TmdbMovieCrossReference>> GetTmdbCrossReferencesForTmdbMovie(string showId)
         => await GetOrNull<IReadOnlyList<TmdbMovieCrossReference>>($"/api/v3/TMDB/Movie/{showId}/CrossReferences").ConfigureAwait(false) ?? [];
