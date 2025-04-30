@@ -58,6 +58,10 @@ public class VersionCheckTask(ILogger<VersionCheckTask> _logger, ILibraryManager
             updated = true;
         }
 
+        if (string.IsNullOrEmpty(Plugin.Instance.Configuration.ApiKey))
+            return;
+
+
         var prefix = await _apiClient.GetWebPrefix().ConfigureAwait(false);
         if (prefix != null && (
             Plugin.Instance.Configuration.WebPrefix == null ||
@@ -68,8 +72,7 @@ public class VersionCheckTask(ILogger<VersionCheckTask> _logger, ILibraryManager
             updated = true;
         }
 
-        if (string.IsNullOrEmpty(Plugin.Instance.Configuration.ApiKey))
-            return;
+        await _apiClient.HasPluginsExposed(cancellationToken).ConfigureAwait(false);
 
         var mediaFolders = Plugin.Instance.Configuration.MediaFolders.ToList();
         var managedFolderNameMap = await Task
