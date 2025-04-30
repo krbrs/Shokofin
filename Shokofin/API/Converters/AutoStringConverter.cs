@@ -14,15 +14,15 @@ public class AutoStringConverter : JsonConverter<string> {
         => typeof(string) == typeToConvert;
 
     public override string? Read(ref Utf8JsonReader reader, Type typeToConvert, JsonSerializerOptions options) {
-        if (reader.TokenType == JsonTokenType.Number) {
-            if (reader.TryGetInt64(out long number))
+        if (reader.TokenType is JsonTokenType.Number) {
+            if (reader.TryGetInt64(out var number))
                 return number.ToString(CultureInfo.InvariantCulture);
 
             if (reader.TryGetDouble(out var doubleNumber))
                 return doubleNumber.ToString(CultureInfo.InvariantCulture);
         }
 
-        if (reader.TokenType == JsonTokenType.String)
+        if (reader.TokenType is JsonTokenType.String)
             return reader.GetString();
 
         using var document = JsonDocument.ParseValue(ref reader);
