@@ -738,6 +738,10 @@ form:not(.expert-mode) .expert-only {
                             <input is="emby-input" id="TagMaximumDepth" label="Maximum Depth for Tags" placeholder="0" type="number" pattern="[0-9]*" min="0" max="10" step="1">
                             <div class="fieldDescription">The maximum relative depth of a tag to be included with the displayed tags based on it's source category.</div>
                         </div>
+                        <div class="inputContainer inputContainer-withDescription expert-only">
+                            <input is="emby-input" type="text" id="TagExcludeList" label="Exclude List for Tags" />
+                            <div class="fieldDescription">A comma separated list of tags to exclude from the displayed tags.</div>
+                        </div>
                         <div id="GenreSources" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
                             <h3 class="checkboxListLabel">Genre Sources</h3>
                             <div class="checkboxList paperList checkboxList-paperList">
@@ -1092,6 +1096,10 @@ form:not(.expert-mode) .expert-only {
                         <div class="inputContainer inputContainer-withDescription expert-only">
                             <input is="emby-input" id="GenreMaximumDepth" label="Maximum Depth for Genres" placeholder="1" type="number" pattern="[0-9]*" min="0" max="10" step="1">
                             <div class="fieldDescription">The maximum relative depth of a tag to be included with the displayed genres based on it's source category.</div>
+                        </div>
+                        <div class="inputContainer inputContainer-withDescription expert-only">
+                            <input is="emby-input" type="text" id="GenreExcludeList" label="Exclude List for Genres" />
+                            <div class="fieldDescription">A comma separated list of genres to exclude from the displayed tags.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>${Save}</span>

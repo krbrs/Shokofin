@@ -405,6 +405,8 @@ function applyFormToConfig(form, config) {
                 });
             }
 
+            const tagExcludeList = filterTags(form.querySelector("#TagExcludeList").value);
+            const genreExcludeList = filterTags(form.querySelector("#GenreExcludeList").value);
             config.MarkSpecialsWhenGrouped = form.querySelector("#MarkSpecialsWhenGrouped").checked;
             ([config.DescriptionSourceList, config.DescriptionSourceOrder] = retrieveSortableCheckboxList(form, "DescriptionSourceList"));
             config.SynopsisCleanLinks = form.querySelector("#CleanupAniDBDescriptions").checked;
@@ -421,10 +423,14 @@ function applyFormToConfig(form, config) {
             config.TagIncludeFilters = retrieveCheckboxList(form, "TagIncludeFilters").join(", ");
             config.TagMinimumWeight = form.querySelector("#TagMinimumWeight").value;
             config.TagMaximumDepth = parseInt(form.querySelector("#TagMaximumDepth").value, 10);
+            config.TagExcludeList = tagExcludeList;
+            form.querySelector("#TagExcludeList").value = tagExcludeList.join(", ");
             config.GenreSources = retrieveCheckboxList(form, "GenreSources").join(", ");
             config.GenreIncludeFilters = retrieveCheckboxList(form, "GenreIncludeFilters").join(", ");
             config.GenreMinimumWeight = form.querySelector("#GenreMinimumWeight").value;
             config.GenreMaximumDepth = parseInt(form.querySelector("#GenreMaximumDepth").value, 10);
+            config.GenreExcludeList = genreExcludeList;
+            form.querySelector("#GenreExcludeList").value = genreExcludeList.join(", ");
             config.Metadata_StudioOnlyAnimationWorks = form.querySelector("#Metadata_StudioOnlyAnimationWorks").checked;
             ([config.ContentRatingList, config.ContentRatingOrder] = retrieveSortableCheckboxList(form, "ContentRatingList"));
             ([config.ProductionLocationList, config.ProductionLocationOrder] = retrieveSortableCheckboxList(form, "ProductionLocationList"));
@@ -586,10 +592,12 @@ async function applyConfigToForm(form, config) {
             renderCheckboxList(form, "TagIncludeFilters", config.TagIncludeFilters.split(",").map(s => s.trim()).filter(s => s));
             form.querySelector("#TagMinimumWeight").value = config.TagMinimumWeight;
             form.querySelector("#TagMaximumDepth").value = config.TagMaximumDepth.toString();
+            form.querySelector("#TagExcludeList").value = config.TagExcludeList.join(", ");
             renderCheckboxList(form, "GenreSources", config.GenreSources.split(",").map(s => s.trim()).filter(s => s));
             renderCheckboxList(form, "GenreIncludeFilters", config.GenreIncludeFilters.split(",").map(s => s.trim()).filter(s => s));
             form.querySelector("#GenreMinimumWeight").value = config.GenreMinimumWeight;
             form.querySelector("#GenreMaximumDepth").value = config.GenreMaximumDepth.toString();
+            form.querySelector("#GenreExcludeList").value = config.GenreExcludeList.join(", ");
             form.querySelector("#Metadata_StudioOnlyAnimationWorks").checked = config.Metadata_StudioOnlyAnimationWorks;
             renderSortableCheckboxList(form, "ContentRatingList", config.ContentRatingList, config.ContentRatingOrder);
             renderSortableCheckboxList(form, "ProductionLocationList", config.ProductionLocationList, config.ProductionLocationOrder);
@@ -1233,6 +1241,23 @@ function filterReconnectIntervals(value) {
         .map(str => parseInt(str.trim().toLowerCase(), 10))
         .filter(int => !Number.isNaN(int) || !Number.isInteger(int));
 }
+
+/**
+ * Filter out duplicates and sanitize list.
+ * @param {string} value - Stringified list of values to filter.
+ * @returns {string[]} An array of sanitized and filtered values.
+ */
+function filterTags(value) {
+    return Array.from(
+        new Set(
+            value
+            .split(",")
+            .map(str => str.trim().toLowerCase())
+            .filter(str => str)
+        )
+    );
+}
+
 
 //#endregion
 

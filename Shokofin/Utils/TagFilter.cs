@@ -344,22 +344,22 @@ public static class TagFilter {
 
     public static string[] FilterTags(IReadOnlyDictionary<string, ResolvedTag> tags) {
         var config = Plugin.Instance.Configuration;
-        return FilterInternal(tags, config.TagSources, config.TagIncludeFilters, config.TagMinimumWeight, config.TagMaximumDepth);
+        return FilterInternal(tags, config.TagSources, config.TagIncludeFilters, config.TagMinimumWeight, config.TagMaximumDepth, config.TagExcludeList);
     }
 
     public static string[] FilterGenres(IReadOnlyDictionary<string, ResolvedTag> tags) {
         var config = Plugin.Instance.Configuration;
-        return FilterInternal(tags, config.GenreSources, config.GenreIncludeFilters, config.GenreMinimumWeight, config.GenreMaximumDepth);
+        return FilterInternal(tags, config.GenreSources, config.GenreIncludeFilters, config.GenreMinimumWeight, config.GenreMaximumDepth, config.GenreExcludeList);
     }
 
     private static readonly HashSet<TagSource> AllFlagsToUse = Enum.GetValues<TagSource>().Except([TagSource.CustomTags]).ToHashSet();
 
     private static readonly HashSet<TagSource> AllFlagsToUseForCustomTags = AllFlagsToUse.Except([TagSource.SourceMaterial, TagSource.TargetAudience]).ToHashSet();
 
-    private static string[] FilterInternal(IReadOnlyDictionary<string, ResolvedTag> tags, TagSource source, TagIncludeFilter includeFilter, TagWeight minWeight = TagWeight.Weightless, int maxDepth = 0) {
+    private static string[] FilterInternal(IReadOnlyDictionary<string, ResolvedTag> tags, TagSource source, TagIncludeFilter includeFilter, TagWeight minWeight = TagWeight.Weightless, int maxDepth = 0, IReadOnlyCollection<string>? excludedTags = null) {
         var tagSet = new List<string>();
         foreach (var flag in AllFlagsToUse.Where(flag => source.HasFlag(flag)))
-            tagSet.AddRange(GetTagsFromSource(tags, flag, includeFilter, minWeight, maxDepth));
+            tagSet.AddRange(GetTagsFromSource(tags, flag, includeFilter, minWeight, maxDepth, excludedTags ?? []));
 
         if (source.HasFlag(TagSource.CustomTags) && tags.TryGetValue("/custom user tags", out var customTags)) {
             var count = tagSet.Count;
@@ -369,7 +369,7 @@ public static class TagFilter {
             // If we have any children that weren't added above, then run the additional checks on them.
             if (customTags.RecursiveNamespacedChildren.Count != count)
                 foreach (var flag in AllFlagsToUseForCustomTags.Where(flag => source.HasFlag(flag)))
-                    tagSet.AddRange(GetTagsFromSource(customTags.RecursiveNamespacedChildren, flag, includeFilter, minWeight, maxDepth));
+                    tagSet.AddRange(GetTagsFromSource(customTags.RecursiveNamespacedChildren, flag, includeFilter, minWeight, maxDepth, excludedTags ?? []));
         }
 
         return tagSet
@@ -378,11 +378,11 @@ public static class TagFilter {
             .ToArray();
     }
 
-    private static HashSet<string> GetTagsFromSource(IReadOnlyDictionary<string, ResolvedTag> tags, TagSource source, TagIncludeFilter includeFilter, TagWeight minWeight, int maxDepth) {
+    private static HashSet<string> GetTagsFromSource(IReadOnlyDictionary<string, ResolvedTag> tags, TagSource source, TagIncludeFilter includeFilter, TagWeight minWeight, int maxDepth, IReadOnlyCollection<string> excludedTags) {
         if (source is TagSource.SourceMaterial)
             return [GetSourceMaterial(tags)];
 
-        var tagSet = new HashSet<string>();
+        var tagSet = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
         var exceptTags = new List<ResolvedTag>();
         var includeTags = new List<KeyValuePair<string, ResolvedTag>>();
         var field = source.GetType().GetField(source.ToString())!;
@@ -432,6 +432,9 @@ public static class TagFilter {
                 continue;
             tagSet.Add(SelectTagName(tag));
         }
+
+        if (excludedTags.Count > 0)
+            tagSet.ExceptWith(excludedTags);
 
         return tagSet;
     }

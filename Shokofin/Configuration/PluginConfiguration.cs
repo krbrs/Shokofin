@@ -299,6 +299,11 @@ public class PluginConfiguration : BasePluginConfiguration {
     public int TagMaximumDepth { get; set; }
 
     /// <summary>
+    /// Exclude tags by name. Tags in this list will not show up as tags.
+    /// </summary>
+    public string[] TagExcludeList { get; set; }
+
+    /// <summary>
     /// All tag sources to use for genres.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -320,6 +325,11 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// </summary>
     [Range(0, 10)]
     public int GenreMaximumDepth { get; set; }
+
+    /// <summary>
+    /// Exclude genres by name. Tags in this list will not show up as genres.
+    /// </summary>
+    public string[] GenreExcludeList { get; set; }
 
     /// <summary>
     /// Hide tags that are not verified by the AniDB moderators yet.
@@ -700,10 +710,12 @@ public class PluginConfiguration : BasePluginConfiguration {
         TagIncludeFilters = TagIncludeFilter.Parent | TagIncludeFilter.Child | TagIncludeFilter.Abstract | TagIncludeFilter.Weightless | TagIncludeFilter.Weighted;
         TagMinimumWeight = TagWeight.Weightless;
         TagMaximumDepth = 0;
+        TagExcludeList = ["18 restricted"];
         GenreSources = TagSource.SourceMaterial | TagSource.TargetAudience | TagSource.Elements;
         GenreIncludeFilters = TagIncludeFilter.Parent | TagIncludeFilter.Child | TagIncludeFilter.Abstract | TagIncludeFilter.Weightless | TagIncludeFilter.Weighted;
         GenreMinimumWeight = TagWeight.Four;
         GenreMaximumDepth = 1;
+        GenreExcludeList = ["18 restricted"];
         ContentRatingList = [
             ProviderName.TMDB,
             ProviderName.AniDB,
