@@ -27,6 +27,11 @@ public class ShokoSeries {
     public string Description { get; set; } = string.Empty;
 
     /// <summary>
+    /// The yearly seasons this series belongs to.
+    /// </summary>
+    public List<YearlySeason> YearlySeasons { get; set; } = [];
+
+    /// <summary>
     /// The AniDB entry.
     /// </summary>
     public AnidbAnimeWithDate AniDB { get; set; } = new();

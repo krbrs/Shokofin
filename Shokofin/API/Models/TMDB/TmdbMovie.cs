@@ -119,6 +119,11 @@ public class TmdbMovie : ITmdbParentEntity {
     public IReadOnlyList<Role> Crew { get; set; } = [];
 
     /// <summary>
+    /// The yearly seasons this series belongs to.
+    /// </summary>
+    public List<YearlySeason> YearlySeasons { get; set; } = [];
+
+    /// <summary>
     /// TMDB movie to file cross-references.
     /// </summary>
     public IReadOnlyList<CrossReference> FileCrossReferences { get; set; } = [];

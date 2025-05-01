@@ -164,7 +164,7 @@ public class EpisodeInfo : IExtendedItemInfo {
                     .ToArray();
             productionLocationDict[ProviderName.TMDB] = tmdbMovie.ProductionCountries.Values.ToArray();
             contentRatings.AddRange(tmdbMovie.ContentRatings);
-            Studios = tmdbMovie.Studios.Select(r => r.Name).ToArray();
+            Studios = tmdbMovie.Studios.Select(r => r.Name).Distinct().Order().ToArray();
             if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.TmdbKeywords))
                 tags.AddRange(tmdbMovie.Keywords);
             if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.TmdbGenres))
@@ -194,7 +194,7 @@ public class EpisodeInfo : IExtendedItemInfo {
             if (tmdbParentEntity is not null) {
                 productionLocationDict[ProviderName.TMDB] = tmdbParentEntity.ProductionCountries.Values.ToArray();
                 contentRatings.AddRange(tmdbParentEntity.ContentRatings);
-                Studios = tmdbParentEntity.Studios.Select(r => r.Name).ToArray();
+                Studios = tmdbParentEntity.Studios.Select(r => r.Name).Distinct().Order().ToArray();
                 if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.TmdbKeywords))
                     tags.AddRange(tmdbParentEntity.Keywords);
                 if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.TmdbGenres))
@@ -225,12 +225,14 @@ public class EpisodeInfo : IExtendedItemInfo {
                     (!onlyAnimationWorks || role.Name is "Animation Works")
                 )
                 .Select(r => r.Staff.Name)
+                .Distinct()
+                .Order()
                 .ToArray();
         }
         CreatedAt = episode.CreatedAt;
         LastUpdatedAt = episode.LastUpdatedAt;
-        Genres = genres;
-        Tags = tags;
+        Genres = genres.Distinct().Order().ToArray();
+        Tags = tags.Distinct().Order().ToArray();
         ProductionLocations = productionLocationDict;
         ContentRatings = contentRatings.Distinct().ToList();
         CrossReferences = episode.CrossReferences;
@@ -270,9 +272,9 @@ public class EpisodeInfo : IExtendedItemInfo {
         CreatedAt = tmdbEpisode.CreatedAt;
         LastUpdatedAt = tmdbEpisode.LastUpdatedAt;
         CommunityRating = tmdbEpisode.UserRating;
-        Genres = genres;
-        Tags = tags;
-        Studios = tmdbShow.Studios.Select(r => r.Name).ToArray();
+        Genres = genres.Distinct().Order().ToList();
+        Tags = tags.Distinct().Order().ToList();
+        Studios = tmdbShow.Studios.Select(r => r.Name).Distinct().Order().ToArray();
         ProductionLocations = new Dictionary<ProviderName, IReadOnlyList<string>>() {
             { ProviderName.TMDB, tmdbShow.ProductionCountries.Values.ToArray() },
         };
@@ -323,9 +325,9 @@ public class EpisodeInfo : IExtendedItemInfo {
         CreatedAt = tmdbMovie.CreatedAt;
         LastUpdatedAt = tmdbMovie.LastUpdatedAt;
         CommunityRating = tmdbMovie.UserRating;
-        Genres = genres;
-        Tags = tags;
-        Studios = tmdbMovie.Studios.Select(r => r.Name).ToArray();
+        Genres = genres.Distinct().Order().ToList();
+        Tags = tags.Distinct().Order().ToList();
+        Studios = tmdbMovie.Studios.Select(r => r.Name).Distinct().Order().ToArray();
         ProductionLocations = new Dictionary<ProviderName, IReadOnlyList<string>>() {
             { ProviderName.TMDB, tmdbMovie.ProductionCountries.Values.ToArray() },
         };

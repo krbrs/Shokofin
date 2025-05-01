@@ -9,7 +9,7 @@ namespace Shokofin.API.Converters;
 /// <summary>
 /// Automatically converts JSON values to a string.
 /// </summary>
-public class AutoStringConverter : JsonConverter<string> {
+public class JsonAutoStringConverter : JsonConverter<string> {
     public override bool CanConvert(Type typeToConvert)
         => typeof(string) == typeToConvert;
 

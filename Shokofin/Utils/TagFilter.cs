@@ -63,7 +63,7 @@ public static class TagFilter {
     /// </summary>
     [Flags]
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public enum TagSource {
+    public enum TagSource : ulong {
         /// <summary>
         /// The content indicators branch is intended to be a less geographically specific
         /// tool than the `age rating` used by convention, for warning about things that
@@ -294,6 +294,18 @@ public static class TagFilter {
         /// </summary>
         [TagSourceInclude("/custom user tags")]
         CustomTags = 1 << 30,
+
+        /// <summary>
+        /// The first yearly season for the series.
+        /// </summary>
+        FirstYearlySeason = 1L << 31,
+
+        /// <summary>
+        /// All yearly seasons for the series, including the first. Useful
+        /// if the anime spans multiple yearly seasons. E.g. Winter 2011/12,
+        /// Spring 2012, etc..
+        /// </summary>
+        AllYearlySeasons = 1L << 32,
     }
 
     [Flags]

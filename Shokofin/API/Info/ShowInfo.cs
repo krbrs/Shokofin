@@ -114,6 +114,17 @@ public class ShowInfo : IExtendedItemInfo {
     public IReadOnlyList<string> Studios { get; init; }
 
     /// <summary>
+    /// The inferred days of the week this series airs on.
+    /// </summary>
+    /// <value>Each weekday</value>
+    public IReadOnlyList<DayOfWeek> DaysOfWeek { get; init; }
+
+    /// <summary>
+    /// The yearly seasons this series belongs to.
+    /// </summary>
+    public IReadOnlyList<YearlySeason> YearlySeasons { get; init; }
+
+    /// <summary>
     /// All staff from across all seasons.
     /// </summary>
     public IReadOnlyList<PersonInfo> Staff { get; init; }
@@ -199,6 +210,8 @@ public class ShowInfo : IExtendedItemInfo {
         ProductionLocations = seasonInfo.ProductionLocations;
         ContentRatings = seasonInfo.ContentRatings;
         Studios = seasonInfo.Studios;
+        DaysOfWeek = seasonInfo.DaysOfWeek;
+        YearlySeasons = seasonInfo.YearlySeasons;
         Staff = seasonInfo.Staff;
         SeasonList = [seasonInfo];
         SeasonNumberBaseDictionary = seasonNumberBaseDictionary;
@@ -327,6 +340,8 @@ public class ShowInfo : IExtendedItemInfo {
             .GroupBy(kP => kP.Key, kP => kP.Value)
             .ToDictionary(gB => gB.Key, gB => gB.SelectMany(l => l).Distinct().ToList() as IReadOnlyList<string>);
         ContentRatings = contentRatings;
+        DaysOfWeek = seasonList[^1].DaysOfWeek;
+        YearlySeasons = seasonList.SelectMany(s => s.YearlySeasons).Distinct().Order().ToArray();
         Staff = seasonList.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
         SeasonList = seasonList;
         SeasonNumberBaseDictionary = seasonNumberBaseDictionary;
@@ -418,6 +433,8 @@ public class ShowInfo : IExtendedItemInfo {
             .SelectMany(sI => sI.ContentRatings)
             .Distinct()
             .ToList();
+        DaysOfWeek = seasonList[^1].DaysOfWeek;
+        YearlySeasons = seasonList.SelectMany(s => s.YearlySeasons).Distinct().Order().ToArray();
         Staff = seasonList.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
         SeasonList = seasonList;
         SeasonNumberBaseDictionary = seasonNumberBaseDictionary;
@@ -453,6 +470,8 @@ public class ShowInfo : IExtendedItemInfo {
         Studios = seasonInfo.Studios;
         ProductionLocations = seasonInfo.ProductionLocations;
         ContentRatings = seasonInfo.ContentRatings;
+        DaysOfWeek = [];
+        YearlySeasons = seasonInfo.YearlySeasons;
         Staff = seasonInfo.Staff;
         SeasonList = [seasonInfo];
         SeasonNumberBaseDictionary = new Dictionary<string, int> { { seasonInfo.Id, 1 } };
@@ -548,6 +567,8 @@ public class ShowInfo : IExtendedItemInfo {
             .Distinct()
             .ToList();
         Studios = seasonList.SelectMany(s => s.Studios).Distinct().ToArray();
+        DaysOfWeek = [];
+        YearlySeasons = seasonList.SelectMany(s => s.YearlySeasons).Distinct().Order().ToArray();
         Staff = seasonList.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
         SeasonList = seasonList;
         SeasonNumberBaseDictionary = seasonNumberBaseDictionary;

@@ -8,6 +8,7 @@ using Shokofin.API.Models.Shoko;
 using Shokofin.API.Models.TMDB;
 using Shokofin.Configuration;
 using Shokofin.Events.Interfaces;
+using Shokofin.Extensions;
 using Shokofin.ExternalIds;
 using Shokofin.Utils;
 
@@ -84,6 +85,17 @@ public class SeasonInfo : IExtendedItemInfo {
     public IReadOnlyDictionary<ProviderName, IReadOnlyList<string>> ProductionLocations { get; init; }
 
     public IReadOnlyList<ContentRating> ContentRatings { get; init; }
+
+    /// <summary>
+    /// The inferred days of the week this series airs on.
+    /// </summary>
+    /// <value>Each weekday</value>
+    public IReadOnlyList<DayOfWeek> DaysOfWeek { get; init; }
+
+    /// <summary>
+    /// The yearly seasons this series belongs to.
+    /// </summary>
+    public IReadOnlyList<YearlySeason> YearlySeasons { get; init; }
 
     public IReadOnlyList<PersonInfo> Staff { get; init; }
 
@@ -287,6 +299,10 @@ public class SeasonInfo : IExtendedItemInfo {
             }
         }
 
+        var genres = episodes.SelectMany(s => s.Genres).ToList();
+        var tags = episodes.SelectMany(s => s.Tags).ToList();
+        AddYearlySeasons(ref genres, ref tags, series.YearlySeasons);
+
         _client = client;
         Id = seasonId;
         ExtraIds = extraIds.ToArray();
@@ -330,17 +346,39 @@ public class SeasonInfo : IExtendedItemInfo {
         CreatedAt = series.CreatedAt;
         LastUpdatedAt = series.LastUpdatedAt;
         EndDate = series.AniDB.EndDate;
-        Genres = episodes.SelectMany(s => s.Genres).Distinct().ToArray();
-        Tags = episodes.SelectMany(s => s.Tags).Distinct().ToArray();
-        Studios = episodes.SelectMany(s => s.Studios).Distinct().ToArray();
+        Genres = genres.Distinct().Order().ToArray();
+        Tags = tags.Distinct().Order().ToArray();
+        Studios = episodes.SelectMany(s => s.Studios).Distinct().Order().ToArray();
         ProductionLocations = episodes
             .SelectMany(sI => sI.ProductionLocations)
             .GroupBy(kP => kP.Key, kP => kP.Value)
-            .ToDictionary(gB => gB.Key, gB => gB.SelectMany(l => l).Distinct().ToList() as IReadOnlyList<string>);
+            .ToDictionary(gB => gB.Key, gB => gB.SelectMany(l => l).Distinct().Order().ToList() as IReadOnlyList<string>);
         ContentRatings = episodes
             .SelectMany(sI => sI.ContentRatings)
             .Distinct()
             .ToList();
+        // Movies aren't aired on a schedule like series, so if even if the
+        // movie series has it's type overridden then we don't want to attempt
+        // to create a schedule.
+        if (series.AniDB.Type is SeriesType.Movie) {
+            DaysOfWeek = [];
+        }
+        else {
+            DaysOfWeek = episodesList
+                .Select(e => e.AiredAt)
+                .WhereNotNullOrDefault()
+                .Distinct()
+                .Order()
+                // A single cour season is usually 12-13 episodes, give or take.
+                .TakeLast(12)
+                // In case the two first episodes got an early screening in a 12-13 episode single cour anime.
+                .Skip(2)
+                .Select(e => e.DayOfWeek)
+                .Distinct()
+                .Order()
+                .ToArray();
+        }
+        YearlySeasons = series.YearlySeasons;
         Staff = episodes.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
         EpisodeList = episodesList;
         AlternateEpisodesList = altEpisodesList;
@@ -363,6 +401,7 @@ public class SeasonInfo : IExtendedItemInfo {
             genres.AddRange(tmdbShow.Keywords);
         if (Plugin.Instance.Configuration.GenreSources.HasFlag(TagFilter.TagSource.TmdbGenres))
             genres.AddRange(tmdbShow.Genres);
+        AddYearlySeasons(ref genres, ref tags, tmdbSeason.YearlySeasons);
 
         _client = client;
         Id = IdPrefix.TmdbShow + tmdbSeason.Id;
@@ -388,13 +427,25 @@ public class SeasonInfo : IExtendedItemInfo {
         }
         CreatedAt = tmdbSeason.CreatedAt;
         LastUpdatedAt = tmdbSeason.LastUpdatedAt;
-        Genres = genres;
-        Tags = tags;
-        Studios = tmdbShow.Studios.Select(s => s.Name).ToArray();
+        Genres = genres.Distinct().Order().ToArray();
+        Tags = tags.Distinct().Order().ToArray();
+        Studios = tmdbShow.Studios.Select(s => s.Name).Distinct().Order().ToArray();
         ProductionLocations = new Dictionary<ProviderName, IReadOnlyList<string>>() {
             { ProviderName.TMDB, tmdbShow.ProductionCountries.Values.ToArray() },
         };
         ContentRatings = tmdbShow.ContentRatings;
+        DaysOfWeek = episodes
+            .Select(e => e.AiredAt)
+            .WhereNotNullOrDefault()
+            .Distinct()
+            .Order()
+            // A single cour season is usually 12-13 episodes, give or take.
+            .TakeLast(12)
+            // In case the two first episodes got an early screening in a 12-13 episode single cour anime.
+            .Skip(2)
+            .Select(e => e.DayOfWeek)
+            .ToArray();
+        YearlySeasons = tmdbSeason.YearlySeasons;
         Staff = episodes.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
         EpisodeList = tmdbSeason.SeasonNumber is not 0 ? episodes.ToList() : [];
         AlternateEpisodesList = [];
@@ -407,6 +458,10 @@ public class SeasonInfo : IExtendedItemInfo {
     }
 
     public SeasonInfo(ShokoApiClient client, TmdbMovie tmdbMovie, EpisodeInfo episodeInfo, string? anidbId = null, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
+        var genres = episodeInfo.Genres.ToList();
+        var tags = episodeInfo.Tags.ToList();
+        AddYearlySeasons(ref genres, ref tags, tmdbMovie.YearlySeasons);
+
         _client = client;
         Id = IdPrefix.TmdbMovie + tmdbMovie.Id.ToString();
         ExtraIds = [];
@@ -429,11 +484,13 @@ public class SeasonInfo : IExtendedItemInfo {
         CreatedAt = tmdbMovie.CreatedAt;
         LastUpdatedAt = tmdbMovie.LastUpdatedAt;
         EndDate = episodeInfo.AiredAt is { } endDate && endDate < DateTime.Now ? endDate : null;
-        Genres = episodeInfo.Genres;
-        Tags = episodeInfo.Tags;
+        Genres = genres.Distinct().Order().ToArray();
+        Tags = tags.Distinct().Order().ToArray();
         Studios = episodeInfo.Studios;
         ProductionLocations = episodeInfo.ProductionLocations;
         ContentRatings = episodeInfo.ContentRatings;
+        DaysOfWeek = [];
+        YearlySeasons = tmdbMovie.YearlySeasons;
         Staff = episodeInfo.Staff;
         EpisodeList = [episodeInfo];
         AlternateEpisodesList = [];
@@ -446,6 +503,10 @@ public class SeasonInfo : IExtendedItemInfo {
     }
 
     public SeasonInfo(ShokoApiClient client, TmdbMovieCollection tmdbMovieCollection, IReadOnlyList<TmdbMovie> movies, IReadOnlyList<EpisodeInfo> episodes, string? anidbId = null, string? shokoSeriesId = null, string? shokoGroupId = null, string? topLevelShokoGroupId = null) {
+        var genres = episodes.SelectMany(m => m.Genres).ToList();
+        var tags = episodes.SelectMany(m => m.Genres).ToList();
+        AddYearlySeasons(ref genres, ref tags, movies.SelectMany(m => m.YearlySeasons));
+
         _client = client;
         Id = IdPrefix.TmdbMovieCollection + tmdbMovieCollection.Id.ToString();
         ExtraIds = [];
@@ -468,17 +529,19 @@ public class SeasonInfo : IExtendedItemInfo {
         CreatedAt = tmdbMovieCollection.CreatedAt;
         LastUpdatedAt = tmdbMovieCollection.LastUpdatedAt;
         EndDate = episodes[^1].AiredAt is { } endDate && endDate < DateTime.Now ? endDate : null;
-        Genres = episodes.SelectMany(m => m.Genres).Distinct().ToArray();
-        Tags = episodes.SelectMany(m => m.Tags).Distinct().ToArray();
+        Genres = genres.Distinct().Order().ToArray();
+        Tags = tags.Distinct().Order().ToArray();
         ProductionLocations = episodes
             .SelectMany(sI => sI.ProductionLocations)
             .GroupBy(kP => kP.Key, kP => kP.Value)
-            .ToDictionary(gB => gB.Key, gB => gB.SelectMany(l => l).Distinct().ToList() as IReadOnlyList<string>);
+            .ToDictionary(gB => gB.Key, gB => gB.SelectMany(l => l).Distinct().Order().ToList() as IReadOnlyList<string>);
         ContentRatings = episodes
             .SelectMany(sI => sI.ContentRatings)
             .Distinct()
             .ToList();
-        Studios = episodes.SelectMany(m => m.Studios).Distinct().ToArray();
+        DaysOfWeek = [];
+        YearlySeasons = movies.SelectMany(m => m.YearlySeasons).Distinct().Order().ToArray();
+        Studios = episodes.SelectMany(m => m.Studios).Distinct().Order().ToArray();
         Staff = episodes.SelectMany(s => s.Staff).DistinctBy(p => new { p.Type, p.Name, p.Role }).ToArray();
         EpisodeList = [.. episodes];
         AlternateEpisodesList = [];
@@ -488,6 +551,22 @@ public class SeasonInfo : IExtendedItemInfo {
         SpecialsAnchors = new Dictionary<EpisodeInfo, EpisodeInfo>();
         Relations = [];
         RelationMap = new Dictionary<string, RelationType>();
+    }
+
+    private void AddYearlySeasons(ref List<string> genres, ref List<string> tags, IEnumerable<YearlySeason> yearlySeasons) {
+        var seasons = yearlySeasons.Select(season => $"{season.Season} {(season.Season is YearlySeasonName.Winter ? $"{season.Year - 1}/{season.Year.ToString().Substring(2, 2)}" : season.Year)}").ToList();
+        if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.AllYearlySeasons)) {
+            tags.AddRange(seasons);
+        }
+        else if (Plugin.Instance.Configuration.TagSources.HasFlag(TagFilter.TagSource.AllYearlySeasons) && seasons.Count > 0) {
+            tags.Add(seasons.First());
+        }
+        if (Plugin.Instance.Configuration.GenreSources.HasFlag(TagFilter.TagSource.AllYearlySeasons)) {
+            genres.AddRange(seasons);
+        }
+        else if (Plugin.Instance.Configuration.GenreSources.HasFlag(TagFilter.TagSource.AllYearlySeasons) && seasons.Count > 0) {
+            genres.Add(seasons.First());
+        }
     }
 
     private IReadOnlyList<(File file, string seriesId, HashSet<string> episodeIds)>? _cachedFiles = null;

@@ -696,7 +696,7 @@ public class PluginConfiguration : BasePluginConfiguration {
             TagSource.OriginProduction | TagSource.OriginDevelopment | TagSource.SourceMaterial | TagSource.SettingPlace |
             TagSource.SettingTimePeriod | TagSource.SettingTimeSeason | TagSource.TargetAudience | TagSource.TechnicalAspects |
             TagSource.TechnicalAspectsAdaptions | TagSource.TechnicalAspectsAwards | TagSource.TechnicalAspectsMultiAnimeProjects |
-            TagSource.Themes | TagSource.ThemesDeath | TagSource.ThemesTales | TagSource.CustomTags;
+            TagSource.Themes | TagSource.ThemesDeath | TagSource.ThemesTales | TagSource.CustomTags | TagSource.AllYearlySeasons;
         TagIncludeFilters = TagIncludeFilter.Parent | TagIncludeFilter.Child | TagIncludeFilter.Abstract | TagIncludeFilter.Weightless | TagIncludeFilter.Weighted;
         TagMinimumWeight = TagWeight.Weightless;
         TagMaximumDepth = 0;

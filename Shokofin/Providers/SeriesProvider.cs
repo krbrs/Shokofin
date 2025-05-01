@@ -57,6 +57,7 @@ public class SeriesProvider(IHttpClientFactory _httpClientFactory, ILogger<Serie
                 OriginalTitle = alternateTitle,
                 Overview = Text.GetDescription(showInfo, info.MetadataLanguage),
                 PremiereDate = premiereDate,
+                AirDays = showInfo.DaysOfWeek.ToArray(),
                 ProductionYear = premiereDate?.Year,
                 EndDate = endDate,
                 Status = !endDate.HasValue || endDate.Value > DateTime.UtcNow ? SeriesStatus.Continuing : SeriesStatus.Ended,

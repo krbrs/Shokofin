@@ -526,10 +526,10 @@ public class ShokoApiClient : IDisposable {
     #region TMDB Season
 
     public Task<TmdbSeason?> GetTmdbSeasonForTmdbEpisode(string episodeId)
-        => GetOrNull<TmdbSeason>($"/api/v3/TMDB/Episode/{episodeId}/Season?include=Titles,Overviews");
+        => GetOrNull<TmdbSeason>($"/api/v3/TMDB/Episode/{episodeId}/Season?include=Titles,Overviews,YearlySeasons");
 
     public Task<TmdbSeason?> GetTmdbSeason(string seasonId)
-        => GetOrNull<TmdbSeason>($"/api/v3/TMDB/Season/{seasonId}?include=Titles,Overviews");
+        => GetOrNull<TmdbSeason>($"/api/v3/TMDB/Season/{seasonId}?include=Titles,Overviews,YearlySeasons");
 
     public async Task<IReadOnlyList<TmdbSeason>> GetTmdbSeasonsInTmdbShow(string showId)
         => (await GetOrNull<ListResult<TmdbSeason>>($"/api/v3/TMDB/Show/{showId}/Season?pageSize=0&include=Titles,Overviews").ConfigureAwait(false))?.List ?? [];
@@ -571,10 +571,10 @@ public class ShokoApiClient : IDisposable {
     #region TMDB Movie
 
     public Task<TmdbMovie?> GetTmdbMovie(string movieId)
-        => GetOrNull<TmdbMovie>($"/api/v3/TMDB/Movie/{movieId}?include=Titles,Overviews,Keywords,Studios,ContentRatings,ProductionCountries,Cast,Crew,FileCrossReferences");
+        => GetOrNull<TmdbMovie>($"/api/v3/TMDB/Movie/{movieId}?include=Titles,Overviews,Keywords,Studios,ContentRatings,ProductionCountries,Cast,Crew,FileCrossReferences,YearlySeasons");
 
     public async Task<IReadOnlyList<TmdbMovie>> GetTmdbMoviesInMovieCollection(string collectionId)
-        => await GetOrNull<IReadOnlyList<TmdbMovie>>($"/api/v3/TMDB/Movie/Collection/{collectionId}/Movie?include=Titles,Overviews,Keywords,Studios,ContentRatings,ProductionCountries,Cast,Crew,FileCrossReferences").ConfigureAwait(false) ?? [];
+        => await GetOrNull<IReadOnlyList<TmdbMovie>>($"/api/v3/TMDB/Movie/Collection/{collectionId}/Movie?include=Titles,Overviews,Keywords,Studios,ContentRatings,ProductionCountries,Cast,Crew,FileCrossReferences,YearlySeasons").ConfigureAwait(false) ?? [];
 
     public Task<EpisodeImages?> GetImagesForTmdbMovie(string movieId, CancellationToken cancellationToken = default)
         => GetOrNull<EpisodeImages>($"/api/v3/TMDB/Movie/{movieId}/Images", cancellationToken: cancellationToken);

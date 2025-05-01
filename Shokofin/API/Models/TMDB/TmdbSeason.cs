@@ -62,6 +62,11 @@ public class TmdbSeason : ITmdbEntity {
     public bool? IsLocked { get; set; }
 
     /// <summary>
+    /// The yearly seasons this series belongs to.
+    /// </summary>
+    public List<YearlySeason> YearlySeasons { get; set; } = [];
+
+    /// <summary>
     /// When the local metadata was first created.
     /// </summary>
     public DateTime CreatedAt { get; set; }

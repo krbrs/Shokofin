@@ -7,7 +7,7 @@ public class ReleaseGroup {
     /// <summary>
     /// The AniDB Release Group ID (e.g. 1)
     /// /// </summary>
-    [JsonPropertyName("ID"), JsonConverter(typeof(AutoStringConverter))]
+    [JsonPropertyName("ID"), JsonConverter(typeof(JsonAutoStringConverter))]
     public string? Id { get; set; }
 
     /// <summary>
