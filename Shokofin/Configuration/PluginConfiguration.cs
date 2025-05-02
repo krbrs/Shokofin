@@ -9,6 +9,7 @@ using Shokofin.API.Models;
 
 using CollectionCreationType = Shokofin.Utils.Ordering.CollectionCreationType;
 using DescriptionProvider = Shokofin.Utils.Text.DescriptionProvider;
+using DescriptionConversionMode = Shokofin.Utils.Text.DescriptionConversionMode;
 using ImageType = MediaBrowser.Model.Entities.ImageType;
 using LibraryFilteringMode = Shokofin.Utils.Ordering.LibraryFilteringMode;
 using MergeVersionSortSelector = Shokofin.MergeVersions.MergeVersionSortSelector;
@@ -195,24 +196,74 @@ public class PluginConfiguration : BasePluginConfiguration {
     public DescriptionProvider[] DescriptionSourceOrder { get; set; }
 
     /// <summary>
+    /// The conversion mode for descriptions/synopses/summaries.
+    /// </summary>
+    [XmlIgnore, JsonInclude]
+    public DescriptionConversionMode DescriptionConversionMode
+    {
+        get
+        {
+            if (SynopsisCleanLinks && SynopsisCleanMiscLines && SynopsisRemoveSummary && SynopsisCleanMultiEmptyLines)
+                return SynopsisEnableMarkdown ? DescriptionConversionMode.Markdown : DescriptionConversionMode.PlainText;
+            return DescriptionConversionMode.PlainText;
+        }
+        set
+        {
+            switch (value) {
+                case DescriptionConversionMode.PlainText:
+                    SynopsisEnableMarkdown = false;
+                    SynopsisCleanLinks = true;
+                    SynopsisCleanMiscLines = true;
+                    SynopsisRemoveSummary = true;
+                    SynopsisCleanMultiEmptyLines = true;
+                    break;
+                case DescriptionConversionMode.Markdown:
+                    SynopsisEnableMarkdown = true;
+                    SynopsisCleanLinks = true;
+                    SynopsisCleanMiscLines = true;
+                    SynopsisRemoveSummary = true;
+                    SynopsisCleanMultiEmptyLines = true;
+                    break;
+                default:
+                    SynopsisEnableMarkdown = false;
+                    SynopsisCleanLinks = false;
+                    SynopsisCleanMiscLines = false;
+                    SynopsisRemoveSummary = false;
+                    SynopsisCleanMultiEmptyLines = false;
+                    break;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Disable markdown in the description.
+    /// </summary>
+    [JsonIgnore]
+    public bool SynopsisEnableMarkdown { get; set; }
+
+    /// <summary>
     /// Clean up links within the AniDB description for entries.
     /// </summary>
+    [JsonIgnore]
     public bool SynopsisCleanLinks { get; set; }
 
     /// <summary>
     /// Clean up misc. lines within the AniDB description for entries.
     /// </summary>
+    [JsonIgnore]
     public bool SynopsisCleanMiscLines { get; set; }
 
     /// <summary>
     /// Remove the "summary" preface text in the AniDB description for entries.
     /// </summary>
+    [JsonIgnore]
     public bool SynopsisRemoveSummary { get; set; }
 
     /// <summary>
     /// Collapse up multiple empty lines into a single line in the AniDB
     /// description for entries.
     /// </summary>
+    [JsonIgnore]
     public bool SynopsisCleanMultiEmptyLines { get; set; }
 
     /// <summary>
@@ -688,6 +739,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         AlternateTitles = [new()];
         AdvancedTitlesConfiguration = new();
         MarkSpecialsWhenGrouped = true;
+        SynopsisEnableMarkdown = true;
         SynopsisCleanLinks = true;
         SynopsisCleanMiscLines = true;
         SynopsisRemoveSummary = true;

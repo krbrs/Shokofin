@@ -409,10 +409,7 @@ function applyFormToConfig(form, config) {
             const genreExcludeList = filterTags(form.querySelector("#GenreExcludeList").value);
             config.MarkSpecialsWhenGrouped = form.querySelector("#MarkSpecialsWhenGrouped").checked;
             ([config.DescriptionSourceList, config.DescriptionSourceOrder] = retrieveSortableCheckboxList(form, "DescriptionSourceList"));
-            config.SynopsisCleanLinks = form.querySelector("#CleanupAniDBDescriptions").checked;
-            config.SynopsisCleanMultiEmptyLines = form.querySelector("#CleanupAniDBDescriptions").checked;
-            config.SynopsisCleanMiscLines = form.querySelector("#CleanupAniDBDescriptions").checked;
-            config.SynopsisRemoveSummary = form.querySelector("#CleanupAniDBDescriptions").checked;
+            config.DescriptionConversionMode = form.querySelector("#DescriptionConversionMode").value;
             config.AddImageLanguageCodeForShows = retrieveCheckboxList(form, "AddImageLanguageCodeForShows");
             config.AddImageLanguageCodeForMovies = retrieveCheckboxList(form, "AddImageLanguageCodeForMovies");
             config.AddImageCommunityRatingForShows = retrieveCheckboxList(form, "AddImageCommunityRatingForShows");
@@ -576,12 +573,7 @@ async function applyConfigToForm(form, config) {
 
             form.querySelector("#MarkSpecialsWhenGrouped").checked = config.MarkSpecialsWhenGrouped;
             renderSortableCheckboxList(form, "DescriptionSourceList", config.DescriptionSourceList, config.DescriptionSourceOrder);
-            form.querySelector("#CleanupAniDBDescriptions").checked = (
-                config.SynopsisCleanMultiEmptyLines ||
-                config.SynopsisCleanLinks ||
-                config.SynopsisRemoveSummary ||
-                config.SynopsisCleanMiscLines
-            );
+            form.querySelector("#DescriptionConversionMode").value = config.DescriptionConversionMode;
             renderCheckboxList(form, "AddImageLanguageCodeForShows", config.AddImageLanguageCodeForShows);
             renderCheckboxList(form, "AddImageLanguageCodeForMovies", config.AddImageLanguageCodeForMovies);
             renderCheckboxList(form, "AddImageCommunityRatingForShows", config.AddImageCommunityRatingForShows);

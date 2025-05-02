@@ -196,6 +196,10 @@ export const LibraryMenu = globalThis.LibraryMenu;
 */
 
 /**
+* @typedef {"Disabled" | "PlainText" | "Markdown"} DescriptionConversionMode
+*/
+
+/**
 * @typedef {"Shoko_Default" | "AniDB_Default" | "AniDB_LibraryLanguage" | "AniDB_CountryOfOrigin" | "TMDB_Default" | "TMDB_LibraryLanguage" | "TMDB_CountryOfOrigin"} TitleProvider
 */
 
@@ -337,10 +341,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   DescriptionSourceOverride: boolean;
  *   DescriptionSourceList: DescriptionProvider[];
  *   DescriptionSourceOrder: DescriptionProvider[];
- *   SynopsisCleanLinks: boolean;
- *   SynopsisCleanMiscLines: boolean;
- *   SynopsisRemoveSummary: boolean;
- *   SynopsisCleanMultiEmptyLines: boolean;
+ *   DescriptionConversionMode: DescriptionConversionMode;
  *   TagSources: TagSource[];
  *   TagIncludeFilters: TagIncludeFilter[];
  *   TagMinimumWeight: TagWeight;

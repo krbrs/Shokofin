@@ -100,6 +100,26 @@ public static partial class Text {
     }
 
     /// <summary>
+    /// Determines how to convert the description.
+    /// </summary>
+    public enum DescriptionConversionMode {
+        /// <summary>
+        /// Don't convert the description.
+        /// </summary>
+        Disabled = 0,
+
+        /// <summary>
+        /// Convert the description to plain text.
+        /// </summary>
+        PlainText = 1,
+
+        /// <summary>
+        /// Convert the description to markdown.
+        /// </summary>
+        Markdown = 2,
+    }
+
+    /// <summary>
     /// Determines which provider and method to use to look-up the title.
     /// </summary>
     public enum TitleProvider {
@@ -206,14 +226,14 @@ public static partial class Text {
 
         var config = Plugin.Instance.Configuration;
         if (config.SynopsisCleanLinks)
-            summary = summary.Replace(SynopsisCleanLinks, match => $"[{match.Groups[2].Value}]({match.Groups[1].Value})");
+            summary = summary.Replace(SynopsisCleanLinks, match => config.SynopsisEnableMarkdown ? $"[{match.Groups[2].Value}]({match.Groups[1].Value})" : match.Groups[2].Value);
 
         if (config.SynopsisCleanMiscLines)
             summary = summary.Replace(SynopsisCleanMiscLines, string.Empty);
 
         if (config.SynopsisRemoveSummary)
             summary = summary
-                .Replace(SynopsisRemoveSummary1, match => $"**{match.Groups[1].Value}**: ")
+                .Replace(SynopsisRemoveSummary1, match => config.SynopsisEnableMarkdown ? $"**{match.Groups[1].Value}**: " : "")
                 .Replace(SynopsisRemoveSummary2, string.Empty);
 
         if (config.SynopsisCleanMultiEmptyLines)
