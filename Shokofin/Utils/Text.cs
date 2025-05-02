@@ -72,6 +72,22 @@ public static partial class Text {
         "Web",
     };
 
+    private static readonly Regex SynopsisCleanLinks = new(@"(https?:\/\/\w+.\w+(?:\/?\w+)?) \[([^\]]+)\]", RegexOptions.Compiled);
+
+    private static readonly Regex SynopsisCleanMiscLines = new(@"^(\*|--|~)\s*", RegexOptions.Multiline | RegexOptions.Compiled);
+
+    private static readonly Regex SynopsisRemoveSummary1 = new(@"\b(Note|Summary):\s*", RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex SynopsisRemoveSummary2 = new(@"\bSource: [^ ]+", RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex SynopsisConvertNewLines = new(@"\r\n|\r", RegexOptions.Singleline | RegexOptions.Compiled);
+
+    private static readonly Regex SynopsisCleanMultiEmptyLines = new(@"\n{2,}", RegexOptions.Singleline | RegexOptions.Compiled);
+
+    [GeneratedRegex(@"^(?:Special|Episode|Volume|OVA|OAD|Web) \d+$|^Part \d+ of \d+$|^Episode [COPRST]\d+$|^(?:OVA|OAD|Movie|Complete Movie|Short Movie|TV Special|Music Video|Web|Volume)$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
+    private static partial Regex InvalidEpisodeTitleRegex();
+
+
     /// <summary>
     /// Determines which provider to use to provide the descriptions.
     /// </summary>
@@ -175,9 +191,142 @@ public static partial class Text {
         /// </summary>
         Alternate = 1,
     }
+    public static string? JoinText(IEnumerable<string?> textList) {
+        var filteredList = textList
+            .Where(title => !string.IsNullOrWhiteSpace(title))
+            .Select(title => title!.Trim())
+            // We distinct the list because some episode entries contain the **exact** same description.
+            .Distinct()
+            .ToList();
 
-    public static string GetDescription(IBaseItemInfo baseInfo, string? metadataLanguage) {
-        foreach (var provider in GetOrderedDescriptionProviders()) {
+        if (filteredList.Count == 0)
+            return null;
+
+        var index = 1;
+        var outputText = filteredList[0];
+        while (index < filteredList.Count) {
+            var lastChar = outputText[^1];
+            outputText += PunctuationMarks.Contains(lastChar) ? " " : ". ";
+            outputText += filteredList[index++];
+        }
+
+        if (filteredList.Count > 1)
+            outputText = outputText.TrimEnd();
+
+        return outputText;
+    }
+
+    #region Description
+
+    #region Description | Episode
+
+    public static string GetEpisodeDescription(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
+        => seasonInfo.StructureType switch {
+            SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.Description.AnidbEpisode.Enabled ? (
+                GetDescription(episodeInfo, Plugin.Instance.Configuration.Description.AnidbEpisode, metadataLanguage)
+            ) : (
+                GetDescription(episodeInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.Description.TmdbEpisode.Enabled ? (
+                GetDescription(episodeInfo, Plugin.Instance.Configuration.Description.TmdbEpisode, metadataLanguage)
+            ) : (
+                GetDescription(episodeInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+            _ => Plugin.Instance.Configuration.Description.ShokoEpisode.Enabled ? (
+                GetDescription(episodeInfo, Plugin.Instance.Configuration.Description.ShokoEpisode, metadataLanguage)
+            ) : (
+                GetDescription(episodeInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+        };
+
+    public static string GetEpisodeDescription(IEnumerable<EpisodeInfo> episodeList, SeasonInfo seasonInfo, string? metadataLanguage)
+        => JoinText(episodeList.Select(baseInfo => GetEpisodeDescription(baseInfo, seasonInfo, metadataLanguage))) ?? string.Empty;
+
+    #endregion
+
+    #region Description | Season
+
+    public static string GetSeasonDescription(SeasonInfo seasonInfo, string? metadataLanguage)
+        => seasonInfo.StructureType switch {
+            SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.Description.AnidbSeason.Enabled ? (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.AnidbSeason, metadataLanguage)
+            ) : (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.Description.TmdbSeason.Enabled ? (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.TmdbSeason, metadataLanguage)
+            ) : (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+            _ => Plugin.Instance.Configuration.Description.ShokoSeason.Enabled ? (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.ShokoSeason, metadataLanguage)
+            ) : (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+        };
+
+    #endregion
+
+    #region Description | Show
+
+    public static string GetShowDescription(ShowInfo showInfo, string? metadataLanguage)
+        => showInfo.DefaultSeason.StructureType switch {
+            SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.Description.AnidbAnime.Enabled ? (
+                GetDescription(showInfo, Plugin.Instance.Configuration.Description.AnidbAnime, metadataLanguage)
+            ) : (
+                GetDescription(showInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.Description.TmdbShow.Enabled ? (
+                GetDescription(showInfo, Plugin.Instance.Configuration.Description.TmdbShow, metadataLanguage)
+            ) : (
+                GetDescription(showInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+            _ => Plugin.Instance.Configuration.Description.ShokoSeries.Enabled ? (
+                GetDescription(showInfo, Plugin.Instance.Configuration.Description.ShokoSeries, metadataLanguage)
+            ) : (
+                GetDescription(showInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+        };
+
+    #endregion
+
+    #region Description | Movie
+
+    public static string GetMovieDescription(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage) {
+        // TMDB movies have a proper "episode" description.
+        if (episodeInfo.Id[0] is IdPrefix.TmdbMovie)
+            return GetEpisodeDescription(episodeInfo, seasonInfo, metadataLanguage);
+
+        return seasonInfo.IsMultiEntry && !episodeInfo.IsMainEntry
+            ? GetEpisodeDescription(episodeInfo, seasonInfo, metadataLanguage)
+            : GetSeasonDescription(seasonInfo, metadataLanguage);
+    }
+
+    #endregion
+
+    public static string GetCollectionDescription(SeasonInfo seasonInfo, string? metadataLanguage)
+        => seasonInfo.StructureType switch {
+            SeriesStructureType.TMDB_SeriesAndMovies => Plugin.Instance.Configuration.Description.TmdbCollection.Enabled ? (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.TmdbCollection, metadataLanguage)
+            ) : (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+            _ => Plugin.Instance.Configuration.Description.ShokoCollection.Enabled ? (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.ShokoCollection, metadataLanguage)
+            ) : (
+                GetDescription(seasonInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+            ),
+        };
+
+    public static string GetCollectionDescription(CollectionInfo collectionInfo, string? metadataLanguage)
+        => Plugin.Instance.Configuration.Description.ShokoCollection.Enabled ? (
+            GetDescription(collectionInfo, Plugin.Instance.Configuration.Description.ShokoCollection, metadataLanguage)
+        ) : (
+            GetDescription(collectionInfo, Plugin.Instance.Configuration.Description.Default, metadataLanguage)
+        );
+
+    private static string GetDescription(IBaseItemInfo baseInfo, DescriptionConfiguration config, string? metadataLanguage) {
+        foreach (var provider in config.GetOrderedTitleProviders()) {
             var overview = provider switch {
                 DescriptionProvider.Shoko =>
                     baseInfo.Overview,
@@ -192,25 +341,6 @@ public static partial class Text {
         }
         return string.Empty;
     }
-
-    public static string GetDescription(IEnumerable<IBaseItemInfo> baseInfoList, string? metadataLanguage)
-        => JoinText(baseInfoList.Select(baseInfo => GetDescription(baseInfo, metadataLanguage))) ?? string.Empty;
-
-    public static string GetMovieDescription(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage) {
-        // TMDB movies have a proper "episode" description.
-        if (episodeInfo.Id[0] is IdPrefix.TmdbMovie)
-            return GetDescription(episodeInfo, metadataLanguage);
-
-        return seasonInfo.IsMultiEntry && !episodeInfo.IsMainEntry
-            ? GetDescription(episodeInfo, metadataLanguage)
-            : GetDescription(seasonInfo, metadataLanguage);
-    }
-
-    /// <summary>
-    /// Returns a list of the description providers to check, and in what order
-    /// </summary>
-    private static DescriptionProvider[] GetOrderedDescriptionProviders()
-        => Plugin.Instance.Configuration.DescriptionSourceOrder.Where((t) => Plugin.Instance.Configuration.DescriptionSourceList.Contains(t)).ToArray();
 
     /// <summary>
     /// Sanitize the AniDB entry description to something usable by Jellyfin.
@@ -244,42 +374,12 @@ public static partial class Text {
         return summary.Trim();
     }
 
-    private static readonly Regex SynopsisCleanLinks = new(@"(https?:\/\/\w+.\w+(?:\/?\w+)?) \[([^\]]+)\]", RegexOptions.Compiled);
 
-    private static readonly Regex SynopsisCleanMiscLines = new(@"^(\*|--|~)\s*", RegexOptions.Multiline | RegexOptions.Compiled);
+    #endregion
 
-    private static readonly Regex SynopsisRemoveSummary1 = new(@"\b(Note|Summary):\s*", RegexOptions.Singleline | RegexOptions.Compiled);
+    #region Titles
 
-    private static readonly Regex SynopsisRemoveSummary2 = new(@"\bSource: [^ ]+", RegexOptions.Singleline | RegexOptions.Compiled);
-
-    private static readonly Regex SynopsisConvertNewLines = new(@"\r\n|\r", RegexOptions.Singleline | RegexOptions.Compiled);
-
-    private static readonly Regex SynopsisCleanMultiEmptyLines = new(@"\n{2,}", RegexOptions.Singleline | RegexOptions.Compiled);
-
-    public static string? JoinText(IEnumerable<string?> textList) {
-        var filteredList = textList
-            .Where(title => !string.IsNullOrWhiteSpace(title))
-            .Select(title => title!.Trim())
-            // We distinct the list because some episode entries contain the **exact** same description.
-            .Distinct()
-            .ToList();
-
-        if (filteredList.Count == 0)
-            return null;
-
-        var index = 1;
-        var outputText = filteredList[0];
-        while (index < filteredList.Count) {
-            var lastChar = outputText[^1];
-            outputText += PunctuationMarks.Contains(lastChar) ? " " : ". ";
-            outputText += filteredList[index++];
-        }
-
-        if (filteredList.Count > 1)
-            outputText = outputText.TrimEnd();
-
-        return outputText;
-    }
+    #region Titles | Episode
 
     public static (string? displayTitle, string? alternateTitle) GetEpisodeTitles(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
         => seasonInfo.StructureType switch {
@@ -305,6 +405,35 @@ public static partial class Text {
                 JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetEpisodeTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
             ),
         };
+
+    private static string? GetEpisodeTitleByType(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, TitleConfiguration configuration, string? metadataLanguage) {
+        foreach (var provider in configuration.GetOrderedTitleProviders()) {
+            var title = provider switch {
+                TitleProvider.Shoko_Default =>
+                    episodeInfo.Title,
+                TitleProvider.AniDB_Default =>
+                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value,
+                TitleProvider.AniDB_LibraryLanguage =>
+                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, configuration.AllowAny, metadataLanguage),
+                TitleProvider.AniDB_CountryOfOrigin =>
+                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, configuration.AllowAny, GuessOriginLanguage(GetMainLanguage(seasonInfo.Titles.Where(t => t.Source is "AniDB").ToList()))),
+                TitleProvider.TMDB_Default =>
+                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "TMDB" && title.LanguageCode is "en")?.Value,
+                TitleProvider.TMDB_LibraryLanguage =>
+                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "TMDB").ToList(), false, configuration.AllowAny, metadataLanguage),
+                TitleProvider.TMDB_CountryOfOrigin =>
+                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "TMDB").ToList(), false, configuration.AllowAny, episodeInfo.OriginalLanguageCode),
+                _ => null,
+            };
+            if (!string.IsNullOrEmpty(title) && !InvalidEpisodeTitleRegex().IsMatch(title))
+                return title.Trim();
+        }
+        return null;
+    }
+
+    #endregion
+
+    #region Titles | Season
 
     public static (string? displayTitle, string? alternateTitle) GetSeasonTitles(SeasonInfo seasonInfo, int baseSeasonOffset, string? metadataLanguage) {
         var (displayTitle, alternateTitle) = seasonInfo.StructureType switch {
@@ -351,6 +480,10 @@ public static partial class Text {
         return (displayTitle, alternateTitle);
     }
 
+    #endregion
+
+    #region Titles | Show
+
     public static (string? displayTitle, string? alternateTitle) GetShowTitles(ShowInfo showInfo, string? metadataLanguage)
         => showInfo.DefaultSeason.StructureType switch {
             SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbAnime.Enabled ? (
@@ -376,6 +509,35 @@ public static partial class Text {
             ),
         };
 
+    private static string? GetSeriesTitleByType(IBaseItemInfo baseInfo, TitleConfiguration configuration, string? metadataLanguage) {
+        foreach (var provider in configuration.GetOrderedTitleProviders()) {
+            var title = provider switch {
+                TitleProvider.Shoko_Default =>
+                    baseInfo.Title,
+                TitleProvider.AniDB_Default =>
+                    baseInfo.Titles.Where(t => t.Source is "AniDB").FirstOrDefault(title => title.IsDefault)?.Value,
+                TitleProvider.AniDB_LibraryLanguage =>
+                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList(), true, configuration.AllowAny, metadataLanguage),
+                TitleProvider.AniDB_CountryOfOrigin =>
+                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList(), true, configuration.AllowAny, GuessOriginLanguage(GetMainLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList()))),
+                TitleProvider.TMDB_Default =>
+                    baseInfo.Titles.Where(t => t.Source is "TMDB").FirstOrDefault(title => title.IsDefault)?.Value,
+                TitleProvider.TMDB_LibraryLanguage =>
+                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "TMDB").ToList(), true, configuration.AllowAny, metadataLanguage),
+                TitleProvider.TMDB_CountryOfOrigin =>
+                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "TMDB").ToList(), true, configuration.AllowAny, baseInfo.OriginalLanguageCode),
+                _ => null,
+            };
+            if (!string.IsNullOrEmpty(title))
+                return title.Trim();
+        }
+        return null;
+    }
+
+    #endregion
+
+    #region Titles | Movie
+
     public static (string? displayTitle, string? alternateTitle) GetMovieTitles(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, string? metadataLanguage)
         => seasonInfo.StructureType switch {
             SeriesStructureType.AniDB_Anime => Plugin.Instance.Configuration.AdvancedTitlesConfiguration.AnidbSeason.Enabled ? (
@@ -400,6 +562,24 @@ public static partial class Text {
                 JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetMovieTitleByType(episodeInfo, seasonInfo, t, metadataLanguage)))
             ),
         };
+
+    private static string? GetMovieTitleByType(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, TitleConfiguration configuration, string? metadataLanguage) {
+        if (episodeInfo.Id[0] is IdPrefix.TmdbMovie)
+            return GetEpisodeTitleByType(episodeInfo, seasonInfo, configuration, metadataLanguage);
+
+        var mainTitle = GetSeriesTitleByType(seasonInfo, configuration, metadataLanguage);
+        var subTitle = GetEpisodeTitleByType(episodeInfo, seasonInfo, configuration, metadataLanguage);
+
+        if (!string.IsNullOrEmpty(subTitle))
+            return $"{mainTitle}: {subTitle}".Trim();
+        else if (episodeInfo.EpisodeNumber > 1)
+            return $"{mainTitle} {NumericToRoman(episodeInfo.EpisodeNumber)}".Trim();
+        return mainTitle?.Trim();
+    }
+
+    #endregion
+
+    #region Titles | Collection
 
     public static (string? displayTitle, string? alternateTitle) GetCollectionTitles(SeasonInfo seasonInfo, string? metadataLanguage)
         => seasonInfo.StructureType switch {
@@ -428,72 +608,9 @@ public static partial class Text {
                 JoinTitles(Plugin.Instance.Configuration.AlternateTitles.Select(t => GetSeriesTitleByType(collectionInfo, t, metadataLanguage)))
             );
 
-    private static string? GetMovieTitleByType(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, TitleConfiguration configuration, string? metadataLanguage) {
-        if (episodeInfo.Id[0] is IdPrefix.TmdbMovie)
-            return GetEpisodeTitleByType(episodeInfo, seasonInfo, configuration, metadataLanguage);
+    #endregion
 
-        var mainTitle = GetSeriesTitleByType(seasonInfo, configuration, metadataLanguage);
-        var subTitle = GetEpisodeTitleByType(episodeInfo, seasonInfo, configuration, metadataLanguage);
-
-        if (!string.IsNullOrEmpty(subTitle))
-            return $"{mainTitle}: {subTitle}".Trim();
-        else if (episodeInfo.EpisodeNumber > 1)
-            return $"{mainTitle} {NumericToRoman(episodeInfo.EpisodeNumber)}".Trim();
-        return mainTitle?.Trim();
-    }
-
-    private static string? GetEpisodeTitleByType(EpisodeInfo episodeInfo, SeasonInfo seasonInfo, TitleConfiguration configuration, string? metadataLanguage) {
-        foreach (var provider in configuration.GetOrderedTitleProviders()) {
-            var title = provider switch {
-                TitleProvider.Shoko_Default =>
-                    episodeInfo.Title,
-                TitleProvider.AniDB_Default =>
-                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value,
-                TitleProvider.AniDB_LibraryLanguage =>
-                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, configuration.AllowAny, metadataLanguage),
-                TitleProvider.AniDB_CountryOfOrigin =>
-                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, configuration.AllowAny, GuessOriginLanguage(GetMainLanguage(seasonInfo.Titles.Where(t => t.Source is "AniDB").ToList()))),
-                TitleProvider.TMDB_Default =>
-                    episodeInfo.Titles.FirstOrDefault(title => title.Source is "TMDB" && title.LanguageCode is "en")?.Value,
-                TitleProvider.TMDB_LibraryLanguage =>
-                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "TMDB").ToList(), false, configuration.AllowAny, metadataLanguage),
-                TitleProvider.TMDB_CountryOfOrigin =>
-                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "TMDB").ToList(), false, configuration.AllowAny, episodeInfo.OriginalLanguageCode),
-                _ => null,
-            };
-            if (!string.IsNullOrEmpty(title) && !InvalidEpisodeTitleRegex().IsMatch(title))
-                return title.Trim();
-        }
-        return null;
-    }
-
-    private static string? GetSeriesTitleByType(IBaseItemInfo baseInfo, TitleConfiguration configuration, string? metadataLanguage) {
-        foreach (var provider in configuration.GetOrderedTitleProviders()) {
-            var title = provider switch {
-                TitleProvider.Shoko_Default =>
-                    baseInfo.Title,
-                TitleProvider.AniDB_Default =>
-                    baseInfo.Titles.Where(t => t.Source is "AniDB").FirstOrDefault(title => title.IsDefault)?.Value,
-                TitleProvider.AniDB_LibraryLanguage =>
-                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList(), true, configuration.AllowAny, metadataLanguage),
-                TitleProvider.AniDB_CountryOfOrigin =>
-                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList(), true, configuration.AllowAny, GuessOriginLanguage(GetMainLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList()))),
-                TitleProvider.TMDB_Default =>
-                    baseInfo.Titles.Where(t => t.Source is "TMDB").FirstOrDefault(title => title.IsDefault)?.Value,
-                TitleProvider.TMDB_LibraryLanguage =>
-                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "TMDB").ToList(), true, configuration.AllowAny, metadataLanguage),
-                TitleProvider.TMDB_CountryOfOrigin =>
-                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "TMDB").ToList(), true, configuration.AllowAny, baseInfo.OriginalLanguageCode),
-                _ => null,
-            };
-            if (!string.IsNullOrEmpty(title))
-                return title.Trim();
-        }
-        return null;
-    }
-
-    [GeneratedRegex(@"^(?:Special|Episode|Volume|OVA|OAD|Web) \d+$|^Part \d+ of \d+$|^Episode [COPRST]\d+$|^(?:OVA|OAD|Movie|Complete Movie|Short Movie|TV Special|Music Video|Web|Volume)$", RegexOptions.IgnoreCase | RegexOptions.Compiled, "en-US")]
-    private static partial Regex InvalidEpisodeTitleRegex();
+    #region Titles | Helpers
 
     /// <summary>
     /// Get the first title available for the language, optionally using types
@@ -584,4 +701,8 @@ public static partial class Text {
             .Select(title => title!.Trim())
             .Distinct(StringComparer.Ordinal)
             .Join(" | ") is { Length: > 0 } result ? result : null;
+
+    #endregion
+
+    #endregion
 }

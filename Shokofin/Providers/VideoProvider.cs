@@ -42,7 +42,7 @@ public class VideoProvider(IHttpClientFactory _httpClientFactory, ILogger<VideoP
             if (string.IsNullOrEmpty(displayTitle))
                 displayTitle = episodeInfo.Title;
 
-            var description = Text.GetDescription(episodeInfo, info.MetadataLanguage);
+            var description = Text.GetEpisodeDescription(episodeInfo, seasonInfo, info.MetadataLanguage);
             result.Item = new() {
                 Name = displayTitle,
                 OriginalTitle = alternateTitle,

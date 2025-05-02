@@ -139,7 +139,7 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
             }
             displayTitle = Text.JoinText(displayTitles);
             alternateTitle = Text.JoinText(alternateTitles);
-            description = Text.GetDescription(file.EpisodeList.Select(tuple => tuple.Episode), metadataLanguage);
+            description = Text.GetEpisodeDescription(file.EpisodeList.Select(tuple => tuple.Episode), seasonInfo, metadataLanguage);
         }
         else {
             string defaultEpisodeTitle = episodeInfo.Title;
@@ -166,7 +166,7 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                     _ => $"Episode {episodeNumber}",
                 };
 
-            description = Text.GetDescription(episodeInfo, metadataLanguage);
+            description = Text.GetEpisodeDescription(episodeInfo, seasonInfo, metadataLanguage);
         }
 
         if (isSpecial && config.MarkSpecialsWhenGrouped) {

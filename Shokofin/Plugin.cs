@@ -202,17 +202,17 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
         if (!configExists && !CanCreateSymbolicLinks) {
             Configuration.VFS_Enabled = false;
             // Remove TvDB from the list of description providers.
-            var index = Configuration.DescriptionSourceList.IndexOf(Text.DescriptionProvider.TvDB);
+            var index = Configuration.Description.Default.List.IndexOf(Text.DescriptionProvider.TvDB);
             if (index != -1) {
-                var list = Configuration.DescriptionSourceList.ToList();
+                var list = Configuration.Description.Default.List.ToList();
                 list.RemoveAt(index);
-                Configuration.DescriptionSourceList = [.. list];
+                Configuration.Description.Default.List = [.. list];
             }
-            index = Configuration.DescriptionSourceOrder.IndexOf(Text.DescriptionProvider.TvDB);
+            index = Configuration.Description.Default.Order.IndexOf(Text.DescriptionProvider.TvDB);
             if (index != -1) {
-                var list = Configuration.DescriptionSourceOrder.ToList();
+                var list = Configuration.Description.Default.Order.ToList();
                 list.RemoveAt(index);
-                Configuration.DescriptionSourceOrder = [.. list];
+                Configuration.Description.Default.Order = [.. list];
             }
             SaveConfiguration();
         }
@@ -245,9 +245,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             config.VFS_CustomLocation = null;
             changed = true;
         }
-        if (config.DescriptionSourceOrder.Length != Enum.GetValues<Text.DescriptionProvider>().Length) {
-            var current = config.DescriptionSourceOrder;
-            config.DescriptionSourceOrder = Enum.GetValues<Text.DescriptionProvider>()
+        if (config.Description.Default.Order.Length != Enum.GetValues<Text.DescriptionProvider>().Length) {
+            var current = config.Description.Default.Order;
+            config.Description.Default.Order = Enum.GetValues<Text.DescriptionProvider>()
                 .OrderBy(x => Array.IndexOf(current, x) == -1 ? int.MaxValue : Array.IndexOf(current, x))
                 .ToArray();
             changed = true;
@@ -293,6 +293,16 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             config.TitleAlternateList = null;
             config.TitleAlternateOrder = null;
             config.TitleAllowAny = null;
+            changed = true;
+        }
+        if (config.DescriptionSourceList is not null || config.DescriptionSourceOrder is not null) {
+            if (config.DescriptionSourceList is not null) {
+                config.Description.Default.List = config.DescriptionSourceList;
+                if (config.DescriptionSourceOrder is not null)
+                    config.Description.Default.Order = config.DescriptionSourceOrder;
+            }
+            config.DescriptionSourceList = null;
+            config.DescriptionSourceOrder = null;
             changed = true;
         }
 

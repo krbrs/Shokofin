@@ -55,7 +55,7 @@ public class SeriesProvider(IHttpClientFactory _httpClientFactory, ILogger<Serie
             result.Item = new Series {
                 Name = displayTitle,
                 OriginalTitle = alternateTitle,
-                Overview = Text.GetDescription(showInfo, info.MetadataLanguage),
+                Overview = Text.GetShowDescription(showInfo, info.MetadataLanguage),
                 PremiereDate = premiereDate,
                 AirDays = showInfo.DaysOfWeek.ToArray(),
                 ProductionYear = premiereDate?.Year,

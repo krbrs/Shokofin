@@ -58,7 +58,7 @@ public class BoxSetProvider(IHttpClientFactory _httpClientFactory, ILogger<BoxSe
         result.Item = new BoxSet {
             Name = displayTitle,
             OriginalTitle = alternateTitle,
-            Overview = Text.GetDescription(seasonInfo, info.MetadataLanguage),
+            Overview = Text.GetCollectionDescription(seasonInfo, info.MetadataLanguage),
             PremiereDate = seasonInfo.PremiereDate,
             EndDate = seasonInfo.EndDate,
             ProductionYear = seasonInfo.PremiereDate?.Year,
@@ -88,7 +88,7 @@ public class BoxSetProvider(IHttpClientFactory _httpClientFactory, ILogger<BoxSe
         result.Item = new BoxSet {
             Name = displayTitle,
             OriginalTitle = alternateTitle,
-            Overview = Text.SanitizeAnidbDescription(collectionInfo.Overview),
+            Overview = Text.GetCollectionDescription(collectionInfo, info.MetadataLanguage),
         };
         result.Item.SetProviderId(ProviderNames.ShokoCollectionForGroup, collectionInfo.Id);
         result.HasMetadata = true;

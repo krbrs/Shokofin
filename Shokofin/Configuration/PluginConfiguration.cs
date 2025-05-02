@@ -156,27 +156,32 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// <summary>
     /// Determines how we'll be selecting our main title for entries.
     /// </summary>
+    /// TODO: Break this during the next major version of the plugin.
     public TitleProvider[]? TitleMainList { get; set; }
 
     /// <summary>
     /// The order of which we will be selecting our main title for entries.
     /// </summary>
+    /// TODO: Break this during the next major version of the plugin.
     public TitleProvider[]? TitleMainOrder { get; set; }
 
     /// <summary>
     /// Determines how we'll be selecting our alternate title for entries.
     /// </summary>
+    /// TODO: Break this during the next major version of the plugin.
     public TitleProvider[]? TitleAlternateList { get; set; }
 
     /// <summary>
     /// The order of which we will be selecting our alternate title for entries.
     /// </summary>
+    /// TODO: Break this during the next major version of the plugin.
     public TitleProvider[]? TitleAlternateOrder { get; set; }
 
     /// <summary>
     /// Allow choosing any title in the selected language if no official
     /// title is available.
     /// </summary>
+    /// TODO: Break this during the next major version of the plugin.
     public bool? TitleAllowAny { get; set; }
 
     /// <summary>
@@ -186,18 +191,26 @@ public class PluginConfiguration : BasePluginConfiguration {
     public bool MarkSpecialsWhenGrouped { get; set; }
 
     /// <summary>
+    /// The new description configuration.
+    /// </summary>
+    public AllDescriptionsConfiguration Description { get; set; }
+
+    /// <summary>
     /// The collection of providers for descriptions. Replaces the former `DescriptionSource`.
     /// </summary>
-    public DescriptionProvider[] DescriptionSourceList { get; set; }
+    /// TODO: Break this during the next major version of the plugin.
+    public DescriptionProvider[]? DescriptionSourceList { get; set; }
 
     /// <summary>
     /// The prioritization order of source providers for description sources.
     /// </summary>
-    public DescriptionProvider[] DescriptionSourceOrder { get; set; }
+    /// TODO: Break this during the next major version of the plugin.
+    public DescriptionProvider[]? DescriptionSourceOrder { get; set; }
 
     /// <summary>
     /// The conversion mode for descriptions/synopses/summaries.
     /// </summary>
+    /// TODO: Break this during the next major version of the plugin.
     [XmlIgnore, JsonInclude]
     public DescriptionConversionMode DescriptionConversionMode
     {
@@ -744,14 +757,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         SynopsisCleanMiscLines = true;
         SynopsisRemoveSummary = true;
         SynopsisCleanMultiEmptyLines = true;
-        DescriptionSourceList = [
-            DescriptionProvider.Shoko,
-        ];
-        DescriptionSourceOrder = [
-            DescriptionProvider.Shoko,
-            DescriptionProvider.AniDB,
-            DescriptionProvider.TMDB,
-        ];
+        Description = new();
         HideUnverifiedTags = true;
         TagSources = TagSource.ContentIndicators | TagSource.Dynamic | TagSource.DynamicCast | TagSource.DynamicEnding | TagSource.Elements |
             TagSource.ElementsPornographyAndSexualAbuse | TagSource.ElementsTropesAndMotifs | TagSource.Fetishes |
