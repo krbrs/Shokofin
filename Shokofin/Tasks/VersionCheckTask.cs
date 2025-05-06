@@ -47,68 +47,73 @@ public class VersionCheckTask(ILogger<VersionCheckTask> _logger, ILibraryManager
 
     /// <inheritdoc />
     public async Task ExecuteAsync(IProgress<double> progress, CancellationToken cancellationToken) {
-        var updated = false;
-        var version = await _apiClient.GetVersion().ConfigureAwait(false);
-        if (version != null && (
-            Plugin.Instance.Configuration.ServerVersion == null ||
-            !string.Equals(version.ToString(), Plugin.Instance.Configuration.ServerVersion.ToString())
-        )) {
-            _logger.LogDebug("Found new Shoko Server version; {version}", version);
-            Plugin.Instance.Configuration.ServerVersion = version;
-            updated = true;
-        }
-
-        if (string.IsNullOrEmpty(Plugin.Instance.Configuration.ApiKey))
-            return;
-
-
-        var prefix = await _apiClient.GetWebPrefix().ConfigureAwait(false);
-        if (prefix != null && (
-            Plugin.Instance.Configuration.WebPrefix == null ||
-            !string.Equals(prefix, Plugin.Instance.Configuration.WebPrefix)
-        )) {
-            _logger.LogDebug("Found new Shoko Server web prefix; {prefix}", prefix);
-            Plugin.Instance.Configuration.WebPrefix = prefix;
-            updated = true;
-        }
-
-        await _apiClient.HasPluginsExposed(cancellationToken).ConfigureAwait(false);
-
-        var mediaFolders = Plugin.Instance.Configuration.MediaFolders.ToList();
-        var managedFolderNameMap = await Task
-            .WhenAll(
-                mediaFolders
-                    .Select(m => m.ManagedFolderId)
-                    .Distinct()
-                    .Except([0, -1])
-                    .Select(id => _apiClient.GetManagedFolder(id))
-                    .ToList()
-            )
-            .ContinueWith(task => task.Result.OfType<ManagedFolder>().ToDictionary(i => i.Id, i => i.Name))
-            .ConfigureAwait(false);
-        foreach (var mediaFolderConfig in mediaFolders) {
-            if (mediaFolderConfig.IsVirtualRoot)
-                continue;
-
-            if (!managedFolderNameMap.TryGetValue(mediaFolderConfig.ManagedFolderId, out var managedFolderName))
-                managedFolderName = null;
-
-            if (mediaFolderConfig.LibraryId == Guid.Empty && _libraryManager.GetItemById(mediaFolderConfig.MediaFolderId) is Folder mediaFolder &&
-                _libraryManager.GetVirtualFolders().FirstOrDefault(p => p.Locations.Contains(mediaFolder.Path)) is { } library &&
-                Guid.TryParse(library.ItemId, out var libraryId)) {
-                _logger.LogDebug("Found new library for media folder; {LibraryName} (Library={LibraryId},MediaFolder={MediaFolderPath})", library.Name, libraryId, mediaFolder.Path);
-                mediaFolderConfig.LibraryId = libraryId;
+        try {
+            var updated = false;
+            var version = await _apiClient.GetVersion().ConfigureAwait(false);
+            if (version != null && (
+                Plugin.Instance.Configuration.ServerVersion == null ||
+                !string.Equals(version.ToString(), Plugin.Instance.Configuration.ServerVersion.ToString())
+            )) {
+                _logger.LogDebug("Found new Shoko Server version; {version}", version);
+                Plugin.Instance.Configuration.ServerVersion = version;
                 updated = true;
             }
 
-            if (!string.IsNullOrEmpty(managedFolderName) && !string.Equals(mediaFolderConfig.ManagedFolderName, managedFolderName)) {
-                _logger.LogDebug("Found new name for managed folder; {name} (ManagedFolder={ManagedFolderId})", managedFolderName, mediaFolderConfig.ManagedFolderId);
-                mediaFolderConfig.ManagedFolderName = managedFolderName;
+            if (string.IsNullOrEmpty(Plugin.Instance.Configuration.ApiKey))
+                return;
+
+
+            var prefix = await _apiClient.GetWebPrefix().ConfigureAwait(false);
+            if (prefix != null && (
+                Plugin.Instance.Configuration.WebPrefix == null ||
+                !string.Equals(prefix, Plugin.Instance.Configuration.WebPrefix)
+            )) {
+                _logger.LogDebug("Found new Shoko Server web prefix; {prefix}", prefix);
+                Plugin.Instance.Configuration.WebPrefix = prefix;
                 updated = true;
             }
+
+            await _apiClient.HasPluginsExposed(cancellationToken).ConfigureAwait(false);
+
+            var mediaFolders = Plugin.Instance.Configuration.MediaFolders.ToList();
+            var managedFolderNameMap = await Task
+                .WhenAll(
+                    mediaFolders
+                        .Select(m => m.ManagedFolderId)
+                        .Distinct()
+                        .Except([0, -1])
+                        .Select(id => _apiClient.GetManagedFolder(id))
+                        .ToList()
+                )
+                .ContinueWith(task => task.Result.OfType<ManagedFolder>().ToDictionary(i => i.Id, i => i.Name))
+                .ConfigureAwait(false);
+            foreach (var mediaFolderConfig in mediaFolders) {
+                if (mediaFolderConfig.IsVirtualRoot)
+                    continue;
+
+                if (!managedFolderNameMap.TryGetValue(mediaFolderConfig.ManagedFolderId, out var managedFolderName))
+                    managedFolderName = null;
+
+                if (mediaFolderConfig.LibraryId == Guid.Empty && _libraryManager.GetItemById(mediaFolderConfig.MediaFolderId) is Folder mediaFolder &&
+                    _libraryManager.GetVirtualFolders().FirstOrDefault(p => p.Locations.Contains(mediaFolder.Path)) is { } library &&
+                    Guid.TryParse(library.ItemId, out var libraryId)) {
+                    _logger.LogDebug("Found new library for media folder; {LibraryName} (Library={LibraryId},MediaFolder={MediaFolderPath})", library.Name, libraryId, mediaFolder.Path);
+                    mediaFolderConfig.LibraryId = libraryId;
+                    updated = true;
+                }
+
+                if (!string.IsNullOrEmpty(managedFolderName) && !string.Equals(mediaFolderConfig.ManagedFolderName, managedFolderName)) {
+                    _logger.LogDebug("Found new name for managed folder; {name} (ManagedFolder={ManagedFolderId})", managedFolderName, mediaFolderConfig.ManagedFolderId);
+                    mediaFolderConfig.ManagedFolderName = managedFolderName;
+                    updated = true;
+                }
+            }
+            if (updated) {
+                Plugin.Instance.UpdateConfiguration();
+            }
         }
-        if (updated) {
-            Plugin.Instance.UpdateConfiguration();
+        catch (Exception ex) {
+            _logger.LogError(ex, "Error while checking Shoko Server version.");
         }
     }
 }
