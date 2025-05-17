@@ -327,6 +327,19 @@ export const LibraryMenu = globalThis.LibraryMenu;
 
 /**
  * @typedef {{
+ *   List: DescriptionProvider[];
+ *   Order: DescriptionProvider[];
+ * }} DescriptionConfiguration
+ */
+
+/**
+ * @typedef {{
+ *   Default: DescriptionConfiguration;
+ * }} AllDescriptionsConfiguration
+ */
+
+/**
+ * @typedef {{
  *   CanCreateSymbolicLinks: boolean;
  *   Url: string;
  *   PublicUrl: string;
@@ -338,10 +351,8 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   MainTitle: TitleConfiguration;
  *   AlternateTitles: TitleConfiguration[];
  *   MarkSpecialsWhenGrouped: boolean;
- *   DescriptionSourceOverride: boolean;
- *   DescriptionSourceList: DescriptionProvider[];
- *   DescriptionSourceOrder: DescriptionProvider[];
  *   DescriptionConversionMode: DescriptionConversionMode;
+ *   Description: AllDescriptionsConfiguration;
  *   TagSources: TagSource[];
  *   TagIncludeFilters: TagIncludeFilter[];
  *   TagMinimumWeight: TagWeight;

@@ -408,7 +408,7 @@ function applyFormToConfig(form, config) {
             const tagExcludeList = filterTags(form.querySelector("#TagExcludeList").value);
             const genreExcludeList = filterTags(form.querySelector("#GenreExcludeList").value);
             config.MarkSpecialsWhenGrouped = form.querySelector("#MarkSpecialsWhenGrouped").checked;
-            ([config.DescriptionSourceList, config.DescriptionSourceOrder] = retrieveSortableCheckboxList(form, "DescriptionSourceList"));
+            ([config.Description.Default.List, config.Description.Default.Order] = retrieveSortableCheckboxList(form, "DescriptionSourceList"));
             config.DescriptionConversionMode = form.querySelector("#DescriptionConversionMode").value;
             config.AddImageLanguageCodeForShows = retrieveCheckboxList(form, "AddImageLanguageCodeForShows");
             config.AddImageLanguageCodeForMovies = retrieveCheckboxList(form, "AddImageLanguageCodeForMovies");
@@ -572,7 +572,7 @@ async function applyConfigToForm(form, config) {
             renderAlternateTitles(form, configAlternateTitles);
 
             form.querySelector("#MarkSpecialsWhenGrouped").checked = config.MarkSpecialsWhenGrouped;
-            renderSortableCheckboxList(form, "DescriptionSourceList", config.DescriptionSourceList, config.DescriptionSourceOrder);
+            renderSortableCheckboxList(form, "DescriptionSourceList", config.Description.Default.List, config.Description.Default.Order);
             form.querySelector("#DescriptionConversionMode").value = config.DescriptionConversionMode;
             renderCheckboxList(form, "AddImageLanguageCodeForShows", config.AddImageLanguageCodeForShows);
             renderCheckboxList(form, "AddImageLanguageCodeForMovies", config.AddImageLanguageCodeForMovies);
