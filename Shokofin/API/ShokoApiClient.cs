@@ -305,7 +305,7 @@ public class ShokoApiClient : IDisposable {
                 return null;
             var settings = JsonNode.Parse(settingsResponse.Content.ReadAsStringAsync(cancellationToken).Result)!;
             var value = settings["Web"]?["WebUIPrefix"]?.GetValue<string>();
-            if (string.IsNullOrEmpty(value))
+            if (value is null)
                 return "webui";
             return value;
         }
