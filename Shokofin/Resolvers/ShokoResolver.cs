@@ -57,7 +57,7 @@ public class ShokoResolver : IItemResolver, IMultiItemResolver {
         NamingOptions = namingOptions;
     }
 
-    public async Task<BaseItem?> ResolveSingle(Folder? parent, CollectionType? collectionType, FileSystemMetadata fileInfo) {
+    public async Task<BaseItem?> ResolveSingle(Folder? parent, CollectionType? collectionType, FileSystemMetadata? fileInfo) {
         if (!(collectionType is CollectionType.tvshows or CollectionType.movies or null) || parent is null || fileInfo is null)
             return null;
 
