@@ -83,7 +83,7 @@ public class ShokoInternalId(ShokoIdLookup lookup, UsageTracker tracker) : IExte
                     using (tracker.Enter("Get External Urls for Video")) {
                         if (lookup.TryGetFileAndSeriesIdFor(item, out var fileId, out seriesId)) {
                             _nextNames.Enqueue(ProviderNames.ShokoSeries);
-                            yield return $"{url}/redirect/series/{seriesId}";
+                            yield return $"{url}/collection/series/{seriesId}";
                             _nextNames.Enqueue(ProviderNames.ShokoFile);
                             yield return $"{url}/collection/series/{seriesId}/files?fileId={fileId}";
                         }
