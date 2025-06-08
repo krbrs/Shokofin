@@ -739,7 +739,7 @@ public class PluginConfiguration : BasePluginConfiguration {
     public PluginConfiguration() {
         Url = "http://127.0.0.1:8111";
         PublicUrl = string.Empty;
-        WebPrefix = "webui";
+        _webPrefix = "webui";
         Username = "Default";
         ApiKey = string.Empty;
         ServerVersion = null;
