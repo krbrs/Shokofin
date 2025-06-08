@@ -54,6 +54,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
                 }
 
                 var protocol = networkOptions.RequireHttps && networkOptions.EnableHttps ? "https" : "http";
+                // TODO: Fix local network address being set. It breaks images currently.
                 var hostname = networkOptions.LocalNetworkAddresses.FirstOrDefault() is { } address && address is not "0.0.0.0" and not "::" ? address : "localhost";
                 var port = networkOptions.RequireHttps && networkOptions.EnableHttps ? networkOptions.InternalHttpsPort : networkOptions.InternalHttpPort;
                 var basePath = networkOptions.BaseUrl is { } baseUrl ? baseUrl : string.Empty;
