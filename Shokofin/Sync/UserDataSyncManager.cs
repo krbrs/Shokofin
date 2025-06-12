@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
@@ -17,6 +18,7 @@ using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.Configuration;
 using Shokofin.Extensions;
+
 using UserStats = Shokofin.API.Models.File.UserStats;
 
 namespace Shokofin.Sync;
@@ -61,7 +63,7 @@ public class UserDataSyncManager {
         LibraryManager.ItemUpdated -= OnItemAddedOrUpdated;
     }
 
-    private static bool TryGetUserConfiguration(Guid userId, out UserConfiguration? config) {
+    private static bool TryGetUserConfiguration(Guid userId, [NotNullWhen(true)] out UserConfiguration? config) {
         config = Plugin.Instance.Configuration.UserList.FirstOrDefault(c => c.UserId == userId && c.EnableSynchronization);
         return config != null;
     }
@@ -149,12 +151,12 @@ public class UserDataSyncManager {
     private readonly ConcurrentDictionary<Guid, SessionMetadata> ActiveSessions = new();
 
     public void OnSessionStarted(object? sender, SessionEventArgs e) {
-        if (TryGetUserConfiguration(e.SessionInfo.UserId, out var userConfig) && (userConfig!.SyncUserDataUnderPlayback || userConfig.SyncUserDataAfterPlayback)) {
+        if (TryGetUserConfiguration(e.SessionInfo.UserId, out var userConfig) && userConfig.EnableSynchronization && (userConfig.SyncUserDataUnderPlayback || userConfig.SyncUserDataAfterPlayback)) {
             var sessionMetadata = new SessionMetadata(Logger, e.SessionInfo);
             ActiveSessions.TryAdd(e.SessionInfo.UserId, sessionMetadata);
         }
         foreach (var user in e.SessionInfo.AdditionalUsers) {
-            if (TryGetUserConfiguration(e.SessionInfo.UserId, out userConfig) && (userConfig!.SyncUserDataUnderPlayback || userConfig.SyncUserDataAfterPlayback)) {
+            if (TryGetUserConfiguration(e.SessionInfo.UserId, out userConfig) && userConfig.EnableSynchronization && (userConfig.SyncUserDataUnderPlayback || userConfig.SyncUserDataAfterPlayback)) {
                 var sessionMetadata = new SessionMetadata(Logger, e.SessionInfo);
                 ActiveSessions.TryAdd(user.UserId, sessionMetadata);
             }
@@ -182,7 +184,8 @@ public class UserDataSyncManager {
             if (!(
                     (e.Item is Movie || e.Item is Episode) &&
                     TryGetUserConfiguration(e.UserId, out var userConfig) &&
-                    (userConfig!.SyncRestrictedVideos || e.Item.CustomRating != "XXX") &&
+                    userConfig.EnableSynchronization &&
+                    (userConfig.SyncRestrictedVideos || e.Item.CustomRating != "XXX") &&
                     Lookup.IsEnabledForItem(e.Item) &&
                     Lookup.TryGetFileAndSeriesIdFor(e.Item, out var fileId, out var seriesId) &&
                     await ApiClient.GetFile(fileId).ConfigureAwait(false) is { } file &&
