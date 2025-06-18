@@ -44,7 +44,9 @@ public class VirtualFileSystemService {
 
     private readonly NamingOptions NamingOptions;
 
-    private readonly ExternalPathParser ExternalPathParser;
+    private readonly ExternalPathParser ExternalSubtitlePathParser;
+
+    private readonly ExternalPathParser ExternalAudioPathParser;
 
     private readonly GuardedMemoryCache DataCache;
 
@@ -86,7 +88,8 @@ public class VirtualFileSystemService {
         Logger = logger;
         DataCache = new(logger, new() { ExpirationScanFrequency = TimeSpan.FromMinutes(25) }, new() { AbsoluteExpirationRelativeToNow = TimeSpan.FromHours(1), SlidingExpiration = TimeSpan.FromMinutes(15) });
         NamingOptions = namingOptions;
-        ExternalPathParser = new ExternalPathParser(namingOptions, localizationManager, MediaBrowser.Model.Dlna.DlnaProfileType.Subtitle);
+        ExternalSubtitlePathParser = new ExternalPathParser(namingOptions, localizationManager, MediaBrowser.Model.Dlna.DlnaProfileType.Subtitle);
+        ExternalAudioPathParser = new ExternalPathParser(namingOptions, localizationManager, MediaBrowser.Model.Dlna.DlnaProfileType.Audio);
         Plugin.Instance.Tracker.Stalled += OnTrackerStalled;
     }
 
@@ -899,7 +902,9 @@ public class VirtualFileSystemService {
             }
 
             var sourcePrefixLength = sourceLocation.Length - Path.GetExtension(sourceLocation).Length;
-            var subtitleLinks = FindSubtitlesForPath(sourceLocation);
+            var externalFiles = FindExternalFilesForPath(sourceLocation, ExternalSubtitlePathParser)
+                .Concat(FindExternalFilesForPath(sourceLocation, ExternalAudioPathParser))
+                .ToList();
             foreach (var symbolicLink in symbolicLinks) {
                 var symbolicDirectory = Path.GetDirectoryName(symbolicLink)!;
                 if (!Directory.Exists(symbolicDirectory))
@@ -1007,48 +1012,7 @@ public class VirtualFileSystemService {
                     }
                 }
 
-                if (subtitleLinks.Count > 0) {
-                    var symbolicName = Path.GetFileNameWithoutExtension(symbolicLink);
-                    foreach (var subtitleSource in subtitleLinks) {
-                        var extName = subtitleSource[sourcePrefixLength..];
-                        var subtitleLink = Path.Join(symbolicDirectory, symbolicName + extName);
-
-                        result.Paths.Add(subtitleLink);
-                        if (!File.Exists(subtitleLink)) {
-                            result.CreatedSubtitles++;
-                            if (!preview) {
-                                Logger.LogDebug("Linking {Link} → {LinkTarget}", subtitleLink, subtitleSource);
-                                File.CreateSymbolicLink(subtitleLink, subtitleSource);
-                            }
-                        }
-                        else {
-                            var shouldFix = false;
-                            try {
-                                var nextTarget = File.ResolveLinkTarget(subtitleLink, false);
-                                if (!string.Equals(subtitleSource, nextTarget?.FullName)) {
-                                    shouldFix = true;
-                                    if (!preview)
-                                        Logger.LogWarning("Fixing broken symbolic link {Link} → {LinkTarget} (RealTarget={RealTarget})", subtitleLink, subtitleSource, nextTarget?.FullName);
-                                }
-                            }
-                            catch (Exception ex) {
-                                shouldFix = true;
-                                if (!preview)
-                                    Logger.LogError(ex, "Encountered an error trying to resolve symbolic link {Link} for {LinkTarget}", subtitleLink, subtitleSource);
-                            }
-                            if (shouldFix) {
-                                result.FixedSubtitles++;
-                                if (!preview) {
-                                    File.Delete(subtitleLink);
-                                    File.CreateSymbolicLink(subtitleLink, subtitleSource);
-                                }
-                            }
-                            else {
-                                result.SkippedSubtitles++;
-                            }
-                        }
-                    }
-                }
+                LinkExternalFiles(externalFiles, symbolicLink, symbolicDirectory, sourcePrefixLength, result, preview);
             }
 
             return result;
@@ -1059,7 +1023,7 @@ public class VirtualFileSystemService {
         }
     }
 
-    private List<string> FindSubtitlesForPath(string sourcePath) {
+    private List<string> FindExternalFilesForPath(string sourcePath, ExternalPathParser parser) {
         var externalPaths = new List<string>();
         var folderPath = Path.GetDirectoryName(sourcePath);
         if (string.IsNullOrEmpty(folderPath) || !FileSystem.DirectoryExists(folderPath))
@@ -1076,13 +1040,59 @@ public class VirtualFileSystemService {
                 sourcePrefix.Equals(fileNameWithoutExtension[..sourcePrefix.Length], StringComparison.OrdinalIgnoreCase) &&
                 (fileNameWithoutExtension.Length == sourcePrefix.Length || NamingOptions.MediaFlagDelimiters.Contains(fileNameWithoutExtension[sourcePrefix.Length]))
             ) {
-                var externalPathInfo = ExternalPathParser.ParseFile(file, fileNameWithoutExtension[sourcePrefix.Length..].ToString());
+                var externalPathInfo = parser.ParseFile(file, fileNameWithoutExtension[sourcePrefix.Length..].ToString());
                 if (externalPathInfo is not null && !string.IsNullOrEmpty(externalPathInfo.Path))
                     externalPaths.Add(externalPathInfo.Path);
             }
         }
 
         return externalPaths;
+    }
+
+    private void LinkExternalFiles(List<string> externalFiles, string symbolicLink, string symbolicDirectory, int sourcePrefixLength, LinkGenerationResult result, bool preview) {
+        if (externalFiles.Count == 0)
+            return;
+
+        var symbolicName = Path.GetFileNameWithoutExtension(symbolicLink);
+        foreach (var externalSource in externalFiles) {
+            var extName = externalSource[sourcePrefixLength..];
+            var externalLink = Path.Join(symbolicDirectory, symbolicName + extName);
+
+            result.Paths.Add(externalLink);
+            if (!File.Exists(externalLink)) {
+                result.CreatedExternalFiles++;
+                if (!preview) {
+                    Logger.LogDebug("Linking {Link} → {LinkTarget}", externalLink, externalSource);
+                    File.CreateSymbolicLink(externalLink, externalSource);
+                }
+            }
+            else {
+                var shouldFix = false;
+                try {
+                    var nextTarget = File.ResolveLinkTarget(externalLink, false);
+                    if (!string.Equals(externalSource, nextTarget?.FullName)) {
+                        shouldFix = true;
+                        if (!preview)
+                            Logger.LogWarning("Fixing broken symbolic link {Link} → {LinkTarget} (RealTarget={RealTarget})", externalLink, externalSource, nextTarget?.FullName);
+                    }
+                }
+                catch (Exception ex) {
+                    shouldFix = true;
+                    if (!preview)
+                        Logger.LogError(ex, "Encountered an error trying to resolve symbolic link {Link} for {LinkTarget}", externalLink, externalSource);
+                }
+                if (shouldFix) {
+                    result.FixedExternalFiles++;
+                    if (!preview) {
+                        File.Delete(externalLink);
+                        File.CreateSymbolicLink(externalLink, externalSource);
+                    }
+                }
+                else {
+                    result.SkippedExternalFiles++;
+                }
+            }
+        }
     }
 
     private LinkGenerationResult CleanupStructure(string vfsPath, string directoryToClean, IReadOnlyList<string> allKnownPaths, bool preview = false) {
@@ -1097,7 +1107,7 @@ public class VirtualFileSystemService {
         var start = DateTime.Now;
         var previousStep = start;
         var result = new LinkGenerationResult();
-        var searchExtensions = NamingOptions.VideoFileExtensions.Concat(NamingOptions.SubtitleFileExtensions).Concat([".nfo", ".trickplay"]).ToHashSet();
+        var searchExtensions = NamingOptions.VideoFileExtensions.Concat(NamingOptions.SubtitleFileExtensions).Concat(NamingOptions.AudioFileExtensions).Concat([".nfo", ".trickplay"]).ToHashSet();
         var entriesToBeRemoved = FileSystem.GetFileSystemEntryPaths(directoryToClean, true)
             .Select(path => (path, extName: Path.GetExtension(path)))
             .Where(tuple => !string.IsNullOrEmpty(tuple.extName) && searchExtensions.Contains(tuple.extName))
@@ -1154,21 +1164,21 @@ public class VirtualFileSystemService {
                 result.RemovedPaths.Add(location);
                 result.RemovedTrickplayDirectories++;
             }
-            else if (NamingOptions.SubtitleFileExtensions.Contains(extName)) {
-                if (TryMoveSubtitleFile(allKnownPaths, location, preview, out var skip)) {
+            else if (NamingOptions.SubtitleFileExtensions.Contains(extName) || NamingOptions.AudioFileExtensions.Contains(extName)) {
+                if (TryMoveExternalFile(allKnownPaths, location, preview, out var skip)) {
                     result.Paths.Add(location);
                     if (skip) {
-                        result.SkippedSubtitles++;
+                        result.SkippedExternalFiles++;
                     }
                     else {
-                        result.FixedSubtitles++;
+                        result.FixedExternalFiles++;
                     }
                     continue;
                 }
 
                 if (!preview) {
                     try {
-                        Logger.LogTrace("Removing subtitle file at {Path}", location);
+                        Logger.LogTrace("Removing external file at {Path}", location);
                         File.Delete(location);
                     }
                     catch (Exception ex) {
@@ -1177,7 +1187,7 @@ public class VirtualFileSystemService {
                     }
                 }
                 result.RemovedPaths.Add(location);
-                result.RemovedSubtitles++;
+                result.RemovedExternalFiles++;
             }
             else {
                 if (ShouldIgnoreVideo(vfsPath, location)) {
@@ -1251,8 +1261,8 @@ public class VirtualFileSystemService {
         return result;
     }
 
-    private bool TryMoveSubtitleFile(IReadOnlyList<string> allKnownPaths, string subtitlePath, bool preview, out bool skip) {
-        if (!TryGetIdsForPath(subtitlePath, out var fileId, out var seriesId)){
+    private bool TryMoveExternalFile(IReadOnlyList<string> allKnownPaths, string externalFilePath, bool preview, out bool skip) {
+        if (!TryGetIdsForPath(externalFilePath, out var fileId, out var seriesId)){
             skip = false;
             return false;
         }
@@ -1264,12 +1274,12 @@ public class VirtualFileSystemService {
         }
 
         var sourcePathWithoutExt = symbolicLink[..^Path.GetExtension(symbolicLink).Length];
-        if (!subtitlePath.StartsWith(sourcePathWithoutExt)){
+        if (!externalFilePath.StartsWith(sourcePathWithoutExt)){
             skip = false;
             return false;
         }
 
-        var extName = subtitlePath[sourcePathWithoutExt.Length..];
+        var extName = externalFilePath[sourcePathWithoutExt.Length..];
         string? realTarget = null;
         try {
             realTarget = File.ResolveLinkTarget(symbolicLink, false)?.FullName;
@@ -1286,7 +1296,7 @@ public class VirtualFileSystemService {
         }
 
         try {
-            var currentTarget = File.ResolveLinkTarget(subtitlePath, false)?.FullName;
+            var currentTarget = File.ResolveLinkTarget(externalFilePath, false)?.FullName;
             if (!string.IsNullOrEmpty(currentTarget)) {
                 // Just remove the link if the target doesn't exist.
                 if (!File.Exists(currentTarget)){
@@ -1299,33 +1309,33 @@ public class VirtualFileSystemService {
                 //     return true;
 
                 // Copy the link so we can move it to where it should be.
-                File.Delete(subtitlePath);
-                File.Copy(currentTarget, subtitlePath);
+                File.Delete(externalFilePath);
+                File.Copy(currentTarget, externalFilePath);
             }
         }
         catch (Exception ex) {
-            Logger.LogWarning(ex, "Unable to check if {Path} is a symbolic link", subtitlePath);
+            Logger.LogWarning(ex, "Unable to check if {Path} is a symbolic link", externalFilePath);
             skip = false;
             return false;
         }
 
-        var realSubtitlePath = realTarget[..^Path.GetExtension(realTarget).Length] + extName;
-        if (!File.Exists(realSubtitlePath)) {
+        var realExternalFilePath = realTarget[..^Path.GetExtension(realTarget).Length] + extName;
+        if (!File.Exists(realExternalFilePath)) {
             try {
-                File.Move(subtitlePath, realSubtitlePath);
+                File.Move(externalFilePath, realExternalFilePath);
             }
             catch (Exception) {
-                Logger.LogWarning("Skipped moving {Path} to {RealPath} because we don't have permissions.", subtitlePath, realSubtitlePath);
+                Logger.LogWarning("Skipped moving {Path} to {RealPath} because we don't have permissions.", externalFilePath, realExternalFilePath);
                 skip = true;
                 return true;
             }
         }
         else {
-            File.Delete(subtitlePath);
+            File.Delete(externalFilePath);
         }
 
-        File.CreateSymbolicLink(subtitlePath, realSubtitlePath);
-        Logger.LogDebug("Moved {Path} to {RealPath}", subtitlePath, realSubtitlePath);
+        File.CreateSymbolicLink(externalFilePath, realExternalFilePath);
+        Logger.LogDebug("Moved {Path} to {RealPath}", externalFilePath, realExternalFilePath);
 
         skip = false;
         return true;

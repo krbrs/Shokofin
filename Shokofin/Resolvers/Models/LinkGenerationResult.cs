@@ -13,19 +13,19 @@ public class LinkGenerationResult {
     public ConcurrentBag<string> RemovedPaths { get; init; } = [];
 
     public int Total =>
-        TotalVideos + TotalSubtitles + TotalTrickplayDirectories;
+        TotalVideos + TotalExternalFiles + TotalTrickplayDirectories;
 
     public int Created =>
-        CreatedVideos + CreatedSubtitles + CreatedTrickplayDirectories;
+        CreatedVideos + CreatedExternalFiles + CreatedTrickplayDirectories;
 
     public int Fixed =>
-        FixedVideos + FixedSubtitles + FixedTrickplayDirectories;
+        FixedVideos + FixedExternalFiles + FixedTrickplayDirectories;
 
     public int Skipped =>
-        SkippedVideos + SkippedSubtitles + SkippedTrickplayDirectories;
+        SkippedVideos + SkippedExternalFiles + SkippedTrickplayDirectories;
 
     public int Removed =>
-        RemovedVideos + RemovedSubtitles + RemovedNfos + RemovedTrickplayDirectories;
+        RemovedVideos + RemovedExternalFiles + RemovedNfos + RemovedTrickplayDirectories;
 
     public int TotalVideos =>
         CreatedVideos + FixedVideos + SkippedVideos;
@@ -38,16 +38,16 @@ public class LinkGenerationResult {
 
     public int RemovedVideos { get; set; }
 
-    public int TotalSubtitles =>
-        CreatedSubtitles + FixedSubtitles + SkippedSubtitles;
+    public int TotalExternalFiles =>
+        CreatedExternalFiles + FixedExternalFiles + SkippedExternalFiles;
 
-    public int CreatedSubtitles { get; set; }
+    public int CreatedExternalFiles { get; set; }
 
-    public int FixedSubtitles { get; set; }
+    public int FixedExternalFiles { get; set; }
 
-    public int SkippedSubtitles { get; set; }
+    public int SkippedExternalFiles { get; set; }
 
-    public int RemovedSubtitles { get; set; }
+    public int RemovedExternalFiles { get; set; }
 
     public int TotalTrickplayDirectories =>
         CreatedTrickplayDirectories + FixedTrickplayDirectories + SkippedTrickplayDirectories;
@@ -65,22 +65,22 @@ public class LinkGenerationResult {
     public void Print(ILogger logger, string path) {
         var timeSpent = DateTime.Now - CreatedAt;
         logger.LogInformation(
-            "Created {CreatedTotal} ({CreatedMedia},{CreatedSubtitles},{CreatedTrickplay}), fixed {FixedTotal} ({FixedMedia},{FixedSubtitles},{FixedTrickplay}), skipped {SkippedTotal} ({SkippedMedia},{SkippedSubtitles},{SkippedTrickplay}), and removed {RemovedTotal} ({RemovedMedia},{RemovedSubtitles},{RemovedTrickplay},{RemovedNFO}) entries in folder at {Path} in {TimeSpan} (Total={Total})",
+            "Created {CreatedTotal} ({CreatedMedia},{CreatedExternal},{CreatedTrickplay}), fixed {FixedTotal} ({FixedMedia},{FixedExternal},{FixedTrickplay}), skipped {SkippedTotal} ({SkippedMedia},{SkippedExternal},{SkippedTrickplay}), and removed {RemovedTotal} ({RemovedMedia},{RemovedExternal},{RemovedTrickplay},{RemovedNFO}) entries in folder at {Path} in {TimeSpan} (Total={Total})",
             Created,
             CreatedVideos,
-            CreatedSubtitles,
+            CreatedExternalFiles,
             CreatedTrickplayDirectories,
             Fixed,
             FixedVideos,
-            FixedSubtitles,
+            FixedExternalFiles,
             FixedTrickplayDirectories,
             Skipped,
             SkippedVideos,
-            SkippedSubtitles,
+            SkippedExternalFiles,
             SkippedTrickplayDirectories,
             Removed,
             RemovedVideos,
-            RemovedSubtitles,
+            RemovedExternalFiles,
             RemovedTrickplayDirectories,
             RemovedNfos,
             path,
@@ -107,10 +107,10 @@ public class LinkGenerationResult {
             FixedVideos = a.FixedVideos + b.FixedVideos,
             SkippedVideos = a.SkippedVideos + b.SkippedVideos,
             RemovedVideos = a.RemovedVideos + b.RemovedVideos,
-            CreatedSubtitles = a.CreatedSubtitles + b.CreatedSubtitles,
-            FixedSubtitles = a.FixedSubtitles + b.FixedSubtitles,
-            SkippedSubtitles = a.SkippedSubtitles + b.SkippedSubtitles,
-            RemovedSubtitles = a.RemovedSubtitles + b.RemovedSubtitles,
+            CreatedExternalFiles = a.CreatedExternalFiles + b.CreatedExternalFiles,
+            FixedExternalFiles = a.FixedExternalFiles + b.FixedExternalFiles,
+            SkippedExternalFiles = a.SkippedExternalFiles + b.SkippedExternalFiles,
+            RemovedExternalFiles = a.RemovedExternalFiles + b.RemovedExternalFiles,
             CreatedTrickplayDirectories = a.CreatedTrickplayDirectories + b.CreatedTrickplayDirectories,
             FixedTrickplayDirectories = a.FixedTrickplayDirectories + b.FixedTrickplayDirectories,
             SkippedTrickplayDirectories = a.SkippedTrickplayDirectories + b.SkippedTrickplayDirectories,
