@@ -741,7 +741,7 @@ public partial class ShokoApiManager : IDisposable {
                 if (tmdbEntity is null) {
                     foreach (var tmdbEpisodeId in episode.IDs.TMDB.Episode) {
                         Logger.LogTrace("Trying to find TMDB episode {EpisodeId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbEpisodeId, episode.Name, episode.Id);
-                        if (await ApiClient.GetTmdbEpisode(tmdbEpisodeId.ToString()).ConfigureAwait(false) is { } tmdbEpisode) {
+                        if (await ApiClient.GetTmdbEpisode(tmdbEpisodeId.ToString(), useDefaultOrdering: true).ConfigureAwait(false) is { } tmdbEpisode) {
                             tmdbEntity = tmdbEpisode;
                             Logger.LogTrace("Found TMDB episode {EpisodeId} for episode {EpisodeName}. (Source=Shoko,Episode={EpisodeId})", tmdbEpisodeId, episode.Name, episode.Id);
 

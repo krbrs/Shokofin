@@ -501,22 +501,8 @@ public class ShokoApiClient : IDisposable {
 
     #region TMDB Episode
 
-    public async Task<TmdbEpisode?> GetTmdbEpisode(string episodeId)
-    {
-        try
-        {
-            return await GetOrNull<TmdbEpisode>($"/api/v3/TMDB/Episode/{episodeId}?include=Titles,Overviews,Cast,Crew,FileCrossReferences");
-        }
-        // In case the episode is not part of the currently preferred alternate ordering, then return null/default.
-        catch (ApiException e) when (e is
-        {
-            StatusCode: HttpStatusCode.BadRequest,
-            Message: "Invalid alternateOrderingID for episode." or "Invalid alternateOrderingID for show."
-        })
-        {
-            return default;
-        }
-    }
+    public Task<TmdbEpisode?> GetTmdbEpisode(string episodeId, bool useDefaultOrdering = false)
+        => GetOrNull<TmdbEpisode>($"/api/v3/TMDB/Episode/{episodeId}?include=Titles,Overviews,Cast,Crew,FileCrossReferences${(useDefaultOrdering ? "&alternateOrderingID=default" : "")}");
 
     public async Task<IReadOnlyList<TmdbEpisode>> GetTmdbEpisodesInTmdbSeason(string seasonId)
         => (await GetOrNull<ListResult<TmdbEpisode>>($"/api/v3/TMDB/Season/{seasonId}/Episode?pageSize=0&include=Titles,Overviews,Cast,Crew,FileCrossReferences").ConfigureAwait(false))?.List ?? [];
