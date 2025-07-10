@@ -29,8 +29,6 @@ public class SeriesConfiguration {
     /// </summary>
     public SeriesEpisodeConversion EpisodeConversion { get; set; }
 
-    public Ordering.OrderType SeasonOrderType { get; set; }
-
     /// <summary>
     /// Whether to order episodes by airdate instead of episode number.
     /// </summary>
@@ -61,11 +59,6 @@ public class NullableSeriesConfiguration {
     /// Determines how episodes should be converted, if at all.
     /// </summary>
     public SeriesEpisodeConversion? EpisodeConversion { get; set; }
-
-    /// <summary>
-    /// Determines how episodes should be converted, if at all.
-    /// </summary>
-    public Ordering.OrderType? SeasonOrderType { get; set; }
 
     /// <summary>
     /// Whether to order episodes by airdate instead of episode number.

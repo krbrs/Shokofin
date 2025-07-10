@@ -320,7 +320,6 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   StructureType: SeriesStructureType | "None";
  *   MergeOverride: SeriesMergingOverride;
  *   EpisodeConversion: SeriesEpisodeConversion;
- *   SeasonOrderType: SeasonOrderType | "None";
  *   OrderByAirdate: boolean;
  * }} SeriesConfiguration
  */
@@ -473,7 +472,7 @@ export const ShokoApiClient = {
      * Get the list of series.
      *
      * @public
-     * @returns {Promise<({ Id: string; Title: string; })[]>} The list of series.
+     * @returns {Promise<({ Id: number; AnidbId: number; Title: string; DefaultTitle: string; })[]>} The list of series.
      */
     getSeriesList() {
         return ApiClient.fetch({
@@ -591,7 +590,7 @@ export const State = window["SHOKO_STATE_OBJECT"] || (window["SHOKO_STATE_OBJECT
 //#region Tabs
 
 /**
- * @typedef {"connection" | "metadata" | "library" | "vfs" | "users" | "signalr" | "misc" | "utilities"} TabType
+ * @typedef {"connection" | "metadata" | "library" | "vfs" | "users" | "series" | "signalr" | "misc" | "utilities"} TabType
  */
 
 /**
@@ -642,6 +641,13 @@ const Tabs = [
         href: getConfigurationPageUrl("Shoko.Settings", "users"),
         helpHref: "https://docs.shokoanime.com/jellyfin/configuring-shokofin/#users",
         name: "Users",
+        connected: true,
+    },
+    {
+        id: "series",
+        href: getConfigurationPageUrl("Shoko.Settings", "series"),
+        helpHref: "https://docs.shokoanime.com/jellyfin/configuring-shokofin/#series",
+        name: "Series",
         connected: true,
     },
     {

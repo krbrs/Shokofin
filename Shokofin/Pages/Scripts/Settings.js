@@ -35,7 +35,7 @@ promise.then(({
 //#region Constants
 
 /**
- * @typedef {"Connection" | "Metadata_Title" | "Metadata_Description" | "Metadata_TagGenre" | "Metadata_Image" | "Metadata_Misc" | "Metadata_ThirdPartyIntegration" | "Library_Basic" | "Library_Collection" | "Library_MultipleVersions" | "Library_New" | "Library_Existing" | "Library_Experimental" | "VFS_Basic" | "VFS_Location" | "User" | "SignalR_Connection" | "SignalR_Basic" | "SignalR_Library_New" | "SignalR_Library_Existing" | "Misc" | "Utilities"} SectionType
+ * @typedef {"Connection" | "Metadata_Title" | "Metadata_Description" | "Metadata_TagGenre" | "Metadata_Image" | "Metadata_Misc" | "Metadata_ThirdPartyIntegration" | "Library_Basic" | "Library_Collection" | "Library_MultipleVersions" | "Library_New" | "Library_Existing" | "Library_Experimental" | "VFS_Basic" | "VFS_Location" | "User" | "Series" | "SignalR_Connection" | "SignalR_Basic" | "SignalR_Library_New" | "SignalR_Library_Existing" | "Misc" | "Utilities"} SectionType
  */
 
 const MaxDebugPresses = 7;
@@ -60,6 +60,7 @@ const Sections = [
     "VFS_Basic",
     "VFS_Location",
     "User",
+    "Series",
     "SignalR_Connection",
     "SignalR_Basic",
     "SignalR_Library_New",
@@ -111,6 +112,10 @@ createControllerFactory({
 
             form.querySelector("#UserSelector").addEventListener("change", function () {
                 applyUserConfigToForm(form, this.value);
+            });
+
+            form.querySelector("#SeriesSelector").addEventListener("change", function () {
+                applySeriesConfigToForm(form, this.value);
             });
 
             form.querySelector("#MediaFolderSelector").addEventListener("change", function () {
@@ -323,6 +328,12 @@ async function updateView(view, form, config) {
             activeSections.push("User");
 
             await applyUserConfigToForm(form, form.querySelector("#UserSelector").value, config);
+            break;
+
+        case "series":
+            activeSections.push("Series");
+
+            await applySeriesConfigToForm(form, form.querySelector("#SeriesSelector").value, config);
             break;
 
         case "signalr":
@@ -694,6 +705,13 @@ async function applyConfigToForm(form, config) {
             break;
         }
 
+        case "series": {
+            Dashboard.showLoadingMsg();
+            const series = await ShokoApiClient.getSeriesList();
+            form.querySelector("#SeriesSelector").innerHTML = `<option value="">Click here to select a series</option>` + series.map((s) => `<option value="${s.Id}">${s.Title} (a${s.AnidbId})</option>`).join("");
+            break;
+        }
+
         case "misc": {
             form.querySelector("#Misc_ShowInMenu").checked = config.Misc_ShowInMenu;
             form.querySelector("#IgnoredFolders").value = config.IgnoredFolders.join();
@@ -758,6 +776,46 @@ async function applyUserConfigToForm(form, userId, config = null) {
 
     // Show the user settings now if it was previously hidden.
     form.querySelector("#UserSettingsContainer").removeAttribute("hidden");
+
+    if (shouldHide) {
+        Dashboard.hideLoadingMsg();
+    }
+}
+
+/**
+ * Load the series configuration for the given series.
+ *
+ * @param {HTMLFormElement} form - The form element.
+ * @param {string} seriesId - The series ID.
+ * @param {import("./Common.js").PluginConfiguration} config - The plugin configuration.
+ * @returns {Promise<void>}
+ */
+async function applySeriesConfigToForm(form, seriesId, config = null) {
+    if (!seriesId) {
+        form.querySelector("#SeriesSettingsContainer").setAttribute("hidden", "");
+        return;
+    }
+
+    let shouldHide = false;
+    if (!config) {
+        if (State.config) {
+            config = State.config;
+        }
+        else {
+            Dashboard.showLoadingMsg();
+            config = await ShokoApiClient.getConfiguration();
+            shouldHide = true;
+        }
+    }
+
+    const seriesConfig = await ShokoApiClient.getSeriesConfiguration(seriesId);
+    form.querySelector("#SeriesType").value = seriesConfig.Type;
+    form.querySelector("#SeriesLibraryStructure").value = seriesConfig.StructureType;
+    form.querySelector("#SeriesMergeOverride").value = seriesConfig.MergeOverride;
+    form.querySelector("#SeriesEpisodeConversion").value = seriesConfig.EpisodeConversion;
+    form.querySelector("#SeriesOrderByAirdate").checked = seriesConfig.OrderByAirdate;
+
+    form.querySelector("#SeriesSettingsContainer").removeAttribute("hidden");
 
     if (shouldHide) {
         Dashboard.hideLoadingMsg();
@@ -1007,6 +1065,20 @@ async function syncSettings(form, config) {
                 userConfig.Username = "";
                 userConfig.Token = "";
             }
+        }
+    }
+
+    const seriesId = form.querySelector("#SeriesSelector").value;
+    if (seriesId) {
+        let seriesConfig = await ShokoApiClient.getSeriesConfiguration(seriesId);
+        if (seriesConfig) {
+            seriesConfig.SeriesType = form.querySelector("#SeriesType").value;
+            seriesConfig.StructureType = form.querySelector("#SeriesLibraryStructure").value;
+            seriesConfig.MergeOverride = form.querySelector("#SeriesMergeOverride").value;
+            seriesConfig.EpisodeConversion = form.querySelector("#SeriesEpisodeConversion").value;
+            seriesConfig.OrderByAirdate = form.querySelector("#SeriesOrderByAirdate").checked;
+
+            await ShokoApiClient.updateSeriesConfiguration(seriesId, seriesConfig);
         }
     }
 

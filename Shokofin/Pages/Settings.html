@@ -1411,10 +1411,10 @@ form:not(.expert-mode) .expert-only {
                             </select>
                             <div class="fieldDescription">
                                 <div>
-                                    This will use Shoko's group structure to construct the shows in the libraries instead of the flat AniDB-esque structure you would otherwise see.
+                                    This setting determines which library structure to use by default for shows and movies in all plugin managed libraries. You can override the structure on a per Shoko Series basis over in the Series settings tab at the top.
                                 </div>
                                 <details style="margin-top: 0.5em">
-                                    <summary style="margin-bottom: 0.25em">Pre-requirements for use.</summary>
+                                    <summary style="margin-bottom: 0.25em">Pre-requirements for using <strong>Shoko Group structure</strong>.</summary>
                                     To make the most out of this feature you first need to configure your groups in Shoko. You can either enable auto-grouping in the settings, manually craft your own group structure, or a mix of the two where you have auto-grouping enabled but override the placement if you feel it should belong elsewhere instead. For more information look up the <a href="https://docs.shokoanime.com/shoko-server/group-management">Shoko docs</a> on how to manage your groups.
                                 </details>
                                 <details style="margin-top: 0.5em">
@@ -2078,6 +2078,99 @@ form:not(.expert-mode) .expert-only {
                                     <span>${ButtonRemove}</span>
                                 </button>
                                 <div class="fieldDescription">This will delete any saved settings for the user.</div>
+                            </div>
+                            <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
+                                <span>${Save}</span>
+                            </button>
+                        </div>
+                    </fieldset>
+                    <fieldset id="Series_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
+                        <legend>
+                            <h3>Series Settings</h3>
+                        </legend>
+                        <div class="selectContainer selectContainer-withDescription">
+                            <label class="selectLabel" for="SeriesSelector">Configure settings for</label>
+                            <select is="emby-select" id="SeriesSelector" name="SeriesSelector" value="" class="emby-select-withcolor emby-select">
+                                <option value="">Click here to select a series</option>
+                            </select>
+                            <div class="fieldDescription selectFieldDescription">Select a series to modify the series settings for.</div>
+                        </div>
+                        <div id="SeriesSettingsContainer" hidden>
+                            <div class="selectContainer selectContainer-withDescription">
+                                <label class="selectLabel" for="SeriesType">Series Type</label>
+                                <select is="emby-select" id="SeriesType" name="SeriesType" class="emby-select-withcolor emby-select">
+                                    <option value="None" selected>Use Original Type (Default)</option>
+                                    <option value="TV">Standard TV series</option>
+                                    <option value="TVSpecial">TV special</option>
+                                    <option value="Web">Web / Original Net Animation (ONA)</option>
+                                    <option value="Movie">Movie</option>
+                                    <option value="OVA">Original Video Animation (OVA)</option>
+                                    <option value="MusicVideo">Music Video (MV)</option>
+                                </select>
+                                <div class="fieldDescription">
+                                    <div>
+                                        Override the series type for this series. Useful if you want to opt into type specific features for this series.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="selectContainer selectContainer-withDescription">
+                                <label class="selectLabel" for="SeriesLibraryStructure">Library Structure Mode</label>
+                                <select is="emby-select" id="SeriesLibraryStructure" name="SeriesLibraryStructure" class="emby-select-withcolor emby-select">
+                                    <option value="None" selected>Follow Global Structure (Default)</option>
+                                    <option value="AniDB_Anime">AniDB Anime Structure</option>
+                                    <option value="Shoko_Groups">Shoko Group Structure</option>
+                                    <option value="TMDB_SeriesAndMovies">TheMovieDb Shows &amp; Movies Structure</option>
+                                </select>
+                                <div class="fieldDescription">
+                                    <div>
+                                        This setting determines which library structure to use the Shoko Series in all plugin managed libraries.
+                                    </div>
+                                    <details style="margin-top: 0.5em">
+                                        <summary style="margin-bottom: 0.25em">Pre-requirements for using <strong>Shoko Group structure</strong>.</summary>
+                                        To make the most out of this feature you first need to configure your groups in Shoko. You can either enable auto-grouping in the settings, manually craft your own group structure, or a mix of the two where you have auto-grouping enabled but override the placement if you feel it should belong elsewhere instead. For more information look up the <a href="https://docs.shokoanime.com/shoko-server/group-management">Shoko docs</a> on how to manage your groups.
+                                    </details>
+                                    <details style="margin-top: 0.5em">
+                                        <summary style="margin-bottom: 0.25em">Can I use this with collections?</summary>
+                                        Yes! You can use this with collections enabled, but that entails most of the time that you've configured a multi-layered structure for your groups because the deepest layer will be used for the shows while all the layers above will be used for collections. The exception to this is if you have a group which contains both movies and shows and you've enabled the option to separate movies from shows. In which case the deepest layer of groups will also be used to generate a collection for your movie(s) and show within the layer. Also note that enabling auto-grouping only gives you a single layer, and you need to use Shoko Desktop (or in the future, the Web UI) to create your nested structure. For more information look up the <a href="https://docs.shokoanime.com/shoko-server/group-management">Shoko docs</a> on how to manage your groups.
+                                    </details>
+                                </div>
+                            </div>
+                            <div class="selectContainer selectContainer-withDescription expert-only experimental-setting">
+                                <label class="selectLabel" for="SeriesMergeOverride">Season Merging Mode</label>
+                                <select is="emby-select" id="SeriesMergeOverride" name="SeriesMergeOverride" class="emby-select-withcolor emby-select">
+                                    <option value="None" selected>Follow Global Series Merging Settings (Default)</option>
+                                    <option value="NoMerge">Do Not Merge This Series With Any Other Series</option>
+                                    <option value="MergeForward">Attempt To Merge This Series With The Sequel Series</option>
+                                    <option value="MergeBackward">Attempt To Merge This Series With The Prequel Series</option>
+                                    <option value="MergeWithMainStory">Attempt To Merge This Series With The Main Story Series</option>
+                                </select>
+                                <div class="fieldDescription">
+                                    <div>
+                                        Determines how the merging should be handled for the series. Requires the global series merging feature to be enabled for this to take effect.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="selectContainer selectContainer-withDescription">
+                                <label class="selectLabel" for="SeriesEpisodeConversion">Episode Conversion Mode</label>
+                                <select is="emby-select" id="SeriesEpisodeConversion" name="SeriesEpisodeConversion" class="emby-select-withcolor emby-select">
+                                    <option value="None" selected>No Conversion (Default)</option>
+                                    <option value="EpisodesAsSpecials">Convert Normal Episodes to Specials</option>
+                                    <option value="SpecialsAsEpisodes">Convert Specials to Normal Episodes</option>
+                                </select>
+                                <div class="fieldDescription">
+                                    <div>
+                                        Determines how episodes should be converted between episode types.
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="checkboxContainer checkboxContainer-withDescription">
+                                <label class="emby-checkbox-label">
+                                    <input is="emby-checkbox" type="checkbox" id="SeriesOrderByAirdate" />
+                                    <span>Order episodes by airdate</span>
+                                </label>
+                                <div class="fieldDescription checkboxFieldDescription">
+                                    Order episodes by their airdate instead of by their original episode number. <strong>Warning</strong>: Only applied to AniDB Anime Structure and Shoko Group Structure.
+                                </div>
                             </div>
                             <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                                 <span>${Save}</span>
