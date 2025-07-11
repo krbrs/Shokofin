@@ -1,6 +1,6 @@
 # Shokofin
 
-A Jellyfin plugin to integrate [Jellyfin](https://jellyfin.org/docs/) with
+A Jellyfin plugin to integrate [Jellyfin](https://jellyfin.org/) with
 [Shoko Server](https://shokoanime.com/downloads/shoko-server).
 
 ## Read this before installing
@@ -8,7 +8,7 @@ A Jellyfin plugin to integrate [Jellyfin](https://jellyfin.org/docs/) with
 **This plugin requires that you have already set up and are using Shoko Server**,
 and that the files you intend to include in Jellyfin are **indexed** (and
 optionally managed) by Shoko Server. **Otherwise, the plugin won't be able to
-provide metadata for your files**, since there is no metadata to find for them.
+provide metadata for your files**, since there is no metadata to provide for them.
 
 ### What Is Shoko?
 
@@ -22,11 +22,14 @@ your collection so let Shoko handle all the heavy lifting.
 
 Learn more about Shoko at https://shokoanime.com/.
 
+## Documentation
+
+Head over to our [documentation site](https://docs.shokoanime.com/jellyfin/installing-shokofin) for documentation that is not pure source-code.
+
 ## Install
 
-There are many ways to install the plugin, but the recommended way is to use
-the official Jellyfin repository. Alternatively, it can be installed from this
-GitHub repository, or you can build it from source.
+There are multiple ways to install the plugin, but the recommended way is to use
+the official Jellyfin repository.
 
 Below is a version compatibility matrix for which version of Shokofin is
 compatible with what.
