@@ -83,7 +83,7 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                 _logger.LogError(ex, "Threw unexpectedly while refreshing a missing episode; {Message} (Episode={EpisodeId})", ex.Message, episodeId);
             }
             else {
-                _logger.LogError(ex, "Threw unexpectedly while refreshing {Path}: {Message}", info.Path, info.IsMissingEpisode);
+                _logger.LogError(ex, "Threw unexpectedly while refreshing {Path}: {Message}", info.Path, ex.Message);
             }
 
             return new MetadataResult<Episode>();
