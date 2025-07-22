@@ -32,7 +32,17 @@ public class ImageHostUrl : IAsyncActionFilter {
     /// </summary>
     public static string BasePath { get => InternalBasePath ??= Plugin.Instance.BasePath; }
 
-    private readonly object LockObj = new();
+    private static Guid? _currentItemId;
+
+    public static Guid? CurrentItemId {
+        get {
+            lock (LockObj) {
+                return _currentItemId;
+            }
+        }
+    }
+
+    private static readonly object LockObj = new();
 
     private static Regex RemoteImagesRegex = new(@"/Items/(?<itemId>[0-9a-fA-F]{32})/RemoteImages$", RegexOptions.Compiled);
 
@@ -40,18 +50,30 @@ public class ImageHostUrl : IAsyncActionFilter {
         var request = context.HttpContext.Request;
         var uriBuilder = new UriBuilder(request.Scheme, request.Host.Host, request.Host.Port ?? (request.Scheme == "https" ? 443 : 80), $"{request.PathBase}{request.Path}", request.QueryString.HasValue ? request.QueryString.Value : null);
         var result = RemoteImagesRegex.Match(uriBuilder.Path);
+        var itemId = Guid.Empty;
         if (result.Success) {
+            itemId = Guid.Parse(result.Groups["itemId"].Value);
             var path = result.Length == uriBuilder.Path.Length ? "" : uriBuilder.Path[..^result.Length];
             uriBuilder.Path = "";
             uriBuilder.Query = "";
             var uri = uriBuilder.ToString();
             lock (LockObj) {
+                _currentItemId = itemId;
                 if (!string.Equals(uri, InternalBaseUrl))
                     InternalBaseUrl = uri;
                 if (!string.Equals(path, InternalBasePath))
                     InternalBasePath = path;
             }
         }
+
         await next().ConfigureAwait(false);
+
+        if (itemId != Guid.Empty && _currentItemId == itemId) {
+            lock (LockObj) {
+                if (itemId != Guid.Empty && _currentItemId == itemId) {
+                    _currentItemId = null;
+                }
+            }
+        }
     }
 }

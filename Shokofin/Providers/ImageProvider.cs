@@ -14,6 +14,7 @@ using MediaBrowser.Model.Providers;
 using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.ExternalIds;
+using Shokofin.Web;
 
 using RatingType = MediaBrowser.Model.Dto.RatingType;
 
@@ -25,6 +26,8 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
     public int Order => 0;
 
     public async Task<IEnumerable<RemoteImageInfo>> GetImages(BaseItem item, CancellationToken cancellationToken) {
+        var currentItemId = ImageHostUrl.CurrentItemId;
+        var isLikelyApiRequest = currentItemId.HasValue && currentItemId.Value == item.Id;
         var list = new List<RemoteImageInfo>();
         var metadataLanguage = item.GetPreferredMetadataLanguage();
         var baseKind = item.GetBaseItemKind();
@@ -39,7 +42,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                     var episodeInfo = fileInfo.EpisodeList[0].Episode;
                     var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(seasonInfo.StructureType);
                     if (await episodeInfo.GetImages(cancellationToken).ConfigureAwait(false) is { } episodeImages)
-                        AddImagesForEpisode(ref list, episodeImages, metadataLanguage, sortPreferred);
+                        AddImagesForEpisode(ref list, episodeImages, metadataLanguage, sortPreferred, isLikelyApiRequest);
 
                     _logger.LogInformation("Getting {Count} images for episode {EpisodeName} (Episode={EpisodeId},Language={MetadataLanguage})", list.Count, episode.Name, episodeInfo.Id, metadataLanguage);
                     break;
@@ -49,7 +52,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                         if (await _apiManager.GetShowInfoBySeasonId(seasonId).ConfigureAwait(false) is { } showInfo) {
                             var images = await showInfo.GetImages(cancellationToken).ConfigureAwait(false);
                             var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(showInfo.DefaultSeason.StructureType);
-                            AddImagesForSeries(ref list, images, metadataLanguage, sortPreferred);
+                            AddImagesForSeries(ref list, images, metadataLanguage, sortPreferred, isLikelyApiRequest);
                             sortPreferred = false;
 
                             // Also attach any images linked to the "seasons" if it's not a standalone series.
@@ -57,7 +60,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                                 foreach (var seasonInfo in showInfo.SeasonList) {
                                     var seriesImages = await seasonInfo.GetImages(cancellationToken).ConfigureAwait(false);
                                     if (seriesImages is not null) {
-                                        AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
+                                        AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred, isLikelyApiRequest);
                                         sortPreferred = false;
                                     }
                                 }
@@ -75,7 +78,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
 
                         var seriesImages = await seasonInfo.GetImages(cancellationToken).ConfigureAwait(false);
                         var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(seasonInfo.StructureType);
-                        AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred);
+                        AddImagesForSeries(ref list, seriesImages, metadataLanguage, sortPreferred, isLikelyApiRequest);
                         _logger.LogInformation("Getting {Count} images for season {SeasonNumber} in {SeriesName} (Season={SeasonId},Language={MetadataLanguage})", list.Count, season.IndexNumber, season.SeriesName, seasonId, metadataLanguage);
                     }
                     break;
@@ -88,7 +91,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                     var episodeInfo = fileInfo.EpisodeList[0].Episode;
                     var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(seasonInfo.StructureType);
                     if (await episodeInfo.GetImages(cancellationToken).ConfigureAwait(false) is { } episodeImages)
-                        AddImagesForSeries(ref list, episodeImages, metadataLanguage, sortPreferred, BaseItemKind.Movie);
+                        AddImagesForSeries(ref list, episodeImages, metadataLanguage, sortPreferred, isLikelyApiRequest, BaseItemKind.Movie);
 
                     _logger.LogInformation("Getting {Count} images for movie {MovieName} (Episode={EpisodeId},Language={MetadataLanguage})", list.Count, movie.Name, episodeInfo.Id, metadataLanguage);
                     break;
@@ -103,7 +106,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                     if (!string.IsNullOrEmpty(seasonId) && await _apiManager.GetShowInfoBySeasonId(seasonId).ConfigureAwait(false) is { } showInfo) {
                         var showImages = await showInfo.GetImages(cancellationToken).ConfigureAwait(false);
                         var sortPreferred = Plugin.Instance.Configuration.RespectPreferredImagePerStructureType.Contains(showInfo.DefaultSeason.StructureType);
-                        AddImagesForSeries(ref list, showImages, metadataLanguage, sortPreferred);
+                        AddImagesForSeries(ref list, showImages, metadataLanguage, sortPreferred, isLikelyApiRequest);
                     }
 
                     _logger.LogInformation("Getting {Count} images for collection {CollectionName} (Collection={CollectionId},Season={SeasonId},Language={MetadataLanguage})", list.Count, collection.Name, collectionId, collectionId is null ? seasonId : null, metadataLanguage);
@@ -124,41 +127,41 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
         }
     }
 
-    public static void AddImagesForEpisode(ref List<RemoteImageInfo> list, API.Models.EpisodeImages images, string metadataLanguage, bool sortList) {
+    public static void AddImagesForEpisode(ref List<RemoteImageInfo> list, API.Models.EpisodeImages images, string metadataLanguage, bool sortList, bool isLikelyApiRequest) {
         IEnumerable<API.Models.Image> imagesList = sortList
             ? images.Thumbnails.Concat(images.Backdrops).OrderByDescending(image => image.IsPreferred).ThenByDescending(image => image.Type is API.Models.ImageType.Thumbnail)
             : images.Thumbnails.Concat(images.Backdrops).OrderByDescending(image => image.Type is API.Models.ImageType.Thumbnail);
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Primary, image, metadataLanguage, overridePreferred: sortList);
+            AddImage(ref list, ImageType.Primary, image, metadataLanguage, BaseItemKind.Series, sortList, isLikelyApiRequest);
     }
 
-    private static void AddImagesForSeries(ref List<RemoteImageInfo> list, API.Models.Images images, string metadataLanguage, bool sortList, BaseItemKind baseKind = BaseItemKind.Series) {
+    private static void AddImagesForSeries(ref List<RemoteImageInfo> list, API.Models.Images images, string metadataLanguage, bool sortList, bool isLikelyApiRequest, BaseItemKind baseKind = BaseItemKind.Series) {
         IEnumerable<API.Models.Image> imagesList = sortList
             ? images.Posters.OrderByDescending(image => image.IsPreferred)
             : images.Posters;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Primary, image, sortList ? metadataLanguage : null, baseKind, sortList);
+            AddImage(ref list, ImageType.Primary, image, sortList ? metadataLanguage : null, baseKind, sortList, isLikelyApiRequest);
 
         imagesList = sortList
             ? images.Backdrops.OrderByDescending(image => image.IsPreferred)
             : images.Backdrops;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Backdrop, image, sortList ? metadataLanguage : null, baseKind, sortList);
+            AddImage(ref list, ImageType.Backdrop, image, sortList ? metadataLanguage : null, baseKind, sortList, isLikelyApiRequest);
 
         imagesList = sortList
             ? images.Banners.OrderByDescending(image => image.IsPreferred)
             : images.Banners;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Banner, image, metadataLanguage, baseKind, sortList);
+            AddImage(ref list, ImageType.Banner, image, metadataLanguage, baseKind, sortList, isLikelyApiRequest);
 
         imagesList = sortList
             ? images.Logos.OrderByDescending(image => image.IsPreferred)
             : images.Logos;
         foreach (var image in imagesList)
-            AddImage(ref list, ImageType.Logo, image, metadataLanguage, baseKind, sortList);
+            AddImage(ref list, ImageType.Logo, image, metadataLanguage, baseKind, sortList, isLikelyApiRequest);
     }
 
-    private static void AddImage(ref List<RemoteImageInfo> list, ImageType imageType, API.Models.Image? image, string? metadataLanguage, BaseItemKind baseKind = BaseItemKind.Series, bool overridePreferred = false) {
+    private static void AddImage(ref List<RemoteImageInfo> list, ImageType imageType, API.Models.Image? image, string? metadataLanguage, BaseItemKind baseKind, bool overridePreferred, bool isLikelyApiRequest) {
         if (image is not { IsAvailable: true })
             return;
 
@@ -169,11 +172,11 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
             Height = image.Height,
             Url = image.ToURLString(),
         };
-        if (UseLanguageCode(imageType, baseKind))
-            imageDto.Language = !string.IsNullOrEmpty(metadataLanguage) && overridePreferred && image.IsPreferred ? metadataLanguage : image.LanguageCode;
+        if (isLikelyApiRequest || UseLanguageCode(imageType, baseKind))
+            imageDto.Language = !isLikelyApiRequest && !string.IsNullOrEmpty(metadataLanguage) && overridePreferred && image.IsPreferred ? metadataLanguage : image.LanguageCode;
 
-        if (UseCommunityRating(imageType, baseKind)) {
-            if (overridePreferred && image.IsPreferred) {
+        if (isLikelyApiRequest || UseCommunityRating(imageType, baseKind)) {
+            if (!isLikelyApiRequest && overridePreferred && image.IsPreferred) {
                 imageDto.CommunityRating = 10;
                 imageDto.VoteCount = 1337;
                 imageDto.RatingType = RatingType.Score;
