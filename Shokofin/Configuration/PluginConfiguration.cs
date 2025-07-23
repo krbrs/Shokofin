@@ -871,7 +871,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         SeasonMerging_SeriesTypes = [SeriesType.OVA, SeriesType.TV, SeriesType.TVSpecial, SeriesType.Web, SeriesType.OVA];
         SeasonMerging_MergeWindowInDays = 185;
         MetadataRefresh = new();
-        UsageTracker_StalledTimeInSeconds = 10;
+        UsageTracker_StalledTimeInSeconds = 60;
         Misc_ShowInMenu = false;
         ExpertMode = false;
     }

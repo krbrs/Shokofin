@@ -409,6 +409,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   SeasonMerging_SeriesTypes: SeriesType[];
  *   SeasonMerging_MergeWindowInDays: number;
  *   Misc_ShowInMenu: boolean;
+ *   UsageTracker_StalledTimeInSeconds: number;
  *   ExpertMode: boolean;
  * }} PluginConfiguration
  */

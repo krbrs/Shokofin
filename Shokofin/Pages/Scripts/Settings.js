@@ -596,8 +596,11 @@ function applyFormToConfig(form, config) {
 
         case "misc": {
             const ignoredFolders = filterIgnoredFolders(form.querySelector("#IgnoredFolders").value);
+            const stallTime = sanitizeNumber(form.querySelector("#UsageTracker_StalledTimeInSeconds").value);
 
             config.Misc_ShowInMenu = form.querySelector("#Misc_ShowInMenu").checked;
+            config.UsageTracker_StalledTimeInSeconds = stallTime;
+            form.querySelector("#UsageTracker_StalledTimeInSeconds").value = stallTime;
             config.IgnoredFolders = ignoredFolders;
             form.querySelector("#IgnoredFolders").value = ignoredFolders.join(", ");
             break;
@@ -780,6 +783,7 @@ async function applyConfigToForm(form, config) {
 
         case "misc": {
             form.querySelector("#Misc_ShowInMenu").checked = config.Misc_ShowInMenu;
+            form.querySelector("#UsageTracker_StalledTimeInSeconds").value = config.UsageTracker_StalledTimeInSeconds;
             form.querySelector("#IgnoredFolders").value = config.IgnoredFolders.join();
             break;
         }

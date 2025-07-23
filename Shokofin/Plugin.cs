@@ -316,6 +316,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
                 config.MetadataRefresh.Episode |= MetadataRefreshField.Images;
             }
             config.SignalR_ReplaceImagesDuringRefresh = null;
+            config.UsageTracker_StalledTimeInSeconds = 60; // reset to the new default for older installs
             changed = true;
         }
 
