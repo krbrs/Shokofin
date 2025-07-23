@@ -681,6 +681,40 @@ public class PluginConfiguration : BasePluginConfiguration {
 
     #endregion
 
+    #region Season Merging
+
+    /// <summary>
+    /// Blur the boundaries between AniDB anime further by merging entries which could had just been a single anime entry based on name matching and a configurable merge window.
+    /// </summary>
+    [XmlElement("EXPERIMENTAL_MergeSeasons")]
+    public bool SeasonMerging_Enabled { get; set; }
+
+    /// <summary>
+    /// Determines the default merge behavior when not overridden on a per-shoko-series basis. Set to NoMerge to not do merges by default unless overridden.
+    /// </summary>
+    [JsonConverter(typeof(JsonStringEnumConverter))]
+    public SeriesMergingOverride SeasonMerging_DefaultBehavior { get; set; }
+
+    /// <summary>
+    /// Series types to attempt to merge. Will respect custom series type overrides. 
+    /// </summary>
+    [XmlElement("EXPERIMENTAL_MergeSeasonsTypes")]
+    public SeriesType[] SeasonMerging_SeriesTypes { get; set; }
+
+    /// <summary>
+    /// Number of days to check between the start of each season, inclusive.
+    /// </summary>
+    /// <remarks>
+    /// Use 0 to disable the threshold and allow all merges, or use any negative
+    /// value to disallow all merges without an override set on one or both of
+    /// the series to merge.
+    /// </remarks>
+    [Range(0, int.MaxValue)]
+    [XmlElement("EXPERIMENTAL_MergeSeasonsMergeWindowInDays")]
+    public int SeasonMerging_MergeWindowInDays { get; set; }
+
+    #endregion
+
     #region Usage Tracker
 
     /// <summary>
@@ -700,30 +734,6 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// Show the plugin in the side-menu.
     /// </summary>
     public bool Misc_ShowInMenu { get; set; }
-
-    #endregion
-
-    #region Experimental features
-
-    /// <summary>
-    /// Blur the boundaries between AniDB anime further by merging entries which could had just been a single anime entry based on name matching and a configurable merge window.
-    /// </summary>
-    public bool EXPERIMENTAL_MergeSeasons { get; set; }
-
-    /// <summary>
-    /// Series types to attempt to merge. Will respect custom series type overrides.
-    /// </summary>
-    public SeriesType[] EXPERIMENTAL_MergeSeasonsTypes { get; set; }
-
-    /// <summary>
-    /// Number of days to check between the start of each season, inclusive.
-    /// </summary>
-    /// <remarks>
-    /// Use 0 to disable the threshold and allow all merges, or use any negative
-    /// value to disallow all merges without an override set on one or both of
-    /// the series to merge.
-    /// </remarks>
-    public int EXPERIMENTAL_MergeSeasonsMergeWindowInDays { get; set; }
 
     #endregion
 
@@ -850,11 +860,12 @@ public class PluginConfiguration : BasePluginConfiguration {
         SignalR_RefreshEnabled = false;
         SignalR_FileEvents = true;
         SignalR_ReplaceImagesDuringRefresh = false;
+        SeasonMerging_Enabled = false;
+        SeasonMerging_DefaultBehavior = SeriesMergingOverride.None;
+        SeasonMerging_SeriesTypes = [SeriesType.OVA, SeriesType.TV, SeriesType.TVSpecial, SeriesType.Web, SeriesType.OVA];
+        SeasonMerging_MergeWindowInDays = 185;
         UsageTracker_StalledTimeInSeconds = 10;
         Misc_ShowInMenu = false;
-        EXPERIMENTAL_MergeSeasons = false;
-        EXPERIMENTAL_MergeSeasonsTypes = [SeriesType.OVA, SeriesType.TV, SeriesType.TVSpecial, SeriesType.Web, SeriesType.OVA];
-        EXPERIMENTAL_MergeSeasonsMergeWindowInDays = 185;
         ExpertMode = false;
     }
 }

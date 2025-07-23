@@ -1411,7 +1411,7 @@ form:not(.expert-mode) .expert-only {
                             </select>
                             <div class="fieldDescription">
                                 <div>
-                                    This setting determines which library structure to use by default for shows and movies in all plugin managed libraries. You can override the structure on a per Shoko Series basis over in the Series settings tab at the top.
+                                    This setting determines which library structure to use by default for shows and movies in all plugin managed libraries. You can override the structure on a per Shoko series basis over in the Series settings tab at the top.
                                 </div>
                                 <details style="margin-top: 0.5em">
                                     <summary style="margin-bottom: 0.25em">Pre-requirements for using <strong>Shoko Group structure</strong>.</summary>
@@ -1424,7 +1424,7 @@ form:not(.expert-mode) .expert-only {
                             </div>
                         </div>
                         <div class="selectContainer selectContainer-withDescription expert-only experimental-setting">
-                            <label class="selectLabel" for="SeasonOrdering">Shoko Group's Season Ordering</label>
+                            <label class="selectLabel" for="SeasonOrdering">Shoko Group Structure Season Ordering</label>
                             <select is="emby-select" id="SeasonOrdering" name="SeasonOrdering" class="emby-select-withcolor emby-select">
                                 <option value="Default" selected>Let Shoko decide (Default)</option>
                                 <option value="ReleaseDate">Order seasons by release date</option>
@@ -1756,17 +1756,118 @@ form:not(.expert-mode) .expert-only {
                             </button>
                         </div>
                     </fieldset>
-                    <fieldset id="Library_Experimental_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
+                    <fieldset id="Library_SeasonMerging_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
                         <legend>
-                            <h3>Experimental Settings</h3>
+                            <h3>Season Merging Settings</h3>
                         </legend>
-                        <div class="fieldDescription verticalSection-extrabottompadding">Any features/settings in this section is still considered to be in an experimental state. <strong>You can enable them, but at the risk if them messing up your library.</strong></div>
-                        <div class="checkboxContainer checkboxContainer-withDescription expert-only experimental-setting">
+                        <div class="fieldDescription verticalSection-extrabottompadding">Determines how the plugin handles merging one or more Shoko series into Jellyfin seasons.</div>
+                        <div class="checkboxContainer checkboxContainer-withDescription">
                             <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="EXPERIMENTAL_MergeSeasons" />
-                                <span>Automatically Merge Seasons</span>
+                                <input is="emby-checkbox" type="checkbox" id="SeasonMerging_Enabled" />
+                                <span>Enable Season Merging</span>
                             </label>
-                            <div class="fieldDescription checkboxFieldDescription">Blur the boundaries between AniDB anime further by merging entries which could have just been a single anime entry based on name matching and a configurable merge window.</div>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Globally enable season merging. This will blur the boundaries between AniDB anime further by merging entries which could have just been a single anime entry based on name matching and a configurable merge window, and/or custom per Shoko series merge overrides.
+                                <br/><br/>
+                                <strong>Note</strong>: The Shoko series will need three things for season merging to be possible:
+                                <ul>
+                                    <li>It needs to have an air date set.</li>
+                                    <li>It needs to be inside the same Shoko group as the other Shoko series that it should be merged with.</li>
+                                    <li>It needs to be using <strong>Shoko Group Structure</strong>, be it explicitly or implicitly, which also applies to the other Shoko series that it should be merged with.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="selectContainer selectContainer-withDescription expert-only">
+                            <label class="selectLabel" for="SeasonMerging_DefaultBehavior">Default Merge Behavior</label>
+                            <select is="emby-select" id="SeasonMerging_DefaultBehavior" name="SeasonMerging_DefaultBehavior" class="emby-select-withcolor emby-select">
+                                <option value="None" selected>Use Auto Merging (Default)</option>
+                                <option value="NoMerge">No Auto Merging</option>
+                            </select>
+                            <div class="fieldDescription">
+                                <div>Determines the default merge behavior when no override is set for a Shoko series.</div>
+                            </div>
+                        </div>
+                        <div id="SeasonMerging_SeriesTypes" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Series Types</h3>
+                            <div class="checkboxList paperList checkboxList-paperList">
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TV">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TV Series | Standard TV Series</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TVSpecial">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TV Special | Standalone Special TV Program</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Web">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Web | Web First Release / Original Net Animation (ONA)</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="OVA">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">OVA | Original Video Animation (OVA)</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Movie">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Movie | Standalone Movie / Movie Collection</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="MusicVideo">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Music Video | Standalone Music Video Release</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Other">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Other | Misc. Other Type</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Unknown">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Unknown | Type Not Determined Yet</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">Series types to attempt to automatically merge unless an override is in use. Will respect custom series type overrides.</div>
+                        </div>
+                        <div class="inputContainer inputContainer-withDescription expert-only">
+                            <input is="emby-input" type="number" id="SeasonMerging_MergeWindowInDays" label="Merge Window (days)" placeholder="0" type="number" pattern="[0-9]*" min="0" step="1" />
+                            <div class="fieldDescription">Number of days to check between the start of each season, inclusive. Set to 0 to allow merging regardless of release dates.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>${Save}</span>
@@ -1894,7 +1995,7 @@ form:not(.expert-mode) .expert-only {
                             </div>
                         </div>
                         <div class="inputContainer inputContainer-withDescription expert-only">
-                            <input is="emby-input" type="text" id="SignalRAutoReconnectIntervals" label="Auto Reconnect Intervals" />
+                            <input is="emby-input" type="text" id="SignalRAutoReconnectIntervals" label="Auto Reconnect Intervals (seconds)" />
                             <div class="fieldDescription">A comma separated list of intervals given in seconds to try to reconnect to your running Shoko instance if we ever gets disconnected. The last value in the list will be retried forever until a successful connection is made. Can be left empty to disable auto reconnect.</div>
                         </div>
                         <div id="SignalREventSources" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
@@ -2123,10 +2224,10 @@ form:not(.expert-mode) .expert-only {
                                 </select>
                                 <div class="fieldDescription">
                                     <div>
-                                        This setting determines which library structure to use the Shoko Series in all plugin managed libraries.
+                                        This setting determines which library structure to use the Shoko series in all plugin managed libraries.
                                     </div>
                                     <details style="margin-top: 0.5em">
-                                        <summary style="margin-bottom: 0.25em">Pre-requirements for using <strong>Shoko Group structure</strong>.</summary>
+                                        <summary style="margin-bottom: 0.25em">Pre-requirements for using <strong>Shoko Group Structure</strong>.</summary>
                                         To make the most out of this feature you first need to configure your groups in Shoko. You can either enable auto-grouping in the settings, manually craft your own group structure, or a mix of the two where you have auto-grouping enabled but override the placement if you feel it should belong elsewhere instead. For more information look up the <a href="https://docs.shokoanime.com/shoko-server/group-management">Shoko docs</a> on how to manage your groups.
                                     </details>
                                     <details style="margin-top: 0.5em">
@@ -2180,7 +2281,7 @@ form:not(.expert-mode) .expert-only {
                                     <span>Order episodes by airdate</span>
                                 </label>
                                 <div class="fieldDescription checkboxFieldDescription">
-                                    Order episodes by their airdate instead of by their original episode number. <strong>Warning</strong>: Only applied to AniDB Anime Structure and Shoko Group Structure.
+                                    Order episodes by their airdate instead of by their original episode number. <strong>Warning</strong>: Only applied to <strong>AniDB Anime Structure</strong> and <strong>Shoko Group Structure</strong>.
                                 </div>
                             </div>
                             <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">

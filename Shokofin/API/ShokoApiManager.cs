@@ -1248,7 +1248,7 @@ public partial class ShokoApiManager : IDisposable {
             $"season-series-ids:{series.Id}",
             (tuple) => {
                 var config = Plugin.Instance.Configuration;
-                if (!config.EXPERIMENTAL_MergeSeasons)
+                if (!config.SeasonMerging_Enabled)
                     return;
 
                 Logger.LogTrace("Reusing existing series-to-season mapping for series. (Series={SeriesId},ExtraSeries={ExtraIds})", tuple.primaryId, tuple.extraIds);
@@ -1257,19 +1257,19 @@ public partial class ShokoApiManager : IDisposable {
                 var primaryId = series.Id;
                 var extraIds = new List<string>();
                 var config = Plugin.Instance.Configuration;
-                if (!config.EXPERIMENTAL_MergeSeasons)
+                if (!config.SeasonMerging_Enabled)
                     return (primaryId, extraIds);
 
                 Logger.LogTrace("Creating new series-to-season mapping for series. (Series={SeriesId})", primaryId);
 
                 var seriesConfig = await GetSeriesConfiguration(series.Id).ConfigureAwait(false);
-                if (seriesConfig.StructureType is not SeriesStructureType.Shoko_Groups)
-                    return (primaryId, extraIds);
-
                 if (seriesConfig.MergeOverride is SeriesMergingOverride.NoMerge)
                     return (primaryId, extraIds);
 
-                if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(seriesConfig.Type))
+                if (seriesConfig.StructureType is not SeriesStructureType.Shoko_Groups)
+                    return (primaryId, extraIds);
+
+                if (seriesConfig.MergeOverride is SeriesMergingOverride.None && !config.SeasonMerging_SeriesTypes.Contains(seriesConfig.Type))
                     return (primaryId, extraIds);
 
                 if (series.AniDB.AirDate is null)
@@ -1278,7 +1278,7 @@ public partial class ShokoApiManager : IDisposable {
                 // We potentially have a "follow-up" season candidate, so look for the "primary" season candidate, then jump into that.
                 var relations = await ApiClient.GetRelationsForShokoSeries(primaryId).ConfigureAwait(false);
                 var mainTitle = series.AniDB.Titles.First(title => title.Type == TitleType.Main).Value;
-                var maxDaysThreshold = config.EXPERIMENTAL_MergeSeasonsMergeWindowInDays;
+                var maxDaysThreshold = config.SeasonMerging_MergeWindowInDays;
                 var adjustedMainTitle = AdjustMainTitle(mainTitle) ?? mainTitle;
                 var currentSeries = series;
                 var currentDate = currentSeries.AniDB.AirDate.Value;
@@ -1306,10 +1306,10 @@ public partial class ShokoApiManager : IDisposable {
                         if (prequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
                             continue;
 
-                        if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(prequelConfig.Type))
+                        if (prequelConfig.MergeOverride is SeriesMergingOverride.None && !config.SeasonMerging_SeriesTypes.Contains(prequelConfig.Type))
                             continue;
 
-                        if (prequelSeries.AniDB.AirDate is not { } prequelDate || (prequelRelation.Type is RelationType.Prequel && prequelDate > currentDate))
+                        if (prequelSeries.AniDB.AirDate is not { } prequelDate)
                             continue;
 
                         var mergeOverride = (
@@ -1318,7 +1318,7 @@ public partial class ShokoApiManager : IDisposable {
                             prequelRelation.Type is RelationType.MainStory && currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeWithMainStory)
                         );
                         if (!mergeOverride) {
-                            if (maxDaysThreshold is -1)
+                            if (prequelRelation.Type is RelationType.Prequel && prequelDate > currentDate)
                                 continue;
 
                             if (maxDaysThreshold > 0) {
@@ -1405,12 +1405,13 @@ public partial class ShokoApiManager : IDisposable {
                             if (sequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
                                 continue;
 
-                            if (!config.EXPERIMENTAL_MergeSeasonsTypes.Contains(sequelConfig.Type))
+                            if (sequelConfig.MergeOverride is SeriesMergingOverride.None && !config.SeasonMerging_SeriesTypes.Contains(sequelConfig.Type))
                                 continue;
 
-                            if (sequelSeries.AniDB.AirDate is not { } sequelDate || (sequelRelation.Type is RelationType.Sequel && sequelDate < currentDate))
+                            if (sequelSeries.AniDB.AirDate is not { } sequelDate)
                                 continue;
 
+                            // Fix for older servers with mismatching relations between the series causing weird behavior.
                             if (sequelRelation.Type is RelationType.SideStory) {
                                 var sequelRelations = await ApiClient.GetRelationsForShokoSeries(sequelSeries.Id).ConfigureAwait(false);
                                 sequelRelations = sequelRelations
@@ -1427,7 +1428,7 @@ public partial class ShokoApiManager : IDisposable {
                                 sequelRelation.Type is RelationType.SideStory && sequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeWithMainStory)
                             );
                             if (!mergeOverride) {
-                                if (maxDaysThreshold < 0)
+                                if (sequelRelation.Type is RelationType.Sequel && sequelDate < currentDate)
                                     continue;
 
                                 if (maxDaysThreshold > 0) {

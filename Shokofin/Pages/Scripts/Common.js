@@ -404,8 +404,11 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   SignalR_RefreshEnabled: boolean;
  *   SignalR_FileEvents: boolean;
  *   SignalR_EventSources: GenericProvider[];
+ *   SeasonMerging_Enabled: boolean;
+ *   SeasonMerging_DefaultBehavior: SeriesMergingOverride;
+ *   SeasonMerging_SeriesTypes: SeriesType[];
+ *   SeasonMerging_MergeWindowInDays: number;
  *   Misc_ShowInMenu: boolean;
- *   EXPERIMENTAL_MergeSeasons: boolean;
  *   ExpertMode: boolean;
  * }} PluginConfiguration
  */

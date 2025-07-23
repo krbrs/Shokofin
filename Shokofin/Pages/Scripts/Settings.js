@@ -35,7 +35,7 @@ promise.then(({
 //#region Constants
 
 /**
- * @typedef {"Connection" | "Metadata_Title" | "Metadata_Description" | "Metadata_TagGenre" | "Metadata_Image" | "Metadata_Misc" | "Metadata_ThirdPartyIntegration" | "Library_Basic" | "Library_Collection" | "Library_MultipleVersions" | "Library_New" | "Library_Existing" | "Library_Experimental" | "VFS_Basic" | "VFS_Location" | "User" | "Series" | "SignalR_Connection" | "SignalR_Basic" | "SignalR_Library_New" | "SignalR_Library_Existing" | "Misc" | "Utilities"} SectionType
+ * @typedef {"Connection" | "Metadata_Title" | "Metadata_Description" | "Metadata_TagGenre" | "Metadata_Image" | "Metadata_Misc" | "Metadata_ThirdPartyIntegration" | "Library_Basic" | "Library_Collection" | "Library_MultipleVersions" | "Library_New" | "Library_Existing" | "Library_SeasonMerging" | "VFS_Basic" | "VFS_Location" | "User" | "Series" | "SignalR_Connection" | "SignalR_Basic" | "SignalR_Library_New" | "SignalR_Library_Existing" | "Misc" | "Utilities"} SectionType
  */
 
 const MaxDebugPresses = 7;
@@ -56,7 +56,7 @@ const Sections = [
     "Library_MultipleVersions",
     "Library_New",
     "Library_Existing",
-    "Library_Experimental",
+    "Library_SeasonMerging",
     "VFS_Basic",
     "VFS_Location",
     "User",
@@ -315,7 +315,7 @@ async function updateView(view, form, config) {
             break;
 
         case "library":
-            activeSections.push("Library_Basic", "Library_Collection", "Library_MultipleVersions", "Library_New", "Library_Existing", "Library_Experimental");
+            activeSections.push("Library_Basic", "Library_Collection", "Library_MultipleVersions", "Library_New", "Library_Existing", "Library_SeasonMerging");
 
             await applyLibraryConfigToForm(form, form.querySelector("#MediaFolderSelector").value, config);
             break;
@@ -449,6 +449,7 @@ function applyFormToConfig(form, config) {
         case "library": {
             const libraryId = form.querySelector("#MediaFolderSelector").value.split(",");
             const mediaFolders = libraryId ? config.MediaFolders.filter((m) => m.LibraryId === libraryId) : undefined;
+            const seasonMergeWindow = sanitizeNumber(form.querySelector("#SeasonMerging_MergeWindowInDays").value);
 
             config.DefaultLibraryStructure = form.querySelector("#DefaultLibraryStructure").value;
             config.DefaultSeasonOrdering = form.querySelector("#SeasonOrdering").value;
@@ -473,7 +474,11 @@ function applyFormToConfig(form, config) {
                 }
             }
 
-            config.EXPERIMENTAL_MergeSeasons = form.querySelector("#EXPERIMENTAL_MergeSeasons").checked;
+            config.SeasonMerging_Enabled = form.querySelector("#SeasonMerging_Enabled").checked;
+            config.SeasonMerging_DefaultBehavior = form.querySelector("#SeasonMerging_DefaultBehavior").value;
+            config.SeasonMerging_SeriesTypes = retrieveCheckboxList(form, "SeasonMerging_SeriesTypes");
+            config.SeasonMerging_MergeWindowInDays = seasonMergeWindow;
+            form.querySelector("#SeasonMerging_MergeWindowInDays").value = seasonMergeWindow;
             break;
         }
 
@@ -641,7 +646,10 @@ async function applyConfigToForm(form, config) {
                 .map((library) => `<option value="${library.LibraryId}">${library.LibraryName}${config.ExpertMode ? ` (${library.LibraryId})` : ""}</option>`)
                 .join("");
 
-            form.querySelector("#EXPERIMENTAL_MergeSeasons").checked = config.EXPERIMENTAL_MergeSeasons || false;
+            form.querySelector("#SeasonMerging_Enabled").checked = config.SeasonMerging_Enabled;
+            form.querySelector("#SeasonMerging_DefaultBehavior").value = config.SeasonMerging_DefaultBehavior;
+            renderCheckboxList(form, "SeasonMerging_SeriesTypes", config.SeasonMerging_SeriesTypes);
+            form.querySelector("#SeasonMerging_MergeWindowInDays").value = config.SeasonMerging_MergeWindowInDays;
             break;
         }
 
@@ -1306,6 +1314,20 @@ function filterReconnectIntervals(value) {
         .split(",")
         .map(str => parseInt(str.trim().toLowerCase(), 10))
         .filter(int => !Number.isNaN(int) || !Number.isInteger(int));
+}
+
+/**
+ * Filter out illegal values and convert from string to number.
+ * @param {string} raw  - Stringified value to filter.
+ * @returns {number} A sanitized and filtered value.
+ */
+function sanitizeNumber(raw, min = 0, max = Number.MAX_SAFE_INTEGER) {
+    const value = parseInt(raw.trim().toLowerCase(), 10);
+    if (Number.isNaN(value) || value < min)
+        return min;
+    if (value > max)
+        return max;
+    return value;
 }
 
 /**
