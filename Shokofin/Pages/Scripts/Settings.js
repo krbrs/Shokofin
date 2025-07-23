@@ -114,6 +114,56 @@ createControllerFactory({
                 applyUserConfigToForm(form, this.value);
             });
 
+            form.querySelector("#SeriesSearch").addEventListener("input", function () {
+                const value = this.value.trim();
+                if (State.seriesQuery === value) {
+                    return;
+                }
+
+                if (State.seriesTimeout) {
+                    clearTimeout(State.seriesTimeout);
+                }
+
+                const timeout = State.seriesTimeout = setTimeout(async () => {
+                    if (State.seriesTimeout !== timeout) {
+                        return;
+                    }
+                    if (State.seriesQuery === value) {
+                        return;
+                    }
+
+                    console.log("Series Search: " + value);
+                    State.seriesQuery = value;
+                    applySeriesConfigToForm(form, "");
+                    form.querySelector("#SeriesSelector").setAttribute("disabled", "");
+                    try {
+                        State.seriesList = await ShokoApiClient.getSeriesList(value);
+                    }
+                    catch (error) {
+                        console.log(error, "Got an error attempting to search for a series.");
+                        form.querySelector("#SeriesSelector").value = "";
+                        form.querySelector("#SeriesSelector").innerHTML = `<option value="">Click here to select a series</option>`;
+                        form.querySelector("#SeriesSelector").removeAttribute("disabled");
+                        return;
+                    }
+
+                    if (State.seriesTimeout !== timeout || State.seriesQuery !== value) {
+                        console.log("Returned too late for series search: " + value);
+                        return;
+                    }
+
+                    const series = State.seriesList;
+                    const seriesId = value && series.length > 0 ? series[0].Id.toString() : "";
+                    State.seriesTimeout = null;
+                    form.querySelector("#SeriesSelector").innerHTML =
+                        `<option value="">Click here to select a series</option>` +
+                        series.map((s) => `<option value="${s.Id}">${s.Title.length >= 50 ? `${s.Title.substring(0, 47)}...` : s.Title} (a${s.AnidbId})</option>`).join("");
+                    form.querySelector("#SeriesSelector").removeAttribute("disabled");
+                    form.querySelector("#SeriesSelector").value = seriesId;
+                    applySeriesConfigToForm(form, seriesId);
+                }, 250);
+            });
+
             form.querySelector("#SeriesSelector").addEventListener("change", function () {
                 applySeriesConfigToForm(form, this.value);
             });
@@ -707,14 +757,24 @@ async function applyConfigToForm(form, config) {
         case "users": {
             Dashboard.showLoadingMsg();
             const users = await ApiClient.getUsers();
-            form.querySelector("#UserSelector").innerHTML = `<option value="">Click here to select a user</option>` + users.map((user) => `<option value="${user.Id}">${user.Name}</option>`).join("");
+            form.querySelector("#UserSelector").innerHTML =
+                `<option value="">Click here to select a user</option>` +
+                users.map((user) => `<option value="${user.Id}">${user.Name}</option>`).join("");
             break;
         }
 
         case "series": {
             Dashboard.showLoadingMsg();
-            const series = await ShokoApiClient.getSeriesList();
-            form.querySelector("#SeriesSelector").innerHTML = `<option value="">Click here to select a series</option>` + series.map((s) => `<option value="${s.Id}">${s.Title} (a${s.AnidbId})</option>`).join("");
+            State.seriesTimeout = null;
+            const seriesQuery = State.seriesQuery;
+            const series = (State.seriesList ||= await ShokoApiClient.getSeriesList(seriesQuery));
+            State.seriesQuery = seriesQuery;
+            form.querySelector("#SeriesSearch").value = seriesQuery;
+            form.querySelector("#SeriesSelector").innerHTML =
+                `<option value="">Click here to select a series</option>` +
+                series.map((s) => `<option value="${s.Id}">${s.Title.length >= 50 ? `${s.Title.substring(0, 47)}...` : s.Title} (a${s.AnidbId})</option>`).join("");
+            form.querySelector("#SeriesSelector").value = State.seriesId;
+            form.querySelector("#SeriesSelector").removeAttribute("disabled");
             break;
         }
 
@@ -797,6 +857,7 @@ async function applyUserConfigToForm(form, userId, config = null) {
  * @returns {Promise<void>}
  */
 async function applySeriesConfigToForm(form, seriesId, config = null) {
+    State.seriesId = seriesId;
     if (!seriesId) {
         form.querySelector("#SeriesSettingsContainer").setAttribute("hidden", "");
         return;

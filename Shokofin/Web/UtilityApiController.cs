@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Net.Mime;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
@@ -10,6 +11,7 @@ using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.Configuration;
 using Shokofin.Resolvers;
+using Shokofin.Utils;
 using Shokofin.Web.Models;
 
 namespace Shokofin.Web;
@@ -23,7 +25,7 @@ namespace Shokofin.Web;
 [ApiController]
 [Route("Plugin/Shokofin/Utility")]
 [Produces(MediaTypeNames.Application.Json)]
-public class UtilityApiController(
+public partial class UtilityApiController(
     ILogger<UtilityApiController> logger,
     ShokoApiClient apiClient,
     SeriesConfigurationService seriesConfigurationService,
@@ -34,6 +36,8 @@ public class UtilityApiController(
     private readonly SeriesConfigurationService SeriesConfigurationService = seriesConfigurationService;
 
     private readonly VirtualFileSystemService VirtualFileSystemService = virtualFileSystemService;
+
+    private readonly GuardedMemoryCache Cache = new(logger, new() { ExpirationScanFrequency = TimeSpan.FromMinutes(25) }, new() { SlidingExpiration = new(0, 30, 0) });
 
     /// <summary>
     /// Previews the VFS structure for the given library.
@@ -58,47 +62,84 @@ public class UtilityApiController(
     /// <summary>
     /// Retrieves a simple series list.
     /// </summary>
+    /// <param name="query">Query to filter the list.</param>
     /// <returns>The series list.</returns>
     [HttpGet("Series")]
-    public async Task<ActionResult<List<SimpleSeries>>> GetSeriesList() {
-        var trackerId = Plugin.Instance.Tracker.Add($"Get Series List");
-        try {
-            const int PageSize = 100;
-            var simpleList = new List<SimpleSeries>();
-            var firstPage = await apiClient.GetAllAnidbAnime(pageSize: PageSize);
-            foreach (var anime in firstPage.List) {
-                if (anime.ShokoId.HasValue)
-                    simpleList.Add(new SimpleSeries() {
-                        Id = anime.ShokoId.Value,
-                        AnidbId = anime.Id,
-                        Title = anime.Title,
-                        DefaultTitle = anime.Titles?.FirstOrDefault(title => title.Type is API.Models.TitleType.Main)?.Value ?? anime.Title,
-                    });
+    public async Task<ActionResult<IReadOnlyList<SimpleSeries>>> GetSeriesList(
+        [FromQuery] string? query = null
+    ) {
+        var list = await GetSeriesListInternal().ConfigureAwait(false);
+        if (!string.IsNullOrWhiteSpace(query))
+        {
+            if (AnidbIdRegex().Match(query) is { Success: true })
+            {
+                var anidbId = int.Parse(AnidbIdRegex().Match(query).Groups["animeId"].Value);
+                return list
+                    .Where(s => s.AnidbId == anidbId)
+                    .ToList();
             }
-            if (firstPage.Total > PageSize) {
-                var total = firstPage.Total;
-                var page = 2;
-                while (total > 0) {
-                    var nextPage = await apiClient.GetAllAnidbAnime(page, PageSize);
-                    foreach (var anime in nextPage.List) {
-                        if (anime.ShokoId.HasValue)
-                            simpleList.Add(new SimpleSeries() {
-                                Id = anime.ShokoId.Value,
-                                AnidbId = anime.Id,
-                                Title = anime.Title,
-                                DefaultTitle = anime.Titles?.FirstOrDefault(title => title.Type is API.Models.TitleType.Main)?.Value ?? anime.Title,
-                            });
+
+            return list
+                .Where(s =>
+                    s.Title.Contains(query, StringComparison.OrdinalIgnoreCase) ||
+                    s.DefaultTitle.Contains(query, StringComparison.OrdinalIgnoreCase)
+                )
+                .OrderByDescending(s => string.Equals(s.Title, query, StringComparison.OrdinalIgnoreCase))
+                .ThenByDescending(s => string.Equals(s.DefaultTitle, query, StringComparison.OrdinalIgnoreCase))
+                .ThenBy(s => s.Title)
+                .ThenBy(s => s.DefaultTitle)
+                .ToList();
+        }
+
+        return new(list);
+    }
+
+    private Task<IReadOnlyList<SimpleSeries>> GetSeriesListInternal()
+        => Cache.GetOrCreateAsync<IReadOnlyList<SimpleSeries>>("SeriesList", async () => {
+            var simpleList = new List<SimpleSeries>();
+            var trackerId = Plugin.Instance.Tracker.Add($"Get Simple Series List");
+            try {
+                const int PageSize = 100;
+                var firstPage = await apiClient.GetAllAnidbAnime(pageSize: PageSize);
+                foreach (var anime in firstPage.List) {
+                    if (anime.ShokoId.HasValue)
+                        simpleList.Add(new SimpleSeries() {
+                            Id = anime.ShokoId.Value,
+                            AnidbId = anime.Id,
+                            Title = anime.Title,
+                            DefaultTitle = anime.Titles?.FirstOrDefault(title => title.Type is API.Models.TitleType.Main)?.Value ?? anime.Title,
+                        });
+                }
+                if (firstPage.Total > PageSize) {
+                    var total = firstPage.Total;
+                    var page = 2;
+                    while (total > 0) {
+                        var nextPage = await apiClient.GetAllAnidbAnime(page, PageSize);
+                        foreach (var anime in nextPage.List) {
+                            if (anime.ShokoId.HasValue)
+                                simpleList.Add(new SimpleSeries() {
+                                    Id = anime.ShokoId.Value,
+                                    AnidbId = anime.Id,
+                                    Title = anime.Title,
+                                    DefaultTitle = anime.Titles?.FirstOrDefault(title => title.Type is API.Models.TitleType.Main)?.Value ?? anime.Title,
+                                });
+                        }
+                        total -= PageSize;
+                        page++;
                     }
-                    total -= PageSize;
-                    page++;
                 }
             }
-            return simpleList;
-        }
-        finally {
-            Plugin.Instance.Tracker.Remove(trackerId);
-        }
-    }
+            finally {
+                Plugin.Instance.Tracker.Remove(trackerId);
+            }
+
+            return simpleList
+                .OrderBy(s => s.AnidbId)
+                .ToList();
+        });
+
+    [GeneratedRegex(@"^\s*a(?<animeId>\d+)\s*$")]
+    private static partial Regex AnidbIdRegex();
 
     /// <summary>
     /// Retrieves the series configuration for the given series id.

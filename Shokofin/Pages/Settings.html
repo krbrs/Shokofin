@@ -2180,6 +2180,10 @@ form:not(.expert-mode) .expert-only {
                         <legend>
                             <h3>Series Settings</h3>
                         </legend>
+                        <div class="inputContainer inputContainer-withDescription">
+                            <input is="emby-input" type="text" id="SeriesSearch" label="Search" />
+                            <div class="fieldDescription">Search for  by title or AniDB ID. AniDB IDs should be prefixed with 'a', e.g. 'a69'.</div>
+                        </div>
                         <div class="selectContainer selectContainer-withDescription">
                             <label class="selectLabel" for="SeriesSelector">Configure settings for</label>
                             <select is="emby-select" id="SeriesSelector" name="SeriesSelector" value="" class="emby-select-withcolor emby-select">

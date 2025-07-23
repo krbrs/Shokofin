@@ -414,6 +414,15 @@ export const LibraryMenu = globalThis.LibraryMenu;
  */
 
 /**
+ * @typedef {{
+ *   Id: number;
+ *   AnidbId: number;
+ *   Title: string;
+ *   DefaultTitle: string;
+ * }} SimpleSeries
+ */
+
+/**
 * Shoko API client.
 */
 export const ShokoApiClient = {
@@ -476,13 +485,16 @@ export const ShokoApiClient = {
      * Get the list of series.
      *
      * @public
-     * @returns {Promise<({ Id: number; AnidbId: number; Title: string; DefaultTitle: string; })[]>} The list of series.
+     * @param {string} query - The query to search for.
+     * @returns {Promise<SimpleSeries[]>} The list of series.
      */
-    getSeriesList() {
+    getSeriesList(query = "") {
         return ApiClient.fetch({
             dataType: "json",
             type: "GET",
-            url: ApiClient.getUrl("Plugin/Shokofin/Utility/Series"),
+            url: query.trim()
+                ? ApiClient.getUrl(`Plugin/Shokofin/Utility/Series?query=${query}`)
+                : ApiClient.getUrl("Plugin/Shokofin/Utility/Series"),
         });
     },
 
@@ -573,6 +585,10 @@ globalThis.ShokoApiClient = ShokoApiClient;
 /**
  * @type {{
 *   config: PluginConfiguration | null;
+*   seriesId: string;
+*   seriesQuery: string;
+*   seriesList: SimpleSeries[] | null;
+*   seriesTimeout: number | null;
 *   currentTab: TabType;
 *   expertPresses: number;
 *   expertMode: boolean;
@@ -582,6 +598,10 @@ globalThis.ShokoApiClient = ShokoApiClient;
 */
 export const State = window["SHOKO_STATE_OBJECT"] || (window["SHOKO_STATE_OBJECT"] = {
    config: null,
+   seriesId: "",
+   seriesQuery: "",
+   seriesList: null,
+   seriesTimeout: null,
    currentTab: "connection",
    expertPresses: 0,
    expertMode: false,
