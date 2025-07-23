@@ -531,7 +531,6 @@ function applyFormToConfig(form, config) {
             config.SignalR_AutoReconnectInSeconds = reconnectIntervals;
             form.querySelector("#SignalRAutoReconnectIntervals").value = reconnectIntervals.join(", ");
             config.SignalR_EventSources = retrieveCheckboxList(form, "SignalREventSources");
-            config.SignalR_ReplaceImagesDuringRefresh = form.querySelector("#SignalRReplaceImagesDuringRefresh").checked;
 
             config.SignalR_FileEvents = form.querySelector("#SignalRDefaultFileEvents").checked;
             config.SignalR_RefreshEnabled = form.querySelector("#SignalRDefaultRefreshEvents").checked;
@@ -695,7 +694,6 @@ async function applyConfigToForm(form, config) {
             form.querySelector("#SignalRAutoConnect").checked = config.SignalR_AutoConnectEnabled;
             form.querySelector("#SignalRAutoReconnectIntervals").value = config.SignalR_AutoReconnectInSeconds.join(", ");
             renderCheckboxList(form, "SignalREventSources", config.SignalR_EventSources);
-            form.querySelector("#SignalRReplaceImagesDuringRefresh").checked = config.SignalR_ReplaceImagesDuringRefresh;
 
             form.querySelector("#SignalRDefaultFileEvents").checked = config.SignalR_FileEvents;
             form.querySelector("#SignalRDefaultRefreshEvents").checked = config.SignalR_RefreshEnabled;

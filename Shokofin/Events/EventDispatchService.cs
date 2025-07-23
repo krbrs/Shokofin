@@ -3,7 +3,6 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using Jellyfin.Data.Enums;
@@ -13,7 +12,6 @@ using MediaBrowser.Model.IO;
 using Microsoft.Extensions.Logging;
 using Shokofin.API;
 using Shokofin.API.Info;
-using Shokofin.API.Models;
 using Shokofin.Configuration;
 using Shokofin.Events.Interfaces;
 using Shokofin.Extensions;
@@ -23,10 +21,7 @@ using Shokofin.Resolvers.Models;
 using Shokofin.Utils;
 
 using File = System.IO.File;
-using IDirectoryService = MediaBrowser.Controller.Providers.IDirectoryService;
-using ImageType = MediaBrowser.Model.Entities.ImageType;
 using LibraryOptions = MediaBrowser.Model.Configuration.LibraryOptions;
-using MetadataRefreshMode = MediaBrowser.Controller.Providers.MetadataRefreshMode;
 using Movie = MediaBrowser.Controller.Entities.Movies.Movie;
 using Timer = System.Timers.Timer;
 using TvEpisode = MediaBrowser.Controller.Entities.TV.Episode;
@@ -46,13 +41,13 @@ public class EventDispatchService {
 
     private readonly LibraryScanWatcher LibraryScanWatcher;
 
+    private readonly MetadataRefreshService MetadataRefreshService;
+
     private readonly MediaFolderConfigurationService ConfigurationService;
 
     private readonly VirtualFileSystemService ResolveManager;
 
     private readonly IFileSystem FileSystem;
-
-    private readonly IDirectoryService DirectoryService;
 
     private readonly ILogger<EventDispatchService> Logger;
 
@@ -81,10 +76,10 @@ public class EventDispatchService {
         ILibraryManager libraryManager,
         ILibraryMonitor libraryMonitor,
         LibraryScanWatcher libraryScanWatcher,
+        MetadataRefreshService metadataRefreshService,
         MediaFolderConfigurationService configurationService,
         VirtualFileSystemService resolveManager,
         IFileSystem fileSystem,
-        IDirectoryService directoryService,
         ILogger<EventDispatchService> logger,
         UsageTracker usageTracker
     ) {
@@ -93,10 +88,10 @@ public class EventDispatchService {
         LibraryManager = libraryManager;
         LibraryMonitor = libraryMonitor;
         LibraryScanWatcher = libraryScanWatcher;
+        MetadataRefreshService = metadataRefreshService;
         ConfigurationService = configurationService;
         ResolveManager = resolveManager;
         FileSystem = fileSystem;
-        DirectoryService = directoryService;
         Logger = logger;
         UsageTracker = usageTracker;
         UsageTracker.Stalled += OnStalled;
@@ -629,16 +624,7 @@ public class EventDispatchService {
                 }
 
                 Logger.LogInformation("Refreshing show {ShowName}. (Show={ShowId},Series={SeriesId})", show.Name, show.Id, showInfo.Id);
-                await show.RefreshMetadata(new(DirectoryService) {
-                    MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                    ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                    ReplaceAllMetadata = true,
-                    ReplaceAllImages = Plugin.Instance.Configuration.SignalR_ReplaceImagesDuringRefresh,
-                    RemoveOldMetadata = true,
-                    ReplaceImages = Enum.GetValues<ImageType>().ToArray(),
-                    IsAutomated = true,
-                    EnableRemoteContentProbe = true,
-                }, CancellationToken.None).ConfigureAwait(false);
+                await MetadataRefreshService.RefreshSeries(show).ConfigureAwait(false);
                 updateCount++;
             }
         }
@@ -683,16 +669,7 @@ public class EventDispatchService {
                     }
 
                     Logger.LogInformation("Refreshing season {SeasonName}. (TvSeason={SeasonId},Season={SeasonId},ExtraSeries={ExtraIds})", season.Name, season.Id, seasonInfo.Id, seasonInfo.ExtraIds);
-                    await season.RefreshMetadata(new(DirectoryService) {
-                        MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                        ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                        ReplaceAllMetadata = true,
-                        ReplaceAllImages = Plugin.Instance.Configuration.SignalR_ReplaceImagesDuringRefresh,
-                        RemoveOldMetadata = true,
-                        ReplaceImages = Enum.GetValues<ImageType>().ToArray(),
-                        IsAutomated = true,
-                        EnableRemoteContentProbe = true,
-                    }, CancellationToken.None).ConfigureAwait(false);
+                    await MetadataRefreshService.RefreshSeason(season).ConfigureAwait(false);
                     updateCount++;
                 }
             }
@@ -731,16 +708,7 @@ public class EventDispatchService {
                     }
 
                     Logger.LogInformation("Refreshing episode {EpisodeName}. (Episode={EpisodeId},Episode={EpisodeId},Season={SeasonId})", episode.Name, episode.Id, episodeInfo.Id, episodeInfo.SeasonId);
-                    await episode.RefreshMetadata(new(DirectoryService) {
-                        MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                        ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                        ReplaceAllMetadata = true,
-                        ReplaceAllImages = Plugin.Instance.Configuration.SignalR_ReplaceImagesDuringRefresh,
-                        RemoveOldMetadata = true,
-                        ReplaceImages = Enum.GetValues<ImageType>().ToArray(),
-                        IsAutomated = true,
-                        EnableRemoteContentProbe = true,
-                    }, CancellationToken.None).ConfigureAwait(false);
+                    await MetadataRefreshService.RefreshEpisode(episode).ConfigureAwait(false);
                     updateCount++;
                 }
             }
@@ -782,16 +750,7 @@ public class EventDispatchService {
                 }
 
                 Logger.LogInformation("Refreshing movie {MovieName}. (Movie={MovieId},Episode={EpisodeId},Season={SeasonId},ExtraSeasons={ExtraIds})", movie.Name, movie.Id, episodeInfo.Id, seasonInfo.Id, seasonInfo.ExtraIds);
-                await movie.RefreshMetadata(new(DirectoryService) {
-                    MetadataRefreshMode = MetadataRefreshMode.FullRefresh,
-                    ImageRefreshMode = MetadataRefreshMode.FullRefresh,
-                    ReplaceAllMetadata = true,
-                    ReplaceAllImages = Plugin.Instance.Configuration.SignalR_ReplaceImagesDuringRefresh,
-                    RemoveOldMetadata = true,
-                    ReplaceImages = Enum.GetValues<ImageType>().ToArray(),
-                    IsAutomated = true,
-                    EnableRemoteContentProbe = true,
-                }, CancellationToken.None).ConfigureAwait(false);
+                await MetadataRefreshService.RefreshMovie(movie).ConfigureAwait(false);
                 updateCount++;
             }
         }

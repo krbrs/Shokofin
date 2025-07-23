@@ -19,6 +19,7 @@ public class PluginServiceRegistrator : IPluginServiceRegistrator {
         serviceCollection.AddSingleton<MergeVersions.MergeVersionsManager>();
         serviceCollection.AddSingleton<Collections.CollectionManager>();
         serviceCollection.AddSingleton<Resolvers.VirtualFileSystemService>();
+        serviceCollection.AddSingleton<Events.MetadataRefreshService>();
         serviceCollection.AddSingleton<Events.EventDispatchService>();
         serviceCollection.AddSingleton<SignalR.SignalRConnectionManager>();
         serviceCollection.AddHostedService<SignalR.SignalREntryPoint>();

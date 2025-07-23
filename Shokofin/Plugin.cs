@@ -306,6 +306,18 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             config.DescriptionSourceOrder = null;
             changed = true;
         }
+        if (config.SignalR_ReplaceImagesDuringRefresh is not null) {
+            if (config.SignalR_ReplaceImagesDuringRefresh.Value) {
+                config.MetadataRefresh.Collection |= MetadataRefreshField.Images;
+                config.MetadataRefresh.Movie |= MetadataRefreshField.Images;
+                config.MetadataRefresh.Series |= MetadataRefreshField.Images;
+                config.MetadataRefresh.Season |= MetadataRefreshField.Images;
+                config.MetadataRefresh.Video |= MetadataRefreshField.Images;
+                config.MetadataRefresh.Episode |= MetadataRefreshField.Images;
+            }
+            config.SignalR_ReplaceImagesDuringRefresh = null;
+            changed = true;
+        }
 
         // Disallow setting the default library structure to none.
         if (config.DefaultLibraryStructure is SeriesStructureType.None) {

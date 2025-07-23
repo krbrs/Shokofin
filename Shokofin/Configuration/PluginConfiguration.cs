@@ -672,7 +672,8 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// Indicates whether or not to replace images for entries if related
     /// metadata is updated in Shoko.
     /// </summary>
-    public bool SignalR_ReplaceImagesDuringRefresh { get; set; }
+    /// TODO: REMOVE THIS IN 6.0
+    public bool? SignalR_ReplaceImagesDuringRefresh { get; set; }
 
     /// <summary>
     /// The different SignalR event sources to 'subscribe' to.
@@ -712,6 +713,12 @@ public class PluginConfiguration : BasePluginConfiguration {
     [Range(0, int.MaxValue)]
     [XmlElement("EXPERIMENTAL_MergeSeasonsMergeWindowInDays")]
     public int SeasonMerging_MergeWindowInDays { get; set; }
+
+    #endregion
+
+    #region Metadata Refresh
+
+    public MetadataRefreshConfiguration MetadataRefresh { get; set; }
 
     #endregion
 
@@ -859,11 +866,11 @@ public class PluginConfiguration : BasePluginConfiguration {
         SignalR_EventSources = [ProviderName.Shoko, ProviderName.AniDB, ProviderName.TMDB];
         SignalR_RefreshEnabled = false;
         SignalR_FileEvents = true;
-        SignalR_ReplaceImagesDuringRefresh = false;
         SeasonMerging_Enabled = false;
         SeasonMerging_DefaultBehavior = SeriesMergingOverride.None;
         SeasonMerging_SeriesTypes = [SeriesType.OVA, SeriesType.TV, SeriesType.TVSpecial, SeriesType.Web, SeriesType.OVA];
         SeasonMerging_MergeWindowInDays = 185;
+        MetadataRefresh = new();
         UsageTracker_StalledTimeInSeconds = 10;
         Misc_ShowInMenu = false;
         ExpertMode = false;
