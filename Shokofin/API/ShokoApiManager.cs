@@ -149,6 +149,7 @@ public partial class ShokoApiManager : IDisposable {
             var seriesSettings = new SeriesConfiguration() {
                 Type = SeriesType.None,
                 StructureType = SeriesStructureType.None,
+                SeasonOrdering = Ordering.OrderType.None,
                 MergeOverride = SeriesMergingOverride.None,
                 EpisodeConversion = SeriesEpisodeConversion.None,
                 OrderByAirdate = false,
@@ -202,6 +203,12 @@ public partial class ShokoApiManager : IDisposable {
             }
             if (seriesSettings.StructureType is SeriesStructureType.None) {
                 seriesSettings.StructureType = Plugin.Instance.Configuration.DefaultLibraryStructure;
+            }
+            if (seriesSettings.SeasonOrdering is Ordering.OrderType.None) {
+                seriesSettings.SeasonOrdering = Plugin.Instance.Configuration.DefaultSeasonOrdering;
+            }
+            if (seriesSettings.MergeOverride is SeriesMergingOverride.None) {
+                seriesSettings.MergeOverride = Plugin.Instance.Configuration.SeasonMerging_DefaultBehavior;
             }
             return seriesSettings;
         });

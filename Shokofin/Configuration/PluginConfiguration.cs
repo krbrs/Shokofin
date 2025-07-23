@@ -536,7 +536,8 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// <summary>
     /// Determines how seasons are ordered within a show.
     /// </summary>
-    public OrderType SeasonOrdering { get; set; }
+    [XmlElement("SeasonOrdering")]
+    public OrderType DefaultSeasonOrdering { get; set; }
 
     /// <summary>
     /// Determines how specials are placed within seasons, if at all.
@@ -833,7 +834,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         AddTrailers = true;
         AddCreditsAsThemeVideos = true;
         AddCreditsAsSpecialFeatures = false;
-        SeasonOrdering = OrderType.Default;
+        DefaultSeasonOrdering = OrderType.Default;
         SpecialsPlacement = SpecialOrderType.AfterSeason;
         AddMissingMetadata = true;
         CollectionGrouping = CollectionCreationType.None;

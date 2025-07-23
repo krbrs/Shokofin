@@ -318,6 +318,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  * @typedef {{
  *   Type: SeriesType | "None";
  *   StructureType: SeriesStructureType | "None";
+*    SeasonOrdering: SeasonOrderType | "None";
  *   MergeOverride: SeriesMergingOverride;
  *   EpisodeConversion: SeriesEpisodeConversion;
  *   OrderByAirdate: boolean;
@@ -384,7 +385,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   AddCreditsAsSpecialFeatures: boolean;
  *   CollectionGrouping: CollectionCreationType;
  *   DefaultLibraryStructure: SeriesStructureType;
- *   SeasonOrdering: SeasonOrderType;
+ *   DefaultSeasonOrdering: SeasonOrderType;
  *   SpecialsPlacement: SpecialOrderType;
  *   AddMissingMetadata: boolean;
  *   IgnoredFolders: string[];

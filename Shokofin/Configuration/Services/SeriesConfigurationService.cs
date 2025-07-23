@@ -73,6 +73,23 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
         },
 
         new() {
+            Name = "Shokofin/Default Season Ordering",
+            Description = "Let the server decide the season ordering.",
+        },
+        new() {
+            Name = "Shokofin/Release Based Season Ordering",
+            Description = "Order seasons based on release date.",
+        },
+        new() {
+            Name = "Shokofin/Chronological Season Ordering",
+            Description = "Order seasons in chronological order with indirect relations weighting in on the position of each season.",
+        },
+        new() {
+            Name = "Shokofin/",
+            Description = "Order seasons in chronological order while ignoring indirect relations.",
+        },
+
+        new() {
             Name = "Shokofin/No Merge",
             Description = $"Never merge this series with other series when deciding on what to merge for seasons in Jellyfin. {ManagedBy}",
         },
@@ -159,6 +176,8 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             config.Type = seriesConfiguration.Type.Value;
         if (seriesConfiguration.StructureType is not null)
             config.StructureType = seriesConfiguration.StructureType.Value;
+        if (seriesConfiguration.SeasonOrdering is not null)
+            config.SeasonOrdering = seriesConfiguration.SeasonOrdering.Value;
         if (seriesConfiguration.MergeOverride is not null)
             config.MergeOverride = seriesConfiguration.MergeOverride.Value;
         if (seriesConfiguration.EpisodeConversion is not null)
@@ -215,6 +234,28 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             case SeriesStructureType.Shoko_Groups:
                 toRemoveSet.Remove(knownTagDict["/shokofin/shoko structure"]);
                 toAddSet.Add(knownTagDict["/shokofin/shoko structure"]);
+                break;
+        }
+        
+        var seasonOrderingTypes = knownTagDict.Where(x => x.Key.Contains("season ordering")).ToDictionary(x => x.Key, x => x.Value);
+        foreach (var (_, id) in seasonOrderingTypes)
+            toRemoveSet.Add(id);
+        switch (seriesConfiguration.SeasonOrdering) {
+            case Ordering.OrderType.Default:
+                toRemoveSet.Remove(knownTagDict["/shokofin/default season ordering"]);
+                toAddSet.Add(knownTagDict["/shokofin/default season ordering"]);
+                break;
+            case Ordering.OrderType.ReleaseDate:
+                toRemoveSet.Remove(knownTagDict["/shokofin/release based season ordering"]);
+                toAddSet.Add(knownTagDict["/shokofin/release based season ordering"]);
+                break;
+            case Ordering.OrderType.Chronological:
+                toRemoveSet.Remove(knownTagDict["/shokofin/chronological season ordering"]);
+                toAddSet.Add(knownTagDict["/shokofin/chronological season ordering"]);
+                break;
+            case Ordering.OrderType.ChronologicalIgnoreIndirect:
+                toRemoveSet.Remove(knownTagDict["/shokofin/simplified chronological season ordering"]);
+                toAddSet.Add(knownTagDict["/shokofin/simplified chronological season ordering"]);
                 break;
         }
 

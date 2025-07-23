@@ -2116,7 +2116,7 @@ form:not(.expert-mode) .expert-only {
                             <div class="selectContainer selectContainer-withDescription">
                                 <label class="selectLabel" for="SeriesLibraryStructure">Library Structure Mode</label>
                                 <select is="emby-select" id="SeriesLibraryStructure" name="SeriesLibraryStructure" class="emby-select-withcolor emby-select">
-                                    <option value="None" selected>Follow Global Structure (Default)</option>
+                                    <option value="None" selected>Follow Global Settings (Default)</option>
                                     <option value="AniDB_Anime">AniDB Anime Structure</option>
                                     <option value="Shoko_Groups">Shoko Group Structure</option>
                                     <option value="TMDB_SeriesAndMovies">TheMovieDb Shows &amp; Movies Structure</option>
@@ -2135,10 +2135,21 @@ form:not(.expert-mode) .expert-only {
                                     </details>
                                 </div>
                             </div>
+                            <div class="selectContainer selectContainer-withDescription">
+                                <label class="selectLabel" for="SeriesSeasonOrdering">Season Ordering</label>
+                                <select is="emby-select" id="SeriesSeasonOrdering" name="SeriesSeasonOrdering" class="emby-select-withcolor emby-select">
+                                    <option value="None">Follow Global Settings (Default)</option>
+                                    <option value="Default">Let Shoko decide</option>
+                                    <option value="ReleaseDate">Order seasons by release date</option>
+                                    <option value="Chronological" class="expert-only">Order seasons in chronological order (use indirect relations) (EXPERIMENTAL)</option>
+                                    <option value="ChronologicalIgnoreIndirect"  class="expert-only">Order seasons in chronological order (ignore indirect relations) (EXPERIMENTAL)</option>
+                                </select>
+                                <div class="fieldDescription">Determines how to order seasons within the show when using <strong>Shoko Group Structure</strong> and this series is the main series in the group.</div>
+                            </div>
                             <div class="selectContainer selectContainer-withDescription expert-only experimental-setting">
                                 <label class="selectLabel" for="SeriesMergeOverride">Season Merging Mode</label>
                                 <select is="emby-select" id="SeriesMergeOverride" name="SeriesMergeOverride" class="emby-select-withcolor emby-select">
-                                    <option value="None" selected>Follow Global Series Merging Settings (Default)</option>
+                                    <option value="None" selected>Follow Global Settings (Default)</option>
                                     <option value="NoMerge">Do Not Merge This Series With Any Other Series</option>
                                     <option value="MergeForward">Attempt To Merge This Series With The Sequel Series</option>
                                     <option value="MergeBackward">Attempt To Merge This Series With The Prequel Series</option>

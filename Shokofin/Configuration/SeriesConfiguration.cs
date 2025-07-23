@@ -19,6 +19,11 @@ public class SeriesConfiguration {
     public SeriesStructureType StructureType { get; set; }
 
     /// <summary>
+    /// Determines how seasons should be ordered for the series.
+    /// </summary>
+    public Ordering.OrderType SeasonOrdering { get; set; }
+
+    /// <summary>
     /// Determines how the merging should be handled for the series, if at all.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -48,6 +53,11 @@ public class NullableSeriesConfiguration {
     /// The series structure type to use.
     /// </summary>
     public SeriesStructureType? StructureType { get; set; }
+
+    /// <summary>
+    /// Determines how seasons should be ordered for the series.
+    /// </summary>
+    public Ordering.OrderType? SeasonOrdering { get; set; }
 
     /// <summary>
     /// Determines how the merging should be handled for the series, if at all.

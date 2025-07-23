@@ -6,7 +6,7 @@ using Shokofin.API.Models;
 
 namespace Shokofin.Utils;
 
-public class SeriesInfoRelationComparer : IComparer<SeasonInfo> {
+public class SeriesInfoRelationComparer(bool useIndirect) : IComparer<SeasonInfo> {
     private static readonly Dictionary<RelationType, int> RelationPriority = new() {
         { RelationType.Prequel, 1 },
         { RelationType.MainStory, 2 },
@@ -38,7 +38,7 @@ public class SeriesInfoRelationComparer : IComparer<SeasonInfo> {
             return directRelationComparison;
 
         // Check for indirect relations.
-        if (Plugin.Instance.Configuration.SeasonOrdering != Ordering.OrderType.ChronologicalIgnoreIndirect) {
+        if (useIndirect) {
             var indirectRelationComparison = CompareIndirectRelations(a, b);
             if (indirectRelationComparison != 0)
                 return indirectRelationComparison;

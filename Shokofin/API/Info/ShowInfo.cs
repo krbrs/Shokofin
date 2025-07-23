@@ -229,38 +229,28 @@ public class ShowInfo : IExtendedItemInfo {
         ITmdbEntity? tmdbEntity,
         bool useGroupIdForCollection
     ) {
-        var groupId = group.Id;
-
-        // Order series list
-        var orderingType = Plugin.Instance.Configuration.SeasonOrdering;
-        switch (orderingType) {
+        // Order series list based on the main series or first available series.
+        // Select the targeted id if a group specify a default series.
+        var foundIndex = -1;
+        var targetId = group.IDs.MainSeries.ToString();
+        var orderingSeason = seasonList.FirstOrDefault(s => s.Id == targetId) ?? seasonList[0];
+        switch (orderingSeason.SeasonOrdering) {
             case Ordering.OrderType.Default:
+                foundIndex = seasonList.FindIndex(s => s.Id == targetId);
                 break;
             case Ordering.OrderType.ReleaseDate:
                 seasonList = [.. seasonList.OrderBy(s => s?.PremiereDate ?? DateTime.MaxValue)];
+                foundIndex = 0;
                 break;
             case Ordering.OrderType.Chronological:
             case Ordering.OrderType.ChronologicalIgnoreIndirect:
-                seasonList.Sort(new SeriesInfoRelationComparer());
-                break;
-        }
-
-        // Select the targeted id if a group specify a default series.
-        var foundIndex = -1;
-        switch (orderingType) {
-            case Ordering.OrderType.ReleaseDate:
-                foundIndex = 0;
-                break;
-            case Ordering.OrderType.Default:
-            case Ordering.OrderType.Chronological:
-            case Ordering.OrderType.ChronologicalIgnoreIndirect: {
-                var targetId = group.IDs.MainSeries.ToString();
+                seasonList.Sort(new SeriesInfoRelationComparer(orderingSeason.SeasonOrdering is Ordering.OrderType.Chronological));
                 foundIndex = seasonList.FindIndex(s => s.Id == targetId);
                 break;
-            }
         }
 
         // Fallback to the first series if we can't get a base point for seasons.
+        var groupId = group.Id;
         if (foundIndex == -1) {
             logger.LogWarning("Unable to get a base-point for seasons within the group for the filter, so falling back to the first series in the group. This is most likely due to library separation being enabled. (Group={GroupID})", groupId);
             foundIndex = 0;

@@ -312,6 +312,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             config.DefaultLibraryStructure = SeriesStructureType.AniDB_Anime;
             changed = true;
         }
+        // Disallow setting the default season ordering to none.
+        if (config.DefaultSeasonOrdering is Ordering.OrderType.None) {
+            config.DefaultSeasonOrdering = Ordering.OrderType.Default;
+            changed = true;
+        }
 
         if (changed)
             SaveConfiguration(config);
