@@ -74,19 +74,19 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
 
         new() {
             Name = "Shokofin/Default Season Ordering",
-            Description = "Let the server decide the season ordering.",
+            Description = $"Let the server decide the season ordering. {ManagedBy}",
         },
         new() {
             Name = "Shokofin/Release Based Season Ordering",
-            Description = "Order seasons based on release date.",
+            Description = $"Order seasons based on release date. {ManagedBy}",
         },
         new() {
             Name = "Shokofin/Chronological Season Ordering",
-            Description = "Order seasons in chronological order with indirect relations weighting in on the position of each season.",
+            Description = $"Order seasons in chronological order with indirect relations weighting in on the position of each season. {ManagedBy}",
         },
         new() {
             Name = "Shokofin/",
-            Description = "Order seasons in chronological order while ignoring indirect relations.",
+            Description = $"Order seasons in chronological order while ignoring indirect relations. {ManagedBy}",
         },
 
         new() {
