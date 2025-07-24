@@ -699,7 +699,7 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// <summary>
     /// Series types to attempt to merge. Will respect custom series type overrides. 
     /// </summary>
-    [XmlElement("EXPERIMENTAL_MergeSeasonsTypes")]
+    [XmlArray("EXPERIMENTAL_MergeSeasonsTypes")]
     public SeriesType[] SeasonMerging_SeriesTypes { get; set; }
 
     /// <summary>
@@ -782,12 +782,12 @@ public class PluginConfiguration : BasePluginConfiguration {
             TagSource.OriginProduction | TagSource.OriginDevelopment | TagSource.SourceMaterial | TagSource.SettingPlace |
             TagSource.SettingTimePeriod | TagSource.SettingTimeSeason | TagSource.TargetAudience | TagSource.TechnicalAspects |
             TagSource.TechnicalAspectsAdaptions | TagSource.TechnicalAspectsAwards | TagSource.TechnicalAspectsMultiAnimeProjects |
-            TagSource.Themes | TagSource.ThemesDeath | TagSource.ThemesTales | TagSource.CustomTags | TagSource.AllYearlySeasons;
+            TagSource.Themes | TagSource.ThemesDeath | TagSource.ThemesTales | TagSource.TmdbKeywords | TagSource.CustomTags | TagSource.AllYearlySeasons;
         TagIncludeFilters = TagIncludeFilter.Parent | TagIncludeFilter.Child | TagIncludeFilter.Abstract | TagIncludeFilter.Weightless | TagIncludeFilter.Weighted;
         TagMinimumWeight = TagWeight.Weightless;
         TagMaximumDepth = 0;
         TagExcludeList = ["18 restricted"];
-        GenreSources = TagSource.SourceMaterial | TagSource.TargetAudience | TagSource.Elements;
+        GenreSources = TagSource.SourceMaterial | TagSource.TargetAudience | TagSource.Elements | TagSource.TmdbGenres;
         GenreIncludeFilters = TagIncludeFilter.Parent | TagIncludeFilter.Child | TagIncludeFilter.Abstract | TagIncludeFilter.Weightless | TagIncludeFilter.Weighted;
         GenreMinimumWeight = TagWeight.Four;
         GenreMaximumDepth = 1;
