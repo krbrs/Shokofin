@@ -187,6 +187,8 @@ public partial class ShokoApiManager : IDisposable {
                 seriesSettings.EpisodeConversion = SeriesEpisodeConversion.EpisodesAsSpecials;
             else if (tags.ContainsKey("/specials as episodes"))
                 seriesSettings.EpisodeConversion = SeriesEpisodeConversion.SpecialsAsEpisodes;
+            else if (tags.ContainsKey("/specials as extra featurettes"))
+                seriesSettings.EpisodeConversion = SeriesEpisodeConversion.SpecialsAsExtraFeaturettes;
 
             if (tags.ContainsKey("/order by airdate"))
                 seriesSettings.OrderByAirdate = true;
@@ -197,18 +199,22 @@ public partial class ShokoApiManager : IDisposable {
     private Task<SeriesConfiguration> GetSeriesConfiguration(string id)
         => DataCache.GetOrCreateAsync($"series-settings:{id}", async () => {
             var seriesSettings = await GetInternalSeriesConfiguration(id).ConfigureAwait(false);
+            var config = Plugin.Instance.Configuration;
             if (seriesSettings.Type is SeriesType.None) {
                 var series = await ApiClient.GetShokoSeries(id).ConfigureAwait(false);
                 seriesSettings.Type = series?.AniDB.Type ?? SeriesType.Other;
             }
             if (seriesSettings.StructureType is SeriesStructureType.None) {
-                seriesSettings.StructureType = Plugin.Instance.Configuration.DefaultLibraryStructure;
+                seriesSettings.StructureType = config.DefaultLibraryStructure;
             }
             if (seriesSettings.SeasonOrdering is Ordering.OrderType.None) {
-                seriesSettings.SeasonOrdering = Plugin.Instance.Configuration.DefaultSeasonOrdering;
+                seriesSettings.SeasonOrdering = config.DefaultSeasonOrdering;
             }
             if (seriesSettings.MergeOverride is SeriesMergingOverride.None) {
-                seriesSettings.MergeOverride = Plugin.Instance.Configuration.SeasonMerging_DefaultBehavior;
+                seriesSettings.MergeOverride = config.SeasonMerging_DefaultBehavior;
+            }
+            if (config.MovieSpecialsAsExtraFeaturettes && seriesSettings.Type is SeriesType.Movie) {
+                seriesSettings.EpisodeConversion = SeriesEpisodeConversion.SpecialsAsExtraFeaturettes;
             }
             return seriesSettings;
         });

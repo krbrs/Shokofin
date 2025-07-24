@@ -289,7 +289,7 @@ public class SeasonInfo : IExtendedItemInfo {
             type = SeriesType.Web;
         }
 
-        if (Plugin.Instance.Configuration.MovieSpecialsAsExtraFeaturettes && type == SeriesType.Movie) {
+        if (seriesConfigurationMap[seasonId].EpisodeConversion is SeriesEpisodeConversion.SpecialsAsExtraFeaturettes) {
             if (specialsList.Count > 0) {
                 extrasList.AddRange(specialsList);
                 specialsAnchorDictionary.Clear();

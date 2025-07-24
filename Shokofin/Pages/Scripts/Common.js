@@ -260,7 +260,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  */
 
 /**
- * @typedef {"None" | "EpisodesAsSpecials" | "SpecialsAsEpisodes"} SeriesEpisodeConversion
+ * @typedef {"None" | "EpisodesAsSpecials" | "SpecialsAsEpisodes" | "SpecialsAsExtraFeaturettes"} SeriesEpisodeConversion
  */
 
 /**

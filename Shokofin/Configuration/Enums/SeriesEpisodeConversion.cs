@@ -19,4 +19,9 @@ public enum SeriesEpisodeConversion {
     /// Convert specials to normal episodes.
     /// </summary>
     SpecialsAsEpisodes = 2,
+
+    /// <summary>
+    /// Always convert specials to extra featurettes.
+    /// </summary>
+    SpecialsAsExtraFeaturettes = 3,
 }

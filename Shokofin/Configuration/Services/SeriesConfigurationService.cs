@@ -114,6 +114,10 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             Name = "Shokofin/Specials as Episodes",
             Description = $"Converts specials to normal episodes in Jellyfin. {ManagedBy}",
         },
+        new() {
+            Name = "Shokofin/Specials As Extra Featurettes",
+            Description = $"Always convert specials to extra featurettes in Jellyfin. {ManagedBy}",
+        },
 
         new() {
             Name = "Shokofin/Order by AirDate",
@@ -298,6 +302,10 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             case SeriesEpisodeConversion.SpecialsAsEpisodes:
                 toRemoveSet.Remove(knownTagDict["/shokofin/specials as episodes"]);
                 toAddSet.Add(knownTagDict["/shokofin/specials as episodes"]);
+                break;
+            case SeriesEpisodeConversion.SpecialsAsExtraFeaturettes:
+                toRemoveSet.Remove(knownTagDict["/shokofin/specials as extra featurettes"]);
+                toAddSet.Add(knownTagDict["/shokofin/specials as extra featurettes"]);
                 break;
         }
 
