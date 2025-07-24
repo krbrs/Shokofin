@@ -129,15 +129,16 @@ public class VirtualFileSystemService {
 
         // Only allow the preview to run once per caching cycle.
         return await DataCache.GetOrCreateAsync($"preview-changes:{vfsPath}", async () => {
-            var fileChecker = GetFileCheckerForMediaFolders(mediaConfigs);
-            var allFiles = GetFilesForManagedFolders(mediaConfigs, fileChecker);
-            var result = await GenerateStructure(collectionType, vfsPath, allFiles, preview: true).ConfigureAwait(false);
-            result += CleanupStructure(vfsPath, vfsPath, result.Paths.ToArray(), preview: true);
-
             // This call will be slow depending on the size of your collection.
             var existingPaths = FileSystem.DirectoryExists(vfsPath)
                 ? FileSystem.GetFilePaths(vfsPath, true).ToHashSet()
                 : [];
+            if (!TryGetFileCheckerForMediaFolders(mediaConfigs, out var fileChecker))
+                return (existingPaths, [], selectedFolder, new(), vfsPath);
+
+            var allFiles = GetFilesForManagedFolders(mediaConfigs, fileChecker);
+            var result = await GenerateStructure(collectionType, vfsPath, allFiles, preview: true).ConfigureAwait(false);
+            result += CleanupStructure(vfsPath, vfsPath, result.Paths.ToArray(), preview: true);
 
             // Alter the paths to match the new structure.
             var alteredPaths = existingPaths
@@ -159,7 +160,7 @@ public class VirtualFileSystemService {
     /// <param name="mediaFolder">The media folder to generate a structure for.</param>
     /// <param name="path">The file or folder within the media folder to generate a structure for.</param>
     /// <returns>The VFS path, if it succeeded.</returns>
-    public async Task<(string?, bool)> GenerateStructureInVFS(Folder mediaFolder, CollectionType? collectionType, string path) {
+    public async Task<(string? vfsPath, bool shouldContinue)> GenerateStructureInVFS(Folder mediaFolder, CollectionType? collectionType, string path) {
         var (vfsPath, mainMediaFolderPath, mediaConfigs, skipGeneration) = await ConfigurationService.GetMediaFoldersForLibraryInVFS(mediaFolder, collectionType, config => config.IsVirtualFileSystemEnabled).ConfigureAwait(false);
         if (string.IsNullOrEmpty(vfsPath) || string.IsNullOrEmpty(mainMediaFolderPath) || mediaConfigs.Count is 0)
             return (null, false);
@@ -205,7 +206,9 @@ public class VirtualFileSystemService {
             string? pathToClean = null;
             IEnumerable<(string sourceLocation, string fileId, string seriesId)>? allFiles = null;
             if (path.StartsWith(vfsPath + Path.DirectorySeparatorChar)) {
-                var fileExists = GetFileCheckerForMediaFolders(mediaConfigs);
+                if (!TryGetFileCheckerForMediaFolders(mediaConfigs, out var fileChecker))
+                    return true;
+
                 var pathSegments = path[(vfsPath.Length + 1)..].Split(Path.DirectorySeparatorChar);
                 switch (pathSegments.Length) {
                     // show/movie-folder level
@@ -217,13 +220,13 @@ public class VirtualFileSystemService {
                         // movie-folder
                         if (seriesName.TryGetAttributeValue(ProviderNames.ShokoEpisode, out var episodeId) ) {
                             pathToClean = path;
-                            allFiles = GetFilesForMovie(episodeId, seasonId, mediaConfigs, fileExists);
+                            allFiles = GetFilesForMovie(episodeId, seasonId, mediaConfigs, fileChecker);
                             break;
                         }
 
                         // show
                         pathToClean = path;
-                        allFiles = GetFilesForShow(seasonId, null, mediaConfigs, fileExists);
+                        allFiles = GetFilesForShow(seasonId, null, mediaConfigs, fileChecker);
                         break;
                     }
 
@@ -241,7 +244,7 @@ public class VirtualFileSystemService {
                             if (!seasonOrMovieName.TryGetAttributeValue(ProviderNames.ShokoFile, out var fileId) || !int.TryParse(fileId, out _))
                                 break;
 
-                            allFiles = GetFilesForEpisode(fileId, seriesId, mediaConfigs, fileExists);
+                            allFiles = GetFilesForEpisode(fileId, seriesId, mediaConfigs, fileChecker);
                             break;
                         }
 
@@ -250,7 +253,7 @@ public class VirtualFileSystemService {
                             break;
 
                         pathToClean = path;
-                        allFiles = GetFilesForShow(seasonId, seasonNumber, mediaConfigs, fileExists);
+                        allFiles = GetFilesForShow(seasonId, seasonNumber, mediaConfigs, fileChecker);
                         break;
                     }
 
@@ -269,14 +272,16 @@ public class VirtualFileSystemService {
                         if (!episodeName.TryGetAttributeValue(ProviderNames.ShokoFile, out var fileId) || !int.TryParse(fileId, out _))
                             break;
 
-                        allFiles = GetFilesForEpisode(fileId, seriesId, mediaConfigs, fileExists);
+                        allFiles = GetFilesForEpisode(fileId, seriesId, mediaConfigs, fileChecker);
                         break;
                     }
                 }
             }
             // Iterate files in the "real" media folder.
             else if (mediaConfigs.Any(config => path.StartsWith(config.MediaFolderPath)) || path == vfsPath) {
-                var fileChecker = GetFileCheckerForMediaFolders(mediaConfigs);
+                if (!TryGetFileCheckerForMediaFolders(mediaConfigs, out var fileChecker))
+                    return true;
+
                 pathToClean = vfsPath;
                 allFiles = GetFilesForManagedFolders(mediaConfigs, fileChecker);
             }
@@ -306,9 +311,37 @@ public class VirtualFileSystemService {
         );
     }
 
-    private Func<string, bool> GetFileCheckerForMediaFolders(IReadOnlyList<MediaFolderConfiguration> mediaConfigs) {
-        if (Plugin.Instance.Configuration.VFS_IterativeFileChecks)
-            return FileSystem.FileExists;
+    private bool TryGetFileCheckerForMediaFolders(IReadOnlyList<MediaFolderConfiguration> mediaConfigs, [NotNullWhen(true)] out Func<string, bool>? fileChecker) {
+        if (mediaConfigs.Count is 0) {
+            Logger.LogDebug("No media folders to create a file checker for.");
+            fileChecker = null;
+            return false;
+        }
+
+        // Do a preliminary check to see if the folders exist and contain files,
+        // in case a mount point failed to mount.
+        var shouldReturn = false;
+        foreach (var mediaConfig in mediaConfigs) {
+            if (!FileSystem.DirectoryExists(mediaConfig.MediaFolderPath)) {
+                Logger.LogDebug("Unable to create a file checker because a folder does not exist; {Path} (Library={LibraryId})", mediaConfig.MediaFolderPath, mediaConfig.LibraryId);
+                shouldReturn = true;
+            }
+            else if (!FileSystem.GetFilePaths(mediaConfig.MediaFolderPath, true).Any()) {
+                Logger.LogDebug("Unable to create a file checker because the folder is empty; {Path} (Library={LibraryId})", mediaConfig.MediaFolderPath, mediaConfig.LibraryId);
+                shouldReturn = true;
+            }
+        }
+
+        if (shouldReturn) {
+            fileChecker = null;
+            return false;
+        }
+
+        if (Plugin.Instance.Configuration.VFS_IterativeFileChecks) {
+            Logger.LogDebug("Creating an iterative file checker for {Count} folders.", mediaConfigs.Count);
+            fileChecker = FileSystem.FileExists;
+            return true;
+        }
 
         var libraryId = mediaConfigs[0].LibraryId;
         Logger.LogDebug("Looking for files in library across {Count} folders. (Library={LibraryId})", mediaConfigs.Count, libraryId);
@@ -326,7 +359,8 @@ public class VirtualFileSystemService {
         }
 
         Logger.LogDebug("Found {FileCount} files in library across {Count} in {TimeSpan}. (Library={LibraryId})", paths.Count, mediaConfigs.Count, DateTime.UtcNow - start, libraryId);
-        return paths.Contains;
+        fileChecker = paths.Contains;
+        return true;
     }
 
     private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForEpisode(string fileId, string seriesId, IReadOnlyList<MediaFolderConfiguration> mediaConfigs, Func<string, bool> fileExists) {
