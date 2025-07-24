@@ -431,7 +431,7 @@ public class PluginConfiguration : BasePluginConfiguration {
 
     #endregion
 
-    #region Library
+    #region Video Version Merging
 
     /// <summary>
     /// Automagically merge alternate versions after a library scan.
@@ -448,6 +448,10 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// The order to go through the selectors to produce the final sort string.
     /// </summary>
     public MergeVersionSortSelector[] MergeVersionSortSelectorOrder { get; set; }
+
+    #endregion
+
+    #region Library
 
     [JsonInclude]
     [XmlIgnore]
@@ -551,11 +555,27 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// </summary>
     public bool AddMissingMetadata { get; set; }
 
+    /// <summary>
+    /// Enable/disable the filtering for new media-folders/libraries.
+    /// </summary>
+    [XmlElement("LibraryFiltering")]
+    public LibraryFilteringMode LibraryFilteringMode { get; set; }
+
+    /// <summary>
+    /// Reaction time to when a library scan starts/ends, because they don't
+    /// expose it as an event, so we need to poll instead.
+    /// </summary>
+    [Range(1, 10)]
+    public int LibraryScanReactionTimeInSeconds { get; set; }
+
+    /// <summary>
+    /// List of folders to ignore when scanning media folders in a non-VFS library.
+    /// </summary>
     public string[] IgnoredFolders { get; set; }
 
     #endregion
 
-    #region Media Folder
+    #region Virtual File System (VFS)
 
     /// <summary>
     /// Enable/disable the VFS for new media-folders/libraries.
@@ -626,23 +646,14 @@ public class PluginConfiguration : BasePluginConfiguration {
     public bool VFS_IterativeFileChecks { get; set; }
 
     /// <summary>
-    /// Enable/disable the filtering for new media-folders/libraries.
-    /// </summary>
-    [XmlElement("LibraryFiltering")]
-    public LibraryFilteringMode LibraryFilteringMode { get; set; }
-
-    /// <summary>
-    /// Reaction time to when a library scan starts/ends, because they don't
-    /// expose it as an event, so we need to poll instead.
-    /// </summary>
-    [Range(1, 10)]
-    public int LibraryScanReactionTimeInSeconds { get; set; }
-
-    /// <summary>
     /// A list of AniDB anime IDs to always include during VFS generation, if 
     /// all the files are shared between different series.
     /// </summary>
     public int[] VFS_AlwaysIncludedAnidbIdList { get; set; }
+
+    #endregion
+
+    #region Media Folder
 
     /// <summary>
     /// Per media folder configuration.
