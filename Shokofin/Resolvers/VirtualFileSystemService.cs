@@ -595,10 +595,6 @@ public class VirtualFileSystemService {
         );
     }
 
-    private static readonly HashSet<int> AnidbExceptionSet = [
-        3651, // Suzumiya Haruhi no Yuuutsu (2006)
-    ];
-
     private IEnumerable<(string sourceLocation, string fileId, string seriesId)> GetFilesForManagedFolders(IReadOnlyList<MediaFolderConfiguration> mediaConfigs, Func<string, bool> fileExists) {
         var start = DateTime.UtcNow;
         var singleSeriesIds = new HashSet<int>();
@@ -680,6 +676,7 @@ public class VirtualFileSystemService {
         // linked to both the OVA and e.g. a specials for the TV Series.
         var totalMultiSeriesFiles = 0;
         if (multiSeriesFiles.Count > 0) {
+            var anidbExceptionSet = Plugin.Instance.Configuration.VFS_AlwaysIncludedAnidbIdList.ToHashSet();
             var mappedSingleSeriesIds = singleSeriesIds
                 .SelectMany(seriesId =>
                     ApiManager.GetShowInfosForShokoSeries(seriesId.ToString())
@@ -699,7 +696,7 @@ public class VirtualFileSystemService {
                         tuple.anidbId,
                         showIds: ApiManager.GetShowInfosForShokoSeries(tuple.seriesId).ConfigureAwait(false).GetAwaiter().GetResult().Select(showInfo => showInfo.Id).ToHashSet()
                     ))
-                    .Where(tuple => tuple.showIds.Count > 0 && (mappedSingleSeriesIds.Overlaps(tuple.showIds) || AnidbExceptionSet.Contains(tuple.anidbId)))
+                    .Where(tuple => tuple.showIds.Count > 0 && (mappedSingleSeriesIds.Overlaps(tuple.showIds) || anidbExceptionSet.Contains(tuple.anidbId)))
                     .Select(tuple => tuple.seriesId)
                     .ToList();
                 foreach (var seriesId in seriesIds)

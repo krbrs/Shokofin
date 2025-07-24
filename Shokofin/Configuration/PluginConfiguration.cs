@@ -639,6 +639,12 @@ public class PluginConfiguration : BasePluginConfiguration {
     public int LibraryScanReactionTimeInSeconds { get; set; }
 
     /// <summary>
+    /// A list of AniDB anime IDs to always include during VFS generation, if 
+    /// all the files are shared between different series.
+    /// </summary>
+    public int[] VFS_AlwaysIncludedAnidbIdList { get; set; }
+
+    /// <summary>
     /// Per media folder configuration.
     /// </summary>
     public List<MediaFolderConfiguration> MediaFolders { get; set; }
@@ -829,6 +835,10 @@ public class PluginConfiguration : BasePluginConfiguration {
         VFS_MaxTotalExceptionsBeforeAbort = 10;
         VFS_MaxSeriesExceptionsBeforeAbort = 3;
         VFS_IterativeFileChecks = false;
+        VFS_AlwaysIncludedAnidbIdList = [
+            3651, // Suzumiya Haruhi no Yuuutsu (2006)
+        ];
+
         AutoMergeVersions = true;
         MergeVersionSortSelectorList = [
             MergeVersionSortSelector.ImportedAt,
