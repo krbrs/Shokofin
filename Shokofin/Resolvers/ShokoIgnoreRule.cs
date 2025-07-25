@@ -68,7 +68,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
         Guid? trackerId = null;
         try {
             // Enable the scanner if we selected to use the Shoko provider for any metadata type on the current root folder.
-            if (!Lookup.IsEnabledForItem(parent, out var isSoleProvider))
+            if (!Lookup.IsEnabledForItem(parent))
                 return false;
 
             // Don't even bother continuing if the file system entry is matching one of the ignore patterns.
@@ -105,12 +105,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
             if (mediaFolderConfig.IsVirtualFileSystemEnabled || mediaFolderConfig.IsVirtualRoot)
                 return true;
 
-            var shouldIgnore = mediaFolderConfig.LibraryFilteringMode switch {
-                Ordering.LibraryFilteringMode.Strict => true,
-                Ordering.LibraryFilteringMode.Lax => false,
-                // Ordering.LibraryFilteringMode.Auto =>
-                _ => mediaFolderConfig.IsVirtualFileSystemEnabled  || isSoleProvider,
-            };
+            var shouldIgnore = mediaFolderConfig.LibraryOperationMode is not Ordering.LibraryFilteringMode.Lax;
             var collectionType = LibraryManager.GetInheritedContentType(mediaFolder);
             if (fileInfo.IsDirectory)
                 return await ShouldFilterDirectory(partialPath, fullPath, collectionType, shouldIgnore).ConfigureAwait(false);

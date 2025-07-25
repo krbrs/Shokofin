@@ -557,12 +557,6 @@ public class PluginConfiguration : BasePluginConfiguration {
     public bool AddMissingMetadata { get; set; }
 
     /// <summary>
-    /// Enable/disable the filtering for new media-folders/libraries.
-    /// </summary>
-    [XmlElement("LibraryFiltering")]
-    public LibraryFilteringMode LibraryFilteringMode { get; set; }
-
-    /// <summary>
     /// Reaction time to when a library scan starts/ends, because they don't
     /// expose it as an event, so we need to poll instead.
     /// </summary>
@@ -579,10 +573,17 @@ public class PluginConfiguration : BasePluginConfiguration {
     #region Virtual File System (VFS)
 
     /// <summary>
-    /// Enable/disable the VFS for new media-folders/libraries.
+    /// Determines how the plugin should operate on new libraries.
     /// </summary>
+    [XmlElement("LibraryFiltering")]
+    public LibraryFilteringMode DefaultLibraryOperationMode { get; set; }
+
+    /// <summary>
+    /// Legacy property used to upgrade to the new library operation mode if necessary.
+    /// </summary>
+    /// TODO: REMOVE IN 6.0
     [XmlElement("VirtualFileSystem")]
-    public bool VFS_Enabled { get; set; }
+    public bool? VFS_Legacy_Enabled { get; set; }
 
     /// <summary>
     /// Number of threads to concurrently generate links for the VFS.
@@ -632,11 +633,16 @@ public class PluginConfiguration : BasePluginConfiguration {
     [JsonConverter(typeof(JsonStringEnumConverter))]
     public VirtualRootLocation VFS_Location { get; set; }
 
+    private string? vfs_CustomLocation;
+
     /// <summary>
     /// The custom location for the VFS root, if specified. Should be an
     /// absolute path or a path relative to the config directory.
     /// </summary>
-    public string? VFS_CustomLocation { get; set; }
+    public string? VFS_CustomLocation {
+        get => vfs_CustomLocation;
+        set => vfs_CustomLocation = string.IsNullOrWhiteSpace(value) ? null : value;
+    }
 
     /// <summary>
     /// Skips the file search pre-generation step for library scans and instead
@@ -836,7 +842,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         ];
         Metadata_StudioOnlyAnimationWorks = false;
 
-        VFS_Enabled = true;
+        DefaultLibraryOperationMode = LibraryFilteringMode.VFS;
         VFS_Threads = 4;
         VFS_AddReleaseGroup = false;
         VFS_AddResolution = false;
@@ -881,7 +887,6 @@ public class PluginConfiguration : BasePluginConfiguration {
         UserList = [];
         MediaFolders = [];
         IgnoredFolders = [".streams", "@recently-snapshot"];
-        LibraryFilteringMode = LibraryFilteringMode.Auto;
         LibraryScanReactionTimeInSeconds = 1;
         SignalR_AutoConnectEnabled = false;
         SignalR_AutoReconnectInSeconds = [0, 2, 10, 30, 60, 120, 300];

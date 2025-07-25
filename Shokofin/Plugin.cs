@@ -191,6 +191,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             }
         }
 
+        MigrateConfiguration(Configuration);
+
         FixupConfiguration(Configuration);
 
         IgnoredFolders = Configuration.IgnoredFolders.ToHashSet();
@@ -201,7 +203,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
 
         // Disable VFS if we can't create symbolic links on Windows and no configuration exists.
         if (!configExists && !CanCreateSymbolicLinks) {
-            Configuration.VFS_Enabled = false;
+            Configuration.DefaultLibraryOperationMode = Ordering.LibraryFilteringMode.Strict;
+
             // Remove TvDB from the list of description providers.
             var index = Configuration.Description.Default.List.IndexOf(Text.DescriptionProvider.TvDB);
             if (index != -1) {
@@ -239,13 +242,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
         ConfigurationChanged?.Invoke(sender, config);
     }
 
-    public void FixupConfiguration(PluginConfiguration config) {
-        // Fix-up faulty configuration.
+    private void MigrateConfiguration(PluginConfiguration config) {
         var changed = false;
-        if (string.IsNullOrWhiteSpace(config.VFS_CustomLocation) && config.VFS_CustomLocation is not null) {
-            config.VFS_CustomLocation = null;
-            changed = true;
-        }
         if (config.Description.Default.Order.Length != Enum.GetValues<Text.DescriptionProvider>().Length) {
             var current = config.Description.Default.Order;
             config.Description.Default.Order = Enum.GetValues<Text.DescriptionProvider>()
@@ -319,6 +317,29 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             config.UsageTracker_StalledTimeInSeconds = 60; // reset to the new default for older installs
             changed = true;
         }
+        if (config.VFS_Legacy_Enabled.HasValue) {
+            if (config.VFS_Legacy_Enabled.Value) {
+                config.DefaultLibraryOperationMode = Ordering.LibraryFilteringMode.VFS;
+            }
+            foreach (var mediaFolder in config.MediaFolders) {
+                if (mediaFolder.LegacyVirtualFileSystemEnabled.HasValue) {
+                    if (mediaFolder.LegacyVirtualFileSystemEnabled.Value) {
+                        mediaFolder.LibraryOperationMode = Ordering.LibraryFilteringMode.VFS;
+                    }
+                    mediaFolder.LegacyVirtualFileSystemEnabled = null;
+                }
+            }
+            config.VFS_Legacy_Enabled = null;
+            changed = true;
+        }
+
+        if (changed)
+            SaveConfiguration(config);
+    }
+
+    public void FixupConfiguration(PluginConfiguration config) {
+        // Fix-up faulty configuration.
+        var changed = false;
 
         // Disallow setting the default library structure to none.
         if (config.DefaultLibraryStructure is SeriesStructureType.None) {

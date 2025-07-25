@@ -81,15 +81,25 @@ public class MediaFolderConfiguration {
     public bool IsRefreshEventsEnabled { get; set; } = true;
 
     /// <summary>
-    /// Enable or disable the virtual file system on a per-media-folder basis.
+    /// Shortcut to check if the virtual file system is enabled.
     /// </summary>
-    public bool IsVirtualFileSystemEnabled { get; set; } = true;
+    [XmlIgnore]
+    [JsonIgnore]
+    public bool IsVirtualFileSystemEnabled => LibraryOperationMode is LibraryFilteringMode.VFS;
 
     /// <summary>
-    /// Enable or disable the library filtering on a per-media-folder basis. Do
-    /// note that this will only take effect if the VFS is not used.
+    /// Legacy property used to upgrade to the new library operation mode if necessary.
     /// </summary>
-    public LibraryFilteringMode LibraryFilteringMode { get; set; } = LibraryFilteringMode.Auto;
+    /// TODO: REMOVE IN 6.0
+    [XmlElement("IsVirtualFileSystemEnabled")]
+    [JsonIgnore]
+    public bool? LegacyVirtualFileSystemEnabled { get; set; }
+
+    /// <summary>
+    /// Determines how the plugin should operate on the selected library.
+    /// </summary>
+    [XmlElement("LibraryFilteringMode")]
+    public LibraryFilteringMode LibraryOperationMode { get; set; } = LibraryFilteringMode.VFS;
 
     /// <summary>
     /// Check if a relative path within the managed folder is potentially available in this media folder.

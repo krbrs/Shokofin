@@ -35,7 +35,7 @@ promise.then(({
 //#region Constants
 
 /**
- * @typedef {"Connection" | "Metadata_Title" | "Metadata_Description" | "Metadata_TagGenre" | "Metadata_Image" | "Metadata_Misc" | "Metadata_ThirdPartyIntegration" | "Library_Basic" | "Library_Collection" | "Library_MultipleVersions" | "Library_New" | "Library_Existing" | "Library_SeasonMerging" | "VFS_Basic" | "VFS_Location" | "User" | "Series" | "SignalR_Connection" | "SignalR_Basic" | "SignalR_Library_New" | "SignalR_Library_Existing" | "Misc" | "Utilities"} SectionType
+ * @typedef {"Connection" | "Metadata_Title" | "Metadata_Description" | "Metadata_TagGenre" | "Metadata_Image" | "Metadata_Misc" | "Metadata_ThirdPartyIntegration" | "Library_Basic" | "Library_Collection" | "Library_MultipleVersions" | "Library_MediaFolder" | "Library_SeasonMerging" | "VFS_Basic" | "VFS_Location" | "User" | "Series" | "SignalR_Connection" | "SignalR_Basic" | "SignalR_Library_New" | "SignalR_Library_Existing" | "Misc" | "Utilities"} SectionType
  */
 
 const MaxDebugPresses = 7;
@@ -54,8 +54,7 @@ const Sections = [
     "Library_Basic",
     "Library_Collection",
     "Library_MultipleVersions",
-    "Library_New",
-    "Library_Existing",
+    "Library_MediaFolder",
     "Library_SeasonMerging",
     "VFS_Basic",
     "VFS_Location",
@@ -365,7 +364,7 @@ async function updateView(view, form, config) {
             break;
 
         case "library":
-            activeSections.push("Library_Basic", "Library_Collection", "Library_MultipleVersions", "Library_New", "Library_Existing", "Library_SeasonMerging");
+            activeSections.push("Library_Basic", "Library_Collection", "Library_MultipleVersions", "Library_MediaFolder", "Library_SeasonMerging");
 
             await applyLibraryConfigToForm(form, form.querySelector("#MediaFolderSelector").value, config);
             break;
@@ -515,12 +514,10 @@ function applyFormToConfig(form, config) {
             config.AutoMergeVersions = form.querySelector("#AutoMergeVersions").checked;
             ([config.MergeVersionSortSelectorList, config.MergeVersionSortSelectorOrder] = retrieveSortableCheckboxList(form, "MergeVersionSortSelectorList"));
 
-            config.VFS_Enabled = form.querySelector("#VFS_Enabled").checked;
-            config.LibraryFilteringMode = form.querySelector("#LibraryFilteringMode").value;
+            config.DefaultLibraryOperationMode = form.querySelector("#DefaultLibraryOperationMode").value;
             if (mediaFolders) {
                 for (const c of mediaFolders) {
-                    c.IsVirtualFileSystemEnabled = form.querySelector("#MediaFolderVirtualFileSystem").checked;
-                    c.LibraryFilteringMode = form.querySelector("#MediaFolderLibraryFilteringMode").value;
+                    c.LibraryOperationMode = form.querySelector("#MediaFolderLibraryOperationMode").value;
                 }
             }
 
@@ -692,8 +689,7 @@ async function applyConfigToForm(form, config) {
             form.querySelector("#AutoMergeVersions").checked = config.AutoMergeVersions || false;
             renderSortableCheckboxList(form, "MergeVersionSortSelectorList", config.MergeVersionSortSelectorList, config.MergeVersionSortSelectorOrder);
 
-            form.querySelector("#VFS_Enabled").checked = config.VFS_Enabled;
-            form.querySelector("#LibraryFilteringMode").value = config.LibraryFilteringMode;
+            form.querySelector("#DefaultLibraryOperationMode").value = config.DefaultLibraryOperationMode;
             form.querySelector("#MediaFolderSelector").innerHTML = `<option value="">Click here to select a library</option>` + libraries
                 .map((library) => `<option value="${library.LibraryId}">${library.LibraryName}${config.ExpertMode ? ` (${library.LibraryId})` : ""}</option>`)
                 .join("");
@@ -941,8 +937,7 @@ async function applyLibraryConfigToForm(form, libraryId, config = null) {
 
     // Configure the elements within the media folder container
     const libraryConfig = mediaFolders[0];
-    form.querySelector("#MediaFolderVirtualFileSystem").checked = libraryConfig.IsVirtualFileSystemEnabled;
-    form.querySelector("#MediaFolderLibraryFilteringMode").value = libraryConfig.LibraryFilteringMode;
+    form.querySelector("#MediaFolderLibraryOperationMode").value = libraryConfig.LibraryOperationMode;
 
     // Show the media folder settings now if it was previously hidden.
     form.querySelector("#MediaFolderPerFolderSettingsContainer").removeAttribute("hidden");

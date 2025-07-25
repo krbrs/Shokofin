@@ -137,7 +137,7 @@ public class MediaFolderConfigurationService {
     }
 
     private static string ConstructKey(MediaFolderConfiguration config)
-        => $"IsMapped={config.IsMapped},IsFileEventsEnabled={config.IsFileEventsEnabled},IsRefreshEventsEnabled={config.IsRefreshEventsEnabled},IsVirtualFileSystemEnabled={config.IsVirtualFileSystemEnabled},LibraryFilteringMode={config.LibraryFilteringMode}";
+        => $"IsMapped={config.IsMapped},IsFileEventsEnabled={config.IsFileEventsEnabled},IsRefreshEventsEnabled={config.IsRefreshEventsEnabled},LibraryOperationMode={config.LibraryOperationMode}";
 
     private void OnConfigurationChanged(object? sender, PluginConfiguration config) {
         foreach (var mediaConfig in config.MediaFolders) {
@@ -284,7 +284,7 @@ public class MediaFolderConfigurationService {
                 }
 
                 return virtualFolder.CollectionType.ConvertToCollectionType() is null or CollectionType.movies or CollectionType.tvshows &&
-                    Lookup.IsEnabledForLibraryOptions(virtualFolder.LibraryOptions, out _);
+                    Lookup.IsEnabledForLibraryOptions(virtualFolder.LibraryOptions);
             })
             .ToList();
         Logger.LogDebug("Found {Count} out of {TotalCount} libraries to check media folder configurations for.", filteredVirtualFolders.Count, allVirtualFolders.Count);
@@ -358,8 +358,7 @@ public class MediaFolderConfigurationService {
             MediaFolderPath = mediaFolder.Path,
             IsFileEventsEnabled = libraryConfig?.IsFileEventsEnabled ?? config.SignalR_FileEvents,
             IsRefreshEventsEnabled = libraryConfig?.IsRefreshEventsEnabled ?? config.SignalR_RefreshEnabled,
-            IsVirtualFileSystemEnabled = libraryConfig?.IsVirtualFileSystemEnabled ?? config.VFS_Enabled,
-            LibraryFilteringMode = libraryConfig?.LibraryFilteringMode ?? config.LibraryFilteringMode,
+            LibraryOperationMode = libraryConfig?.LibraryOperationMode ?? config.DefaultLibraryOperationMode,
         };
 
         var start = DateTime.UtcNow;

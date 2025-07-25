@@ -26,16 +26,7 @@ public class ShokoIdLookup(ShokoApiManager _apiManager, ILibraryManager _library
     /// </summary>
     /// <param name="item">The <see cref="BaseItem" /> to check.</param>
     /// <returns>True if the plugin is enabled for the <see cref="BaseItem" /></returns>
-    public bool IsEnabledForItem(BaseItem item)
-        => IsEnabledForItem(item, out var _);
-
-    /// <summary>
-    /// Check if the plugin is enabled for <see cref="BaseItem" >the item</see>.
-    /// </summary>
-    /// <param name="item">The <see cref="BaseItem" /> to check.</param>
-    /// <param name="isSoleProvider">True if the plugin is the only metadata provider enabled for the item.</param>
-    /// <returns>True if the plugin is enabled for the <see cref="BaseItem" /></returns>
-    public bool IsEnabledForItem(BaseItem item, out bool isSoleProvider) {
+    public bool IsEnabledForItem(BaseItem item) {
         var reItem = item switch {
             Series s => s,
             Season s => s.Series,
@@ -43,17 +34,15 @@ public class ShokoIdLookup(ShokoApiManager _apiManager, ILibraryManager _library
             _ => item,
         };
         if (reItem == null) {
-            isSoleProvider = false;
             return false;
         }
 
         var libraryOptions = _libraryManager.GetLibraryOptions(reItem);
         if (libraryOptions == null) {
-            isSoleProvider = false;
             return false;
         }
 
-        return IsEnabledForLibraryOptions(libraryOptions, out isSoleProvider);
+        return IsEnabledForLibraryOptions(libraryOptions);
     }
 
     /// <summary>
@@ -62,9 +51,8 @@ public class ShokoIdLookup(ShokoApiManager _apiManager, ILibraryManager _library
     /// <param name="libraryOptions">The <see cref="LibraryOptions" /> to check.</param>
     /// <param name="isSoleProvider">True if the plugin is the only metadata provider enabled for the item.</param>
     /// <returns>True if the plugin is enabled for the <see cref="LibraryOptions" /></returns>
-    public bool IsEnabledForLibraryOptions(LibraryOptions libraryOptions, out bool isSoleProvider) {
+    public bool IsEnabledForLibraryOptions(LibraryOptions libraryOptions) {
         var isEnabled = false;
-        isSoleProvider = true;
         foreach (var options in libraryOptions.TypeOptions) {
             if (!AllowedTypes.Contains(options.Type))
                 continue;
@@ -72,8 +60,6 @@ public class ShokoIdLookup(ShokoApiManager _apiManager, ILibraryManager _library
             if (isEnabledForType) {
                 if (!isEnabled)
                     isEnabled = true;
-                if (options.MetadataFetchers.Length > 1 && isSoleProvider)
-                    isSoleProvider = false;
             }
         }
         return isEnabled;

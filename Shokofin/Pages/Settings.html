@@ -1524,6 +1524,87 @@ form:not(.expert-mode) .expert-only {
                             <span>${Save}</span>
                         </button>
                     </fieldset>
+                    <fieldset id="Library_MediaFolder_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
+                        <legend>
+                            <h3>Library Settings</h3>
+                        </legend>
+                        <div class="selectContainer selectContainer-withDescription">
+                            <label class="selectLabel" for="DefaultLibraryOperationMode">Default Library Operation Mode</label>
+                            <select is="emby-select" id="DefaultLibraryOperationMode" name="DefaultLibraryOperationMode" class="emby-select-withcolor emby-select">
+                                <option value="VFS" selected>Virtual File System (VFS)</option>
+                                <option value="Strict">Legacy Filtering (Strict)</option>
+                                <option value="Lax">Legacy Filtering (Lax)</option>
+                            </select>
+                            <div class="fieldDescription">
+                                <div>Determines how the plugin should operate on new libraries.</div>
+                                <div id="WindowsSymLinkWarning1" hidden><strong>Warning</strong>: Windows users are required to <a href="https://learn.microsoft.com/en-us/windows/apps/get-started/developer-mode-features-and-debugging#use-regedit-to-enable-your-device" target="_blank" rel="noopener noreferrer">enable Developer Mode</a> then restart Jellyfin to be able to create symbolic links, a feature <strong>required</strong> to use the VFS.</div>
+                                <details style="margin-top: 0.5em">
+                                    <summary style="margin-bottom: 0.25em">What does using the Virtual File System (VFS) entail?</summary>
+                                    Using the VFS allows you to disregard the underlying disk file structure while automagically meeting Jellyfin's requirements for file organization. It also ensures that no unrecognized files appear in your library and allows us to fully leverage Jellyfin's native features better than we otherwise could without it. This enables us to effortlessly support trailers, special features, and theme videos for series, seasons and movies, as well as merge partial episodes into a single episode. All this is possible because we disregard the underlying disk file structure to create our own using symbolic links.
+                                    <br/>
+                                    <strong>Do not enable this for an existing library. If you do, then delete and re-create your library from scratch.</strong>
+                                </details>
+                                <details style="margin-top: 0.5em">
+                                    <summary style="margin-bottom: 0.25em">What does using Legacy Filtering (Strict) entail?</summary>
+                                    Using legacy filtering in strict mode means the plugin will operate on your media folders as-is, but filter out any and all unrecognized media from the library.
+                                </details>
+                                <details style="margin-top: 0.5em">
+                                    <summary style="margin-bottom: 0.25em">What does using Legacy Filtering (Lax) entail?</summary>
+                                    Using legacy filtering in lax mode means the plugin will operate on your media folders as-is, but it will not filter out anything from the library. Use this only if intend to mix Shoko with other metadata providers.
+                                </details>
+                            </div>
+                        </div>
+                        <div class="selectContainer selectContainer-withDescription">
+                            <label class="selectLabel" for="MediaFolderSelector">Configure settings for</label>
+                            <select is="emby-select" id="MediaFolderSelector" name="MediaFolderSelector" value="" class="emby-select-withcolor emby-select">
+                                <option value="">Click here to select a library</option>
+                            </select>
+                            <div class="fieldDescription selectFieldDescription">Select a media folder to add or modify the media folder settings for.</div>
+                        </div>
+                        <div id="MediaFolderPerFolderSettingsContainer" hidden>
+                            <div id="MediaFolderManagedFolderMapping" style="margin-bottom: 2em;">
+                                <h3 class="checkboxListLabel">Managed Folder Mapping</h3>
+                                <div class="checkboxList paperList checkboxList-paperList">
+                                </div>
+                                <div class="fieldDescription">The Shoko Managed Folders the Media Folders are mapped to.</div>
+                            </div>
+                            <div class="selectContainer selectContainer-withDescription">
+                                <label class="selectLabel" for="MediaFolderLibraryOperationMode">Library Operation Mode</label>
+                                <select is="emby-select" id="MediaFolderLibraryOperationMode" name="MediaFolderLibraryOperationMode" class="emby-select-withcolor emby-select">
+                                    <option value="VFS" selected>Virtual File System (VFS)</option>
+                                    <option value="Strict">Legacy Filtering (Strict)</option>
+                                    <option value="Lax">Legacy Filtering (Lax)</option>
+                                </select>
+                                <div class="fieldDescription">
+                                    <div>Determines how the plugin should operate on the selected library.</div>
+                                    <div id="WindowsSymLinkWarning1" hidden><strong>Warning</strong>: Windows users are required to <a href="https://learn.microsoft.com/en-us/windows/apps/get-started/developer-mode-features-and-debugging#use-regedit-to-enable-your-device" target="_blank" rel="noopener noreferrer">enable Developer Mode</a> then restart Jellyfin to be able to create symbolic links, a feature <strong>required</strong> to use the VFS.</div>
+                                    <details style="margin-top: 0.5em">
+                                        <summary style="margin-bottom: 0.25em">What does using the Virtual File System (VFS) entail?</summary>
+                                        Using the VFS allows you to disregard the underlying disk file structure while automagically meeting Jellyfin's requirements for file organization. It also ensures that no unrecognized files appear in your library and allows us to fully leverage Jellyfin's native features better than we otherwise could without it. This enables us to effortlessly support trailers, special features, and theme videos for series, seasons and movies, as well as merge partial episodes into a single episode. All this is possible because we disregard the underlying disk file structure to create our own using symbolic links.
+                                        <br/>
+                                        <strong>Do not enable this for an existing library. If you do, then delete and re-create your library from scratch.</strong>
+                                    </details>
+                                    <details style="margin-top: 0.5em">
+                                        <summary style="margin-bottom: 0.25em">What does using Legacy Filtering (Strict) entail?</summary>
+                                        Using legacy filtering in strict mode means the plugin will operate on your media folders as-is, but filter out any and all unrecognized media from the library.
+                                    </details>
+                                    <details style="margin-top: 0.5em">
+                                        <summary style="margin-bottom: 0.25em">What does using Legacy Filtering (Lax) entail?</summary>
+                                        Using legacy filtering in lax mode means the plugin will operate on your media folders as-is, but it will not filter out anything from the library. Use this only if intend to mix Shoko with other metadata providers.
+                                    </details>
+                                </div>
+                            </div>
+                            <div class="inputContainer inputContainer-withDescription">
+                                <button is="emby-button" type="submit" name="remove-library" class="raised button-delete block emby-button">
+                                    <span>${ButtonRemove}</span>
+                                </button>
+                                <div class="fieldDescription">This will delete the saved settings and reset the mapping for the library.</div>
+                            </div>
+                            <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
+                                <span>${Save}</span>
+                            </button>
+                        </div>
+                    </fieldset>
                     <fieldset id="Library_MultipleVersions_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
                         <legend>
                             <h3>Multiple Versions Settings</h3>
@@ -1757,121 +1838,6 @@ form:not(.expert-mode) .expert-only {
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>${Save}</span>
                         </button>
-                    </fieldset>
-                    <fieldset id="Library_New_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
-                        <legend>
-                            <h3>New Library Settings</h3>
-                        </legend>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="VFS_Enabled" />
-                                <span>Use the Virtual File System (<strong>VFS</strong>)</span>
-                            </label>
-                            <div class="fieldDescription checkboxFieldDescription">
-                                <div>Enables the use of the VFS for any new libraries managed by the plugin.</div>
-                                <div id="WindowsSymLinkWarning1" hidden><strong>Warning</strong>: Windows users are required to <a href="https://learn.microsoft.com/en-us/windows/apps/get-started/developer-mode-features-and-debugging#use-regedit-to-enable-your-device" target="_blank" rel="noopener noreferrer">enable Developer Mode</a> then restart Jellyfin to be able to create symbolic links, a feature <strong>required</strong> to use the VFS.</div>
-                                <details style="margin-top: 0.5em">
-                                    <summary style="margin-bottom: 0.25em">What does this mean?</summary>
-                                    Enabling this feature allows you to disregard the underlying disk file structure while automagically meeting Jellyfin's requirements for file organization. It also ensures that no unrecognized files appear in your library and allows us to fully leverage Jellyfin's native features better than we otherwise could without it. This enables us to effortlessly support trailers, special features, and theme videos for series, seasons and movies, as well as merge partial episodes into a single episode. All this is possible because we disregard the underlying disk file structure to create our own using symbolic links.
-                                    <br/>
-                                    <strong>Do not enable this for an existing library. If you do, then delete and re-create your library from scratch.</strong>
-                                </details>
-                            </div>
-                        </div>
-                        <div class="selectContainer selectContainer-withDescription">
-                            <label class="selectLabel" for="LibraryFilteringMode">Legacy Library Filtering</label>
-                            <select is="emby-select" id="LibraryFilteringMode" name="LibraryFilteringMode" class="emby-select-withcolor emby-select">
-                                <option value="Auto" selected>Auto</option>
-                                <option value="Strict">Strict</option>
-                                <option value="Lax">Lax</option>
-                            </select>
-                            <div class="fieldDescription">
-                                <div>Adjust how the plugin filters out unrecognized media in your new libraries. This option only applies if the VFS is not used.</div>
-                                <details style="margin-top: 0.5em">
-                                    <summary style="margin-bottom: 0.25em">What does auto filtering entail?</summary>
-                                    Auto filtering means the plugin will only filter out unrecognized media if no other metadata provider is enabled, otherwise it will leave them in the library.
-                                </details>
-                                <details style="margin-top: 0.5em">
-                                    <summary style="margin-bottom: 0.25em">What does strict filtering entail?</summary>
-                                    Strict filtering means the plugin will filter out any and all unrecognized media from the library.
-                                </details>
-                                <details style="margin-top: 0.5em">
-                                    <summary style="margin-bottom: 0.25em">What does lax filtering entail?</summary>
-                                    Lax filtering means the plugin will not filter out anything from the library. Use this only if you're having trouble.
-                                </details>
-                            </div>
-                        </div>
-                        <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>${Save}</span>
-                        </button>
-                    </fieldset>
-                    <fieldset id="Library_Existing_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
-                        <legend>
-                            <h3>Existing Library Settings</h3>
-                        </legend>
-                        <div class="selectContainer selectContainer-withDescription">
-                            <label class="selectLabel" for="MediaFolderSelector">Configure settings for</label>
-                            <select is="emby-select" id="MediaFolderSelector" name="MediaFolderSelector" value="" class="emby-select-withcolor emby-select">
-                                <option value="">Click here to select a library</option>
-                            </select>
-                            <div class="fieldDescription selectFieldDescription">Select a media folder to add or modify the media folder settings for.</div>
-                        </div>
-                        <div id="MediaFolderPerFolderSettingsContainer" hidden>
-                            <div id="MediaFolderManagedFolderMapping" style="margin-bottom: 2em;">
-                                <h3 class="checkboxListLabel">Managed Folder Mapping</h3>
-                                <div class="checkboxList paperList checkboxList-paperList">
-                                </div>
-                                <div class="fieldDescription">The Shoko Managed Folders the Media Folders are mapped to.</div>
-                            </div>
-                            <div class="checkboxContainer checkboxContainer-withDescription">
-                                <label class="emby-checkbox-label">
-                                    <input is="emby-checkbox" type="checkbox" id="MediaFolderVirtualFileSystem" />
-                                    <span>Use the Virtual File System (<strong>VFS</strong>)</span>
-                                </label>
-                                <div class="fieldDescription checkboxFieldDescription">
-                                    <div>Enables the use of the VFS for the library.</div>
-                                    <div id="WindowsSymLinkWarning2" hidden><strong>Warning</strong>: Windows users are required to <a href="https://learn.microsoft.com/en-us/windows/apps/get-started/developer-mode-features-and-debugging#use-regedit-to-enable-your-device" target="_blank" rel="noopener noreferrer">enable Developer Mode</a> then restart Jellyfin to be able to create symbolic links, a feature <strong>required</strong> to use the VFS.</div>
-                                    <details style="margin-top: 0.5em">
-                                        <summary style="margin-bottom: 0.25em">What does this mean?</summary>
-                                        Enabling this setting should in theory make it so you won't have to think about file structure incompatibilities, since it will override your existing file structure and replace it with a layer of symbolic links managed by the plugin instead of your actual file structure.
-                                        &nbsp;
-                                        <strong>Do not enable this for an existing library. If you do, then delete and re-create your library from scratch.</strong>
-                                    </details>
-                                </div>
-                            </div>
-                            <div class="selectContainer selectContainer-withDescription">
-                                <label class="selectLabel" for="MediaFolderLibraryFilteringMode">Legacy Library Filtering</label>
-                                <select is="emby-select" id="MediaFolderLibraryFilteringMode" name="MediaFolderLibraryFilteringMode" class="emby-select-withcolor emby-select">
-                                    <option value="Auto" selected>Auto</option>
-                                    <option value="Strict">Strict</option>
-                                    <option value="Lax">Lax</option>
-                                </select>
-                                <div class="fieldDescription">
-                                    <div>Adjust how the plugin filters out unrecognized media in the library. This option only applies if the VFS is not used.</div>
-                                    <details style="margin-top: 0.5em">
-                                        <summary style="margin-bottom: 0.25em">What does auto filtering entail?</summary>
-                                        Auto filtering means the plugin will only filter out unrecognized media if no other metadata provider is enabled, otherwise it will leave them in the library.
-                                    </details>
-                                    <details style="margin-top: 0.5em">
-                                        <summary style="margin-bottom: 0.25em">What does strict filtering entail?</summary>
-                                        Strict filtering means the plugin will filter out any and all unrecognized media from the library.
-                                    </details>
-                                    <details style="margin-top: 0.5em">
-                                        <summary style="margin-bottom: 0.25em">What does lax filtering entail?</summary>
-                                        Lax filtering means the plugin will not filter out anything from the library. Use this only if you're having trouble.
-                                    </details>
-                                </div>
-                            </div>
-                            <div class="inputContainer inputContainer-withDescription">
-                                <button is="emby-button" type="submit" name="remove-library" class="raised button-delete block emby-button">
-                                    <span>${ButtonRemove}</span>
-                                </button>
-                                <div class="fieldDescription">This will delete the saved settings and reset the mapping for the library.</div>
-                            </div>
-                            <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                                <span>${Save}</span>
-                            </button>
-                        </div>
                     </fieldset>
                     <fieldset id="VFS_Basic_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
                         <legend>

@@ -14,16 +14,17 @@ public class Ordering {
     /// Library filtering mode.
     /// </summary>
     public enum LibraryFilteringMode {
-        /// <summary>
-        /// Will use either <see cref="Strict"/> or <see cref="Lax"/> depending
-        /// on which metadata providers are enabled for the library.
-        /// </summary>
-        Auto = 0,
+        VFS = 0,
         /// <summary>
         /// Will only allow files/folders that are recognized and it knows
         /// should be part of the library.
         /// </summary>
         Strict = 1,
+        /// <summary>
+        /// Obsolete. Use <see cref="Strict"/> instead.
+        /// </summary>
+        /// TODO: REMOVE IN 6.0
+        Auto = Strict,
         /// <summary>
         /// Will permit files/folders that are not recognized to exist in the
         /// library, but will filter out anything it knows should not be part of

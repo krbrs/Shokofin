@@ -236,7 +236,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
 */
 
 /**
-* @typedef {"Auto" | "Strict" | "Lax"} LibraryFilteringMode
+* @typedef {"VFS" | "Strict" | "Lax"} LibraryMode
 */
 
 /**
@@ -293,8 +293,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
 *   IsMapped: boolean;
 *   IsFileEventsEnabled: boolean;
 *   IsRefreshEventsEnabled: boolean;
-*   IsVirtualFileSystemEnabled: boolean;
-*   LibraryFilteringMode: LibraryFilteringMode;
+*   LibraryOperationMode: LibraryMode;
 * }} MediaFolderConfig
 */
 
@@ -390,7 +389,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   SpecialsPlacement: SpecialOrderType;
  *   AddMissingMetadata: boolean;
  *   IgnoredFolders: string[];
- *   VFS_Enabled: boolean;
+ *   DefaultLibraryOperationMode: LibraryMode;
  *   VFS_Threads: number;
  *   VFS_AddReleaseGroup: boolean;
  *   VFS_AddResolution: boolean;
@@ -398,7 +397,6 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   VFS_Location: VirtualRootLocation;
  *   VFS_CustomLocation: string;
  *   VFS_IterativeFileChecks: boolean;
- *   LibraryFilteringMode: LibraryFilteringMode;
  *   MediaFolders: MediaFolderConfig[];
  *   SignalR_AutoConnectEnabled: boolean;
  *   SignalR_AutoReconnectInSeconds: number[];
