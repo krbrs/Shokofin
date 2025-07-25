@@ -105,7 +105,6 @@ public class Ordering {
         /// Obsolete. Use <see cref="Excluded" /> instead.
         /// </summary>
         /// TODO: REMOVE IN 6.0
-        [Obsolete("Use Excluded instead")]
         Default = Excluded,
 
         /// <summary>
