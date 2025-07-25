@@ -1423,7 +1423,7 @@ form:not(.expert-mode) .expert-only {
                                 </details>
                             </div>
                         </div>
-                        <div class="selectContainer selectContainer-withDescription expert-only experimental-setting">
+                        <div class="selectContainer selectContainer-withDescription expert-only">
                             <label class="selectLabel" for="SeasonOrdering">Shoko Group Structure Season Ordering</label>
                             <select is="emby-select" id="SeasonOrdering" name="SeasonOrdering" class="emby-select-withcolor emby-select">
                                 <option value="Default" selected>Let Shoko decide (Default)</option>
@@ -1641,6 +1641,123 @@ form:not(.expert-mode) .expert-only {
                             <span>${Save}</span>
                         </button>
                     </fieldset>
+                    <fieldset id="Library_SeasonMerging_Section" class="verticalSection verticalSection-extrabottompadding expert-only" hidden>
+                        <legend>
+                            <h3>Season Merging Settings</h3>
+                        </legend>
+                        <div class="fieldDescription verticalSection-extrabottompadding">Determines how the plugin handles merging one or more Shoko series into Jellyfin seasons.</div>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="SeasonMerging_Enabled" />
+                                <span>Enable Season Merging</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Globally enable season merging. This will blur the boundaries between AniDB anime further by merging entries which could have just been a single anime entry based on name matching and a configurable merge window, and/or custom per Shoko series merge overrides.
+                                <br/><br/>
+                                <strong>Note</strong>: The Shoko series will need three things for season merging to be possible:
+                                <ul>
+                                    <li>It needs to have an air date set.</li>
+                                    <li>It needs to be inside the same Shoko group as the other Shoko series that it should be merged with.</li>
+                                    <li>It needs to be using <strong>Shoko Group Structure</strong>, be it explicitly or implicitly, which also applies to the other Shoko series that it should be merged with.</li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="selectContainer selectContainer-withDescription expert-only">
+                            <label class="selectLabel" for="SeasonMerging_DefaultBehavior">Default Merge Behavior</label>
+                            <select is="emby-select" id="SeasonMerging_DefaultBehavior" name="SeasonMerging_DefaultBehavior" class="emby-select-withcolor emby-select">
+                                <option value="None" selected>Use Auto Merging (Default)</option>
+                                <option value="NoMerge">No Auto Merging</option>
+                            </select>
+                            <div class="fieldDescription">
+                                <div>Determines the default merge behavior when no override is set for a Shoko series.</div>
+                            </div>
+                        </div>
+                        <div id="SeasonMerging_SeriesTypes" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Series Types</h3>
+                            <div class="checkboxList paperList checkboxList-paperList">
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TV">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TV Series | Standard TV Series</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="TVSpecial">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">TV Special | Standalone Special TV Program</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Web">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Web | Web First Release / Original Net Animation (ONA)</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="OVA">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">OVA | Original Video Animation (OVA)</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Movie">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Movie | Standalone Movie / Movie Collection</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="MusicVideo">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Music Video | Standalone Music Video Release</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Other">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Other | Misc. Other Type</h3>
+                                    </div>
+                                </div>
+                                <div class="listItem">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Unknown">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">Unknown | Type Not Determined Yet</h3>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fieldDescription">Series types to attempt to automatically merge unless an override is in use. Will respect custom series type overrides.</div>
+                        </div>
+                        <div class="inputContainer inputContainer-withDescription expert-only">
+                            <input is="emby-input" type="number" id="SeasonMerging_MergeWindowInDays" label="Merge Window (days)" placeholder="0" type="number" pattern="[0-9]*" min="0" step="1" />
+                            <div class="fieldDescription">Number of days to check between the start of each season, inclusive. Set to 0 to allow merging regardless of release dates.</div>
+                        </div>
+                        <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
+                            <span>${Save}</span>
+                        </button>
+                    </fieldset>
                     <fieldset id="Library_New_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
                         <legend>
                             <h3>New Library Settings</h3>
@@ -1755,123 +1872,6 @@ form:not(.expert-mode) .expert-only {
                                 <span>${Save}</span>
                             </button>
                         </div>
-                    </fieldset>
-                    <fieldset id="Library_SeasonMerging_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
-                        <legend>
-                            <h3>Season Merging Settings</h3>
-                        </legend>
-                        <div class="fieldDescription verticalSection-extrabottompadding">Determines how the plugin handles merging one or more Shoko series into Jellyfin seasons.</div>
-                        <div class="checkboxContainer checkboxContainer-withDescription">
-                            <label class="emby-checkbox-label">
-                                <input is="emby-checkbox" type="checkbox" id="SeasonMerging_Enabled" />
-                                <span>Enable Season Merging</span>
-                            </label>
-                            <div class="fieldDescription checkboxFieldDescription">
-                                Globally enable season merging. This will blur the boundaries between AniDB anime further by merging entries which could have just been a single anime entry based on name matching and a configurable merge window, and/or custom per Shoko series merge overrides.
-                                <br/><br/>
-                                <strong>Note</strong>: The Shoko series will need three things for season merging to be possible:
-                                <ul>
-                                    <li>It needs to have an air date set.</li>
-                                    <li>It needs to be inside the same Shoko group as the other Shoko series that it should be merged with.</li>
-                                    <li>It needs to be using <strong>Shoko Group Structure</strong>, be it explicitly or implicitly, which also applies to the other Shoko series that it should be merged with.</li>
-                                </ul>
-                            </div>
-                        </div>
-                        <div class="selectContainer selectContainer-withDescription expert-only">
-                            <label class="selectLabel" for="SeasonMerging_DefaultBehavior">Default Merge Behavior</label>
-                            <select is="emby-select" id="SeasonMerging_DefaultBehavior" name="SeasonMerging_DefaultBehavior" class="emby-select-withcolor emby-select">
-                                <option value="None" selected>Use Auto Merging (Default)</option>
-                                <option value="NoMerge">No Auto Merging</option>
-                            </select>
-                            <div class="fieldDescription">
-                                <div>Determines the default merge behavior when no override is set for a Shoko series.</div>
-                            </div>
-                        </div>
-                        <div id="SeasonMerging_SeriesTypes" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
-                            <h3 class="checkboxListLabel">Series Types</h3>
-                            <div class="checkboxList paperList checkboxList-paperList">
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="TV">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TV Series | Standard TV Series</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="TVSpecial">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TV Special | Standalone Special TV Program</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Web">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Web | Web First Release / Original Net Animation (ONA)</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="OVA">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">OVA | Original Video Animation (OVA)</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Movie">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Movie | Standalone Movie / Movie Collection</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="MusicVideo">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Music Video | Standalone Music Video Release</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Other">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Other | Misc. Other Type</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Unknown">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Unknown | Type Not Determined Yet</h3>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="fieldDescription">Series types to attempt to automatically merge unless an override is in use. Will respect custom series type overrides.</div>
-                        </div>
-                        <div class="inputContainer inputContainer-withDescription expert-only">
-                            <input is="emby-input" type="number" id="SeasonMerging_MergeWindowInDays" label="Merge Window (days)" placeholder="0" type="number" pattern="[0-9]*" min="0" step="1" />
-                            <div class="fieldDescription">Number of days to check between the start of each season, inclusive. Set to 0 to allow merging regardless of release dates.</div>
-                        </div>
-                        <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
-                            <span>${Save}</span>
-                        </button>
                     </fieldset>
                     <fieldset id="VFS_Basic_Section" class="verticalSection verticalSection-extrabottompadding" hidden>
                         <legend>
@@ -2231,7 +2231,7 @@ form:not(.expert-mode) .expert-only {
                                     </details>
                                 </div>
                             </div>
-                            <div class="selectContainer selectContainer-withDescription">
+                            <div class="selectContainer selectContainer-withDescription expert-only">
                                 <label class="selectLabel" for="SeriesSeasonOrdering">Shoko Group Structure Season Ordering</label>
                                 <select is="emby-select" id="SeriesSeasonOrdering" name="SeriesSeasonOrdering" class="emby-select-withcolor emby-select">
                                     <option value="None">Follow Global Settings (Default)</option>
@@ -2254,7 +2254,7 @@ form:not(.expert-mode) .expert-only {
                                 </select>
                                 <div class="fieldDescription selectFieldDescription">Determines how specials are placed within seasons. <strong>Warning:</strong> Modifying this setting requires a recreation (read as; delete existing then create a new) of any libraries using this plugin — otherwise you <strong>will</strong> have mixed metadata.</div>
                             </div>
-                            <div class="selectContainer selectContainer-withDescription expert-only experimental-setting">
+                            <div class="selectContainer selectContainer-withDescription expert-only">
                                 <label class="selectLabel" for="SeriesMergeOverride">Season Merging Mode</label>
                                 <select is="emby-select" id="SeriesMergeOverride" name="SeriesMergeOverride" class="emby-select-withcolor emby-select">
                                     <option value="None" selected>Follow Global Settings (Default)</option>
