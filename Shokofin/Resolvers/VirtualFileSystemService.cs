@@ -110,21 +110,14 @@ public class VirtualFileSystemService {
 
     public async Task<(HashSet<string> filesBefore, HashSet<string> filesAfter, VirtualFolderInfo? virtualFolder, LinkGenerationResult? result, string vfsPath)> PreviewChangesForLibrary(Guid libraryId) {
         // Don't allow starting a preview if a library scan is running.
-
         var virtualFolders = LibraryManager.GetVirtualFolders();
         var selectedFolder = virtualFolders.FirstOrDefault(folder => Guid.TryParse(folder.ItemId, out var guid) && guid == libraryId);
-        if (selectedFolder is null)
-            return ([], [], null, null, string.Empty);
-
-        if (LibraryManager.FindByPath(selectedFolder.Locations[0], true) is not Folder mediaFolder)
+        if (selectedFolder is null || LibraryManager.FindByPath(selectedFolder.Locations[0], true) is not Folder mediaFolder || LibraryManager.IsScanRunning)
             return ([], [], selectedFolder, null, string.Empty);
 
         var collectionType = selectedFolder.CollectionType.ConvertToCollectionType();
         var (vfsPath, _, mediaConfigs, _) = await ConfigurationService.GetMediaFoldersForLibraryInVFS(mediaFolder, collectionType, config => config.IsVirtualFileSystemEnabled).ConfigureAwait(false);
         if (string.IsNullOrEmpty(vfsPath) || mediaConfigs.Count is 0)
-            return ([], [], selectedFolder, null, string.Empty);
-
-        if (LibraryManager.IsScanRunning)
             return ([], [], selectedFolder, null, string.Empty);
 
         // Only allow the preview to run once per caching cycle.
