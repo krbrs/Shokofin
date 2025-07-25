@@ -24,6 +24,11 @@ public class SeriesConfiguration {
     public Ordering.OrderType SeasonOrdering { get; set; }
 
     /// <summary>
+    /// Determines how specials should be placed for the series.
+    /// </summary>
+    public Ordering.SpecialOrderType SpecialsPlacement { get; set; }
+
+    /// <summary>
     /// Determines how the merging should be handled for the series, if at all.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
@@ -58,6 +63,11 @@ public class NullableSeriesConfiguration {
     /// Determines how seasons should be ordered for the series.
     /// </summary>
     public Ordering.OrderType? SeasonOrdering { get; set; }
+
+    /// <summary>
+    /// Determines how specials should be placed for the series.
+    /// </summary>
+    public Ordering.SpecialOrderType? SpecialsPlacement { get; set; }
 
     /// <summary>
     /// Determines how the merging should be handled for the series, if at all.

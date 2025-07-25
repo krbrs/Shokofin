@@ -150,6 +150,7 @@ public partial class ShokoApiManager : IDisposable {
                 Type = SeriesType.None,
                 StructureType = SeriesStructureType.None,
                 SeasonOrdering = Ordering.OrderType.None,
+                SpecialsPlacement = Ordering.SpecialOrderType.None,
                 MergeOverride = SeriesMergingOverride.None,
                 EpisodeConversion = SeriesEpisodeConversion.None,
                 OrderByAirdate = false,
@@ -165,22 +166,42 @@ public partial class ShokoApiManager : IDisposable {
                 return seriesSettings;
 
             tags = customTags.RecursiveNamespacedChildren;
-            if (tags.ContainsKey("/anidb structure"))
+            if (tags.ContainsKey("/structure/anidb"))
                 seriesSettings.StructureType = SeriesStructureType.AniDB_Anime;
-            else if (tags.ContainsKey("/shoko structure"))
+            else if (tags.ContainsKey("/structure/shoko"))
                 seriesSettings.StructureType = SeriesStructureType.Shoko_Groups;
-            else if (tags.ContainsKey("/tmdb structure"))
+            else if (tags.ContainsKey("/structure/tmdb"))
                 seriesSettings.StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
 
-            if (tags.ContainsKey("/no merge"))
+            if (tags.ContainsKey("/season ordering/default"))
+                seriesSettings.SeasonOrdering = Ordering.OrderType.Default;
+            else if (tags.ContainsKey("/season ordering/release"))
+                seriesSettings.SeasonOrdering = Ordering.OrderType.ReleaseDate;
+            else if (tags.ContainsKey("/season ordering/chronological"))
+                seriesSettings.SeasonOrdering = Ordering.OrderType.Chronological;
+            else if (tags.ContainsKey("/season ordering/simplified chronological"))
+                seriesSettings.SeasonOrdering = Ordering.OrderType.ChronologicalIgnoreIndirect;
+
+            if (tags.ContainsKey("/specials placement/excluded"))
+                seriesSettings.SpecialsPlacement = Ordering.SpecialOrderType.Excluded;
+            else if (tags.ContainsKey("/specials placement/after season"))
+                seriesSettings.SpecialsPlacement = Ordering.SpecialOrderType.AfterSeason;
+            else if (tags.ContainsKey("/specials placement/mixed"))
+                seriesSettings.SpecialsPlacement = Ordering.SpecialOrderType.InBetweenSeasonMixed;
+            else if (tags.ContainsKey("/specials placement/air date"))
+                seriesSettings.SpecialsPlacement = Ordering.SpecialOrderType.InBetweenSeasonByAirDate;
+            else if (tags.ContainsKey("/specials placement/tmdb"))
+                seriesSettings.SpecialsPlacement = Ordering.SpecialOrderType.InBetweenSeasonByOtherData;
+
+            if (tags.ContainsKey("/merge/none"))
                 seriesSettings.MergeOverride = SeriesMergingOverride.NoMerge;
-            else if (tags.ContainsKey("/merge with main story"))
+            else if (tags.ContainsKey("/merge/main story"))
                 seriesSettings.MergeOverride = SeriesMergingOverride.MergeWithMainStory;
-            else if (tags.ContainsKey("/merge forward") && tags.ContainsKey("/merge backward"))
+            else if (tags.ContainsKey("/merge/forward") && tags.ContainsKey("/merge/backward"))
                 seriesSettings.MergeOverride = SeriesMergingOverride.MergeForward | SeriesMergingOverride.MergeBackward;
-            else if (tags.ContainsKey("/merge forward"))
+            else if (tags.ContainsKey("/merge/forward"))
                 seriesSettings.MergeOverride = SeriesMergingOverride.MergeForward;
-            else if (tags.ContainsKey("/merge backward"))
+            else if (tags.ContainsKey("/merge/backward"))
                 seriesSettings.MergeOverride = SeriesMergingOverride.MergeBackward;
 
             if (tags.ContainsKey("/episodes as specials"))
@@ -209,6 +230,9 @@ public partial class ShokoApiManager : IDisposable {
             }
             if (seriesSettings.SeasonOrdering is Ordering.OrderType.None) {
                 seriesSettings.SeasonOrdering = config.DefaultSeasonOrdering;
+            }
+            if (seriesSettings.SpecialsPlacement is Ordering.SpecialOrderType.None) {
+                seriesSettings.SpecialsPlacement = config.DefaultSpecialsPlacement;
             }
             if (seriesSettings.MergeOverride is SeriesMergingOverride.None) {
                 seriesSettings.MergeOverride = config.SeasonMerging_DefaultBehavior;

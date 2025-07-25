@@ -319,6 +319,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   Type: SeriesType | "None";
  *   StructureType: SeriesStructureType | "None";
 *    SeasonOrdering: SeasonOrderType | "None";
+ *   SpecialsPlacement: SpecialOrderType | "None";
  *   MergeOverride: SeriesMergingOverride;
  *   EpisodeConversion: SeriesEpisodeConversion;
  *   OrderByAirdate: boolean;

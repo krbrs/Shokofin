@@ -330,6 +330,11 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             config.DefaultSeasonOrdering = Ordering.OrderType.Default;
             changed = true;
         }
+        // Disallow setting the default specials placement to none.
+        if (config.DefaultSpecialsPlacement is Ordering.SpecialOrderType.None) {
+            config.DefaultSpecialsPlacement = Ordering.SpecialOrderType.Excluded;
+            changed = true;
+        }
 
         if (changed)
             SaveConfiguration(config);

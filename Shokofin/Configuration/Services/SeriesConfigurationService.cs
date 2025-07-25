@@ -60,49 +60,81 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
         },
 
         new() {
-            Name = "Shokofin/AniDB Structure",
+            NameRegex = new(@"^Shokofin/(AniDB Structure|Structure/AniDB)$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Structure/AniDB",
             Description = $"Use an AniDB based structure for this Shoko series in Jellyfin. {ManagedBy}",
         },
         new() {
-            Name = "Shokofin/Shoko Structure",
+            NameRegex = new(@"^Shokofin/(Shoko Structure|Structure/Shoko)$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Structure/Shoko",
             Description = $"Use a Shoko Group based structure for this Shoko series in Jellyfin. {ManagedBy}",
         },
         new() {
-            Name = "Shokofin/TMDb Structure",
+            NameRegex = new(@"^Shokofin/(TMDb Structure|Structure/TMDb)$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Structure/TMDb",
             Description = $"Use a TMDb based structure for this Shoko series in Jellyfin. {ManagedBy}",
         },
 
         new() {
-            Name = "Shokofin/Default Season Ordering",
+            NameRegex = new(@"^Shokofin/(Default Season Ordering|Season Ordering/Default)$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Season Ordering/Default",
             Description = $"Let the server decide the season ordering. {ManagedBy}",
         },
         new() {
-            Name = "Shokofin/Release Based Season Ordering",
+            NameRegex = new(@"^Shokofin/(Release Based Season Ordering|Season Ordering/Release)$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Season Ordering/Release",
             Description = $"Order seasons based on release date. {ManagedBy}",
         },
         new() {
-            Name = "Shokofin/Chronological Season Ordering",
+            NameRegex = new(@"^Shokofin/(Chronological Season Ordering|Season Ordering/Chronological)$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Season Ordering/Chronological",
             Description = $"Order seasons in chronological order with indirect relations weighting in on the position of each season. {ManagedBy}",
         },
         new() {
-            Name = "Shokofin/",
+            NameRegex = new(@"^Shokofin/(Simplified Chronological Season Ordering|Season Ordering/Simplified Chronological)$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Season Ordering/Simplified Chronological",
             Description = $"Order seasons in chronological order while ignoring indirect relations. {ManagedBy}",
         },
 
         new() {
-            Name = "Shokofin/No Merge",
+            Name = "Shokofin/Specials Placement/Excluded",
+            Description = $"Always exclude the specials from the season. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Specials Placement/After Season",
+            Description = $"Always place the specials after the normal episodes in the season. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Specials Placement/Mixed",
+            Description = $"Place the specials in-between normal episodes based upon data from TMDb or when the episodes aired. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Specials Placement/Air Date",
+            Description = $"Place the specials in-between normal episodes based on when the episodes aired. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Specials Placement/TMDb",
+            Description = $"Place the specials in-between normal episodes based upon data from TMDb. {ManagedBy}",
+        },
+
+        new() {
+            NameRegex = new(@"^Shokofin/(No Merge|Merge/None)$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Merge/None",
             Description = $"Never merge this series with other series when deciding on what to merge for seasons in Jellyfin. {ManagedBy}",
         },
         new() {
-            Name = "Shokofin/Merge Forward",
+            NameRegex = new(@"^Shokofin/Merge[ /]Forward$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Merge/Forward",
             Description = $"Merge the current series with the sequel series in Jellyfin. {ManagedBy}",
         },
         new() {
-            Name = "Shokofin/Merge Backward",
+            NameRegex = new(@"^Shokofin/Merge[ /]Backward$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Merge/Backward",
             Description = $"Merge the current series with the prequel series in Jellyfin. {ManagedBy}",
         },
         new() {
-            Name = "Shokofin/Merge with Main Story",
+            NameRegex = new(@"^Shokofin/Merge( with |/)Main Story$", RegexOptions.ECMAScript | RegexOptions.IgnoreCase | RegexOptions.Compiled),
+            Name = "Shokofin/Merge/Main Story",
             Description = $"Merge the current side-story with the main-story in Jellyfin. {ManagedBy}",
         },
 
@@ -132,7 +164,7 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             foreach (var simpleTag in _simpleTags) {
                 var localTags = allCustomTags
                     .Where(x => simpleTag.NameRegex is not null
-                        ? simpleTag.NameRegex.IsMatch(x.Name) 
+                        ? simpleTag.NameRegex.IsMatch(x.Name)
                         : string.Equals(simpleTag.Name, x.Name, StringComparison.OrdinalIgnoreCase)
                     )
                     .ToList();
@@ -150,7 +182,7 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
                     existingTag = await apiClient.UpdateCustomTag(existingTag.Id, simpleTag.Name, simpleTag.Description).ConfigureAwait(false);
                 }
 
-                if (localTags.Skip(1).ToList() is {Count: > 0 } otherTags) {
+                if (localTags.Skip(1).ToList() is { Count: > 0 } otherTags) {
                     var seriesIds = await apiClient.GetSeriesIdsWithCustomTag(otherTags.Select(x => x.Id)).ConfigureAwait(false);
                     foreach (var otherTag in otherTags) {
                         await apiClient.RemoveCustomTag(otherTag.Id).ConfigureAwait(false);
@@ -182,6 +214,8 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             config.StructureType = seriesConfiguration.StructureType.Value;
         if (seriesConfiguration.SeasonOrdering is not null)
             config.SeasonOrdering = seriesConfiguration.SeasonOrdering.Value;
+        if (seriesConfiguration.SpecialsPlacement is not null)
+            config.SpecialsPlacement = seriesConfiguration.SpecialsPlacement.Value;
         if (seriesConfiguration.MergeOverride is not null)
             config.MergeOverride = seriesConfiguration.MergeOverride.Value;
         if (seriesConfiguration.EpisodeConversion is not null)
@@ -228,38 +262,68 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             toRemoveSet.Add(id);
         switch (seriesConfiguration.StructureType) {
             case SeriesStructureType.TMDB_SeriesAndMovies:
-                toRemoveSet.Remove(knownTagDict["/shokofin/tmdb structure"]);
-                toAddSet.Add(knownTagDict["/shokofin/tmdb structure"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/structure/tmdb"]);
+                toAddSet.Add(knownTagDict["/shokofin/structure/tmdb"]);
                 break;
             case SeriesStructureType.AniDB_Anime:
-                toRemoveSet.Remove(knownTagDict["/shokofin/anidb structure"]);
-                toAddSet.Add(knownTagDict["/shokofin/anidb structure"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/structure/anidb"]);
+                toAddSet.Add(knownTagDict["/shokofin/structure/anidb"]);
                 break;
             case SeriesStructureType.Shoko_Groups:
-                toRemoveSet.Remove(knownTagDict["/shokofin/shoko structure"]);
-                toAddSet.Add(knownTagDict["/shokofin/shoko structure"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/structure/shoko"]);
+                toAddSet.Add(knownTagDict["/shokofin/structure/shoko"]);
                 break;
         }
-        
+
         var seasonOrderingTypes = knownTagDict.Where(x => x.Key.Contains("season ordering")).ToDictionary(x => x.Key, x => x.Value);
         foreach (var (_, id) in seasonOrderingTypes)
             toRemoveSet.Add(id);
         switch (seriesConfiguration.SeasonOrdering) {
+            case Ordering.OrderType.None:
+                break;
             case Ordering.OrderType.Default:
-                toRemoveSet.Remove(knownTagDict["/shokofin/default season ordering"]);
-                toAddSet.Add(knownTagDict["/shokofin/default season ordering"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/season ordering/default"]);
+                toAddSet.Add(knownTagDict["/shokofin/season ordering/default"]);
                 break;
             case Ordering.OrderType.ReleaseDate:
-                toRemoveSet.Remove(knownTagDict["/shokofin/release based season ordering"]);
-                toAddSet.Add(knownTagDict["/shokofin/release based season ordering"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/season ordering/release"]);
+                toAddSet.Add(knownTagDict["/shokofin/season ordering/release"]);
                 break;
             case Ordering.OrderType.Chronological:
-                toRemoveSet.Remove(knownTagDict["/shokofin/chronological season ordering"]);
-                toAddSet.Add(knownTagDict["/shokofin/chronological season ordering"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/season ordering/chronological"]);
+                toAddSet.Add(knownTagDict["/shokofin/season ordering/chronological"]);
                 break;
             case Ordering.OrderType.ChronologicalIgnoreIndirect:
-                toRemoveSet.Remove(knownTagDict["/shokofin/simplified chronological season ordering"]);
-                toAddSet.Add(knownTagDict["/shokofin/simplified chronological season ordering"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/season ordering/simplified chronological"]);
+                toAddSet.Add(knownTagDict["/shokofin/season ordering/simplified chronological"]);
+                break;
+        }
+
+        var specialsPlacementTypes = knownTagDict.Where(x => x.Key.Contains("specials placement")).ToDictionary(x => x.Key, x => x.Value);
+        foreach (var (_, id) in specialsPlacementTypes)
+            toRemoveSet.Add(id);
+        switch (seriesConfiguration.SpecialsPlacement) {
+            case Ordering.SpecialOrderType.None:
+                break;
+            case Ordering.SpecialOrderType.Excluded:
+                toRemoveSet.Remove(knownTagDict["/shokofin/specials placement/excluded"]);
+                toAddSet.Add(knownTagDict["/shokofin/specials placement/excluded"]);
+                break;
+            case Ordering.SpecialOrderType.AfterSeason:
+                toRemoveSet.Remove(knownTagDict["/shokofin/specials placement/after season"]);
+                toAddSet.Add(knownTagDict["/shokofin/specials placement/after season"]);
+                break;
+            case Ordering.SpecialOrderType.InBetweenSeasonMixed:
+                toRemoveSet.Remove(knownTagDict["/shokofin/specials placement/mixed"]);
+                toAddSet.Add(knownTagDict["/shokofin/specials placement/mixed"]);
+                break;
+            case Ordering.SpecialOrderType.InBetweenSeasonByAirDate:
+                toRemoveSet.Remove(knownTagDict["/shokofin/specials placement/air date"]);
+                toAddSet.Add(knownTagDict["/shokofin/specials placement/air date"]);
+                break;
+            case Ordering.SpecialOrderType.InBetweenSeasonByOtherData:
+                toRemoveSet.Remove(knownTagDict["/shokofin/specials placement/tmdb"]);
+                toAddSet.Add(knownTagDict["/shokofin/specials placement/tmdb"]);
                 break;
         }
 
@@ -268,26 +332,26 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             toRemoveSet.Add(id);
         switch (seriesConfiguration.MergeOverride) {
             case SeriesMergingOverride.NoMerge:
-                toRemoveSet.Remove(knownTagDict["/shokofin/no merge"]);
-                toAddSet.Add(knownTagDict["/shokofin/no merge"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/none"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/none"]);
                 break;
             case SeriesMergingOverride.MergeWithMainStory:
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge with main story"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge with main story"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/main story"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/main story"]);
                 break;
             case SeriesMergingOverride.MergeForward | SeriesMergingOverride.MergeBackward:
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge forward"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge forward"]);
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge backward"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge backward"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/forward"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/forward"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/backward"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/backward"]);
                 break;
             case SeriesMergingOverride.MergeForward:
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge forward"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge forward"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/forward"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/forward"]);
                 break;
             case SeriesMergingOverride.MergeBackward:
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge backward"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge backward"]);
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/backward"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/backward"]);
                 break;
         }
 

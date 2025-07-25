@@ -546,7 +546,8 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// <summary>
     /// Determines how specials are placed within seasons, if at all.
     /// </summary>
-    public SpecialOrderType SpecialsPlacement { get; set; }
+    [XmlElement("SpecialsPlacement")]
+    public SpecialOrderType DefaultSpecialsPlacement { get; set; }
 
     /// <summary>
     /// Add missing season and episode entries so the user can see at a glance
@@ -873,7 +874,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         AddCreditsAsThemeVideos = true;
         AddCreditsAsSpecialFeatures = false;
         DefaultSeasonOrdering = OrderType.Default;
-        SpecialsPlacement = SpecialOrderType.AfterSeason;
+        DefaultSpecialsPlacement = SpecialOrderType.Excluded;
         AddMissingMetadata = true;
         CollectionGrouping = CollectionCreationType.None;
         CollectionMinSizeOfTwo = true;

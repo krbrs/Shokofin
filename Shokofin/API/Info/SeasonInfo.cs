@@ -42,6 +42,8 @@ public class SeasonInfo : IExtendedItemInfo {
 
     public Ordering.OrderType SeasonOrdering { get; init; }
 
+    public Ordering.SpecialOrderType SpecialsPlacement { get; init; }
+
     public SeriesType Type { get; init; }
 
     public bool IsMultiEntry { get; init; }
@@ -320,6 +322,7 @@ public class SeasonInfo : IExtendedItemInfo {
         TopLevelShokoGroupId = series.IDs.TopLevelGroup.ToString();
         StructureType = seriesConfigurationMap[seasonId].StructureType;
         SeasonOrdering = seriesConfigurationMap[seasonId].SeasonOrdering;
+        SpecialsPlacement = seriesConfigurationMap[seasonId].SpecialsPlacement;
         Type = type;
         IsMultiEntry = type is SeriesType.Movie && series.Sizes.Total.Episodes > 1;
         IsRestricted = series.AniDB.Restricted;
@@ -416,6 +419,7 @@ public class SeasonInfo : IExtendedItemInfo {
         TopLevelShokoGroupId = topLevelShokoGroupId;
         StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
         SeasonOrdering = Ordering.OrderType.None;
+        SpecialsPlacement = Ordering.SpecialOrderType.Excluded;
         Type = SeriesType.TV;
         IsMultiEntry = true;
         IsRestricted = tmdbShow.IsRestricted;
@@ -476,6 +480,7 @@ public class SeasonInfo : IExtendedItemInfo {
         TopLevelShokoGroupId = topLevelShokoGroupId;
         StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
         SeasonOrdering = Ordering.OrderType.None;
+        SpecialsPlacement = Ordering.SpecialOrderType.Excluded;
         Type = SeriesType.Movie;
         IsMultiEntry = false;
         IsRestricted = tmdbMovie.IsRestricted;
@@ -522,6 +527,7 @@ public class SeasonInfo : IExtendedItemInfo {
         TopLevelShokoGroupId = topLevelShokoGroupId;
         StructureType = SeriesStructureType.TMDB_SeriesAndMovies;
         SeasonOrdering = Ordering.OrderType.None;
+        SpecialsPlacement = Ordering.SpecialOrderType.Excluded;
         Type = SeriesType.Movie;
         IsMultiEntry = true;
         IsRestricted = movies.Any(movie => movie.IsRestricted);

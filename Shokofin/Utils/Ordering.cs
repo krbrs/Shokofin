@@ -86,9 +86,9 @@ public class Ordering {
 
     public enum SpecialOrderType {
         /// <summary>
-        /// Use the default for the type.
+        /// Only for use with the series settings.
         /// </summary>
-        Default = 0,
+        None = -1,
 
         /// <summary>
         /// Always exclude the specials from the season.
@@ -101,17 +101,24 @@ public class Ordering {
         AfterSeason = 2,
 
         /// <summary>
+        /// Obsolete. Use <see cref="Excluded" /> instead.
+        /// </summary>
+        /// TODO: REMOVE IN 6.0
+        [Obsolete("Use Excluded instead")]
+        Default = Excluded,
+
+        /// <summary>
         /// Use a mix of <see cref="InBetweenSeasonByOtherData" /> and <see cref="InBetweenSeasonByAirDate" />.
         /// </summary>
         InBetweenSeasonMixed = 3,
 
         /// <summary>
-        /// Place the specials in-between normal episodes based on the time the episodes aired.
+        /// Place the specials in-between normal episodes based on when the episodes aired.
         /// </summary>
         InBetweenSeasonByAirDate = 4,
 
         /// <summary>
-        /// Place the specials in-between normal episodes based upon the data from TMDB.
+        /// Place the specials in-between normal episodes based upon data from TMDB.
         /// </summary>
         InBetweenSeasonByOtherData = 5,
     }
@@ -158,10 +165,8 @@ public class Ordering {
     }
 
     public static (int?, int?, int?, bool) GetSpecialPlacement(ShowInfo showInfo, SeasonInfo seasonInfo, EpisodeInfo episodeInfo) {
-        var order = Plugin.Instance.Configuration.SpecialsPlacement;
-
         // Return early if we want to exclude them from the normal seasons.
-        if (order == SpecialOrderType.Excluded) {
+        if (seasonInfo.SpecialsPlacement is SpecialOrderType.Excluded) {
             // Check if this should go in the specials season.
             return (null, null, null, showInfo.IsSpecial(episodeInfo));
         }
@@ -174,7 +179,7 @@ public class Ordering {
         int? airsBeforeEpisodeNumber = null;
         int? airsBeforeSeasonNumber = null;
         int? airsAfterSeasonNumber = null;
-        switch (order) {
+        switch (seasonInfo.SpecialsPlacement) {
             default:
                 airsAfterSeasonNumber = seasonNumber;
                 break;

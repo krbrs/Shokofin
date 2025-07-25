@@ -682,7 +682,7 @@ async function applyConfigToForm(form, config) {
             form.querySelector("#SeasonOrdering").value = config.DefaultSeasonOrdering;
             form.querySelector("#SeparateMovies").checked = config.SeparateMovies;
             form.querySelector("#DisableFilterMovieLibraries").checked = !config.FilterMovieLibraries;
-            form.querySelector("#SpecialsPlacement").value = config.SpecialsPlacement === "Default" ? "AfterSeason" : config.SpecialsPlacement;
+            form.querySelector("#SpecialsPlacement").value = config.SpecialsPlacement === "Default" ? "Excluded" : config.SpecialsPlacement;
             form.querySelector("#MovieSpecialsAsExtraFeaturettes").checked = config.MovieSpecialsAsExtraFeaturettes;
             form.querySelector("#AddMissingMetadata").checked = config.AddMissingMetadata;
 
@@ -883,6 +883,7 @@ async function applySeriesConfigToForm(form, seriesId, config = null) {
     form.querySelector("#SeriesType").value = seriesConfig.Type;
     form.querySelector("#SeriesLibraryStructure").value = seriesConfig.StructureType;
     form.querySelector("#SeriesSeasonOrdering").value = seriesConfig.SeasonOrdering;
+    form.querySelector("#SeriesSpecialsPlacement").value = seriesConfig.SpecialsPlacement;
     form.querySelector("#SeriesMergeOverride").value = seriesConfig.MergeOverride;
     form.querySelector("#SeriesEpisodeConversion").value = seriesConfig.EpisodeConversion;
     form.querySelector("#SeriesOrderByAirdate").checked = seriesConfig.OrderByAirdate;
@@ -1147,6 +1148,7 @@ async function syncSettings(form, config) {
             seriesConfig.SeriesType = form.querySelector("#SeriesType").value;
             seriesConfig.StructureType = form.querySelector("#SeriesLibraryStructure").value;
             seriesConfig.SeasonOrdering = form.querySelector("#SeriesSeasonOrdering").value;
+            seriesConfig.SpecialsPlacement = form.querySelector("#SeriesSpecialsPlacement").value;
             seriesConfig.MergeOverride = form.querySelector("#SeriesMergeOverride").value;
             seriesConfig.EpisodeConversion = form.querySelector("#SeriesEpisodeConversion").value;
             seriesConfig.OrderByAirdate = form.querySelector("#SeriesOrderByAirdate").checked;
