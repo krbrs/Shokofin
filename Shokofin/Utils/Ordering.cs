@@ -11,24 +11,31 @@ namespace Shokofin.Utils;
 
 public class Ordering {
     /// <summary>
-    /// Library filtering mode.
+    /// Library operation mode.
     /// </summary>
-    public enum LibraryFilteringMode {
-        VFS = 0,
+    public enum LibraryOperationMode {
         /// <summary>
-        /// Will only allow files/folders that are recognized and it knows
-        /// should be part of the library.
+        /// Will use the Virtual File System (VFS) on the library.
+        /// </summary>
+        VFS = 0,
+
+        /// <summary>
+        /// Will use legacy filtering in strict mode, which will only allow
+        /// files/folders that are recognized and it knows should be part of the
+        /// library.
         /// </summary>
         Strict = 1,
+
         /// <summary>
         /// Obsolete. Use <see cref="Strict"/> instead.
         /// </summary>
         /// TODO: REMOVE IN 6.0
         Auto = Strict,
+
         /// <summary>
-        /// Will permit files/folders that are not recognized to exist in the
-        /// library, but will filter out anything it knows should not be part of
-        /// the library.
+        /// Will use legacy filtering in lax mode, which will permit
+        /// files/folders that are not recognized to exist in the library, but
+        /// will filter out anything it knows should not be part of the library.
         /// </summary>
         Lax = 2,
     }

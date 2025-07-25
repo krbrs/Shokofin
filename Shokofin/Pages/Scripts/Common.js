@@ -236,7 +236,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
 */
 
 /**
-* @typedef {"VFS" | "Strict" | "Lax"} LibraryMode
+* @typedef {"VFS" | "Strict" | "Lax"} LibraryOperationMode
 */
 
 /**
@@ -293,7 +293,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
 *   IsMapped: boolean;
 *   IsFileEventsEnabled: boolean;
 *   IsRefreshEventsEnabled: boolean;
-*   LibraryOperationMode: LibraryMode;
+*   LibraryOperationMode: LibraryOperationMode;
 * }} MediaFolderConfig
 */
 
@@ -389,7 +389,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   SpecialsPlacement: SpecialOrderType;
  *   AddMissingMetadata: boolean;
  *   IgnoredFolders: string[];
- *   DefaultLibraryOperationMode: LibraryMode;
+ *   DefaultLibraryOperationMode: LibraryOperationMode;
  *   VFS_Threads: number;
  *   VFS_AddReleaseGroup: boolean;
  *   VFS_AddResolution: boolean;

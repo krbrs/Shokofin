@@ -105,7 +105,7 @@ public class ShokoIgnoreRule : IResolverIgnoreRule {
             if (mediaFolderConfig.IsVirtualFileSystemEnabled || mediaFolderConfig.IsVirtualRoot)
                 return true;
 
-            var shouldIgnore = mediaFolderConfig.LibraryOperationMode is not Ordering.LibraryFilteringMode.Lax;
+            var shouldIgnore = mediaFolderConfig.LibraryOperationMode is not Ordering.LibraryOperationMode.Lax;
             var collectionType = LibraryManager.GetInheritedContentType(mediaFolder);
             if (fileInfo.IsDirectory)
                 return await ShouldFilterDirectory(partialPath, fullPath, collectionType, shouldIgnore).ConfigureAwait(false);

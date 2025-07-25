@@ -11,7 +11,7 @@ using CollectionCreationType = Shokofin.Utils.Ordering.CollectionCreationType;
 using DescriptionProvider = Shokofin.Utils.Text.DescriptionProvider;
 using DescriptionConversionMode = Shokofin.Utils.Text.DescriptionConversionMode;
 using ImageType = MediaBrowser.Model.Entities.ImageType;
-using LibraryFilteringMode = Shokofin.Utils.Ordering.LibraryFilteringMode;
+using LibraryOperationMode = Shokofin.Utils.Ordering.LibraryOperationMode;
 using MergeVersionSortSelector = Shokofin.MergeVersions.MergeVersionSortSelector;
 using OrderType = Shokofin.Utils.Ordering.OrderType;
 using ProviderName = Shokofin.Events.Interfaces.ProviderName;
@@ -576,7 +576,7 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// Determines how the plugin should operate on new libraries.
     /// </summary>
     [XmlElement("LibraryFiltering")]
-    public LibraryFilteringMode DefaultLibraryOperationMode { get; set; }
+    public LibraryOperationMode DefaultLibraryOperationMode { get; set; }
 
     /// <summary>
     /// Legacy property used to upgrade to the new library operation mode if necessary.
@@ -842,7 +842,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         ];
         Metadata_StudioOnlyAnimationWorks = false;
 
-        DefaultLibraryOperationMode = LibraryFilteringMode.VFS;
+        DefaultLibraryOperationMode = LibraryOperationMode.VFS;
         VFS_Threads = 4;
         VFS_AddReleaseGroup = false;
         VFS_AddResolution = false;

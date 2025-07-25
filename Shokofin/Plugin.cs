@@ -203,7 +203,7 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
 
         // Disable VFS if we can't create symbolic links on Windows and no configuration exists.
         if (!configExists && !CanCreateSymbolicLinks) {
-            Configuration.DefaultLibraryOperationMode = Ordering.LibraryFilteringMode.Strict;
+            Configuration.DefaultLibraryOperationMode = Ordering.LibraryOperationMode.Strict;
 
             // Remove TvDB from the list of description providers.
             var index = Configuration.Description.Default.List.IndexOf(Text.DescriptionProvider.TvDB);
@@ -319,12 +319,12 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
         }
         if (config.VFS_Legacy_Enabled.HasValue) {
             if (config.VFS_Legacy_Enabled.Value) {
-                config.DefaultLibraryOperationMode = Ordering.LibraryFilteringMode.VFS;
+                config.DefaultLibraryOperationMode = Ordering.LibraryOperationMode.VFS;
             }
             foreach (var mediaFolder in config.MediaFolders) {
                 if (mediaFolder.LegacyVirtualFileSystemEnabled.HasValue) {
                     if (mediaFolder.LegacyVirtualFileSystemEnabled.Value) {
-                        mediaFolder.LibraryOperationMode = Ordering.LibraryFilteringMode.VFS;
+                        mediaFolder.LibraryOperationMode = Ordering.LibraryOperationMode.VFS;
                     }
                     mediaFolder.LegacyVirtualFileSystemEnabled = null;
                 }

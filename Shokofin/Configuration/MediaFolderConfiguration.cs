@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 using System.Xml.Serialization;
 using MediaBrowser.Controller.Entities;
 
-using LibraryFilteringMode = Shokofin.Utils.Ordering.LibraryFilteringMode;
+using LibraryOperationMode = Shokofin.Utils.Ordering.LibraryOperationMode;
 
 namespace Shokofin.Configuration;
 
@@ -85,7 +85,7 @@ public class MediaFolderConfiguration {
     /// </summary>
     [XmlIgnore]
     [JsonIgnore]
-    public bool IsVirtualFileSystemEnabled => LibraryOperationMode is LibraryFilteringMode.VFS;
+    public bool IsVirtualFileSystemEnabled => LibraryOperationMode is LibraryOperationMode.VFS;
 
     /// <summary>
     /// Legacy property used to upgrade to the new library operation mode if necessary.
@@ -99,7 +99,7 @@ public class MediaFolderConfiguration {
     /// Determines how the plugin should operate on the selected library.
     /// </summary>
     [XmlElement("LibraryFilteringMode")]
-    public LibraryFilteringMode LibraryOperationMode { get; set; } = LibraryFilteringMode.VFS;
+    public LibraryOperationMode LibraryOperationMode { get; set; } = LibraryOperationMode.VFS;
 
     /// <summary>
     /// Check if a relative path within the managed folder is potentially available in this media folder.
