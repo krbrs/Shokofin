@@ -318,14 +318,14 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             changed = true;
         }
         if (config.VFS_Legacy_Enabled.HasValue) {
-            if (config.VFS_Legacy_Enabled.Value) {
+            if (config.VFS_Legacy_Enabled.Value)
                 config.DefaultLibraryOperationMode = Ordering.LibraryOperationMode.VFS;
-            }
+
             foreach (var mediaFolder in config.MediaFolders) {
                 if (mediaFolder.LegacyVirtualFileSystemEnabled.HasValue) {
-                    if (mediaFolder.LegacyVirtualFileSystemEnabled.Value) {
+                    if (mediaFolder.LegacyVirtualFileSystemEnabled.Value)
                         mediaFolder.LibraryOperationMode = Ordering.LibraryOperationMode.VFS;
-                    }
+
                     mediaFolder.LegacyVirtualFileSystemEnabled = null;
                 }
             }
