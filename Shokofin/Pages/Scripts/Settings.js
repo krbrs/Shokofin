@@ -497,7 +497,7 @@ function applyFormToConfig(form, config) {
         }
 
         case "library": {
-            const libraryId = form.querySelector("#MediaFolderSelector").value.split(",");
+            const libraryId = form.querySelector("#MediaFolderSelector").value;
             const mediaFolders = libraryId ? config.MediaFolders.filter((m) => m.LibraryId === libraryId) : undefined;
             const seasonMergeWindow = sanitizeNumber(form.querySelector("#SeasonMerging_MergeWindowInDays").value);
 
