@@ -386,7 +386,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   CollectionGrouping: CollectionCreationType;
  *   DefaultLibraryStructure: SeriesStructureType;
  *   DefaultSeasonOrdering: SeasonOrderType;
- *   SpecialsPlacement: SpecialOrderType;
+ *   DefaultSpecialsPlacement: SpecialOrderType;
  *   AddMissingMetadata: boolean;
  *   IgnoredFolders: string[];
  *   DefaultLibraryOperationMode: LibraryOperationMode;

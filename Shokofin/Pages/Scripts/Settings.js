@@ -501,10 +501,10 @@ function applyFormToConfig(form, config) {
             const seasonMergeWindow = sanitizeNumber(form.querySelector("#SeasonMerging_MergeWindowInDays").value);
 
             config.DefaultLibraryStructure = form.querySelector("#DefaultLibraryStructure").value;
-            config.DefaultSeasonOrdering = form.querySelector("#SeasonOrdering").value;
+            config.DefaultSeasonOrdering = form.querySelector("#DefaultSeasonOrdering").value;
             config.SeparateMovies = form.querySelector("#SeparateMovies").checked;
             config.FilterMovieLibraries = !form.querySelector("#DisableFilterMovieLibraries").checked;
-            config.SpecialsPlacement = form.querySelector("#SpecialsPlacement").value;
+            config.DefaultSpecialsPlacement = form.querySelector("#DefaultSpecialsPlacement").value;
             config.MovieSpecialsAsExtraFeaturettes = form.querySelector("#MovieSpecialsAsExtraFeaturettes").checked;
             config.AddMissingMetadata = form.querySelector("#AddMissingMetadata").checked;
 
@@ -676,10 +676,10 @@ async function applyConfigToForm(form, config) {
                 }, []);
 
             form.querySelector("#DefaultLibraryStructure").value = config.DefaultLibraryStructure;
-            form.querySelector("#SeasonOrdering").value = config.DefaultSeasonOrdering;
+            form.querySelector("#DefaultSeasonOrdering").value = config.DefaultSeasonOrdering;
             form.querySelector("#SeparateMovies").checked = config.SeparateMovies;
             form.querySelector("#DisableFilterMovieLibraries").checked = !config.FilterMovieLibraries;
-            form.querySelector("#SpecialsPlacement").value = config.SpecialsPlacement === "Default" ? "Excluded" : config.SpecialsPlacement;
+            form.querySelector("#DefaultSpecialsPlacement").value = config.DefaultSpecialsPlacement === "Default" ? "Excluded" : config.DefaultSpecialsPlacement;
             form.querySelector("#MovieSpecialsAsExtraFeaturettes").checked = config.MovieSpecialsAsExtraFeaturettes;
             form.querySelector("#AddMissingMetadata").checked = config.AddMissingMetadata;
 

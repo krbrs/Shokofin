@@ -1403,7 +1403,7 @@ form:not(.expert-mode) .expert-only {
                             <h3>Basic Settings</h3>
                         </legend>
                         <div class="selectContainer selectContainer-withDescription">
-                            <label class="selectLabel" for="DefaultLibraryStructure">Library Structure Mode</label>
+                            <label class="selectLabel" for="DefaultLibraryStructure">Default Library Structure Mode</label>
                             <select is="emby-select" id="DefaultLibraryStructure" name="DefaultLibraryStructure" class="emby-select-withcolor emby-select">
                                 <option value="AniDB_Anime" selected>AniDB Anime Structure (Default)</option>
                                 <option value="Shoko_Groups">Shoko Group Structure</option>
@@ -1424,8 +1424,8 @@ form:not(.expert-mode) .expert-only {
                             </div>
                         </div>
                         <div class="selectContainer selectContainer-withDescription expert-only">
-                            <label class="selectLabel" for="SeasonOrdering">Shoko Group Structure Season Ordering</label>
-                            <select is="emby-select" id="SeasonOrdering" name="SeasonOrdering" class="emby-select-withcolor emby-select">
+                            <label class="selectLabel" for="DefaultSeasonOrdering">Default Shoko Group Structure Season Ordering</label>
+                            <select is="emby-select" id="DefaultSeasonOrdering" name="DefaultSeasonOrdering" class="emby-select-withcolor emby-select">
                                 <option value="Default" selected>Let Shoko decide (Default)</option>
                                 <option value="ReleaseDate">Order seasons by release date</option>
                                 <option value="Chronological" class="expert-only">Order seasons in chronological order (use indirect relations) (EXPERIMENTAL)</option>
@@ -1434,8 +1434,8 @@ form:not(.expert-mode) .expert-only {
                             <div class="fieldDescription">Determines how to order seasons within shows when using groups for shows.</div>
                         </div>
                         <div class="selectContainer selectContainer-withDescription">
-                            <label class="selectLabel" for="SpecialsPlacement">Specials Placement Within Seasons</label>
-                            <select is="emby-select" id="SpecialsPlacement" name="SpecialsPlacement" class="emby-select-withcolor emby-select">
+                            <label class="selectLabel" for="DefaultSpecialsPlacement">Default Specials Placement Within Seasons</label>
+                            <select is="emby-select" id="DefaultSpecialsPlacement" name="DefaultSpecialsPlacement" class="emby-select-withcolor emby-select">
                                 <option value="Excluded" selected>Exclude specials from the seasons (Default)</option>
                                 <option value="AfterSeason">Always place specials after the normal episodes</option>
                                 <option value="InBetweenSeasonByAirDate">Use release dates to place specials</option>
