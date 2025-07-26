@@ -292,7 +292,9 @@ public class EventDispatchService {
                     foreach (var (vfsPath, mainMediaFolderPath, collectionType, mediaConfigs) in libraries) {
                         // Give the core logic _any_ file or folder placed directly in the media folder, so it will schedule the media folder to be refreshed.
                         var fileOrFolder = FileSystem.GetFileSystemEntryPaths(mainMediaFolderPath, false).FirstOrDefault();
-                        if (!string.IsNullOrEmpty(fileOrFolder))
+                        if (vfsPath == mainMediaFolderPath)
+                            locationsToNotify.Add(vfsPath);
+                        else if (!string.IsNullOrEmpty(fileOrFolder))
                             mediaFoldersToNotify.TryAdd(mainMediaFolderPath, (fileOrFolder, mainMediaFolderPath.GetFolderForPath()));
                     }
 
