@@ -5,6 +5,7 @@ using MediaBrowser.Controller.Entities.Movies;
 using MediaBrowser.Controller.Library;
 using MediaBrowser.Controller.Providers;
 using MediaBrowser.Model.Entities;
+using Shokofin.API;
 using Shokofin.ExternalIds;
 using Shokofin.MergeVersions;
 
@@ -20,7 +21,7 @@ namespace Shokofin.Providers;
 /// about how a provider cannot also be a custom provider otherwise it won't
 /// save the metadata.
 /// </remarks>
-public class CustomMovieProvider(ILibraryManager _libraryManager, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Movie> {
+public class CustomMovieProvider(ILibraryManager _libraryManager, ShokoIdLookup _lookup, MergeVersionsManager _mergeVersionsManager) : IHasItemChangeMonitor, ICustomMetadataProvider<Movie> {
     public string Name => Plugin.MetadataProviderName;
 
     public bool HasChanged(BaseItem item, IDirectoryService directoryService) {
@@ -37,7 +38,7 @@ public class CustomMovieProvider(ILibraryManager _libraryManager, MergeVersionsM
 
     public async Task<ItemUpdateType> FetchAsync(Movie movie, MetadataRefreshOptions options, CancellationToken cancellationToken) {
         var itemUpdated = ItemUpdateType.None;
-        if (movie.TryGetProviderId(ProviderNames.ShokoEpisode, out var episodeId) && Plugin.Instance.Configuration.AutoMergeVersions && !_libraryManager.IsScanRunning && options.MetadataRefreshMode != MetadataRefreshMode.ValidationOnly) {
+        if (_lookup.IsEnabledForItem(movie) && movie.TryGetProviderId(ProviderNames.ShokoEpisode, out var episodeId) && Plugin.Instance.Configuration.AutoMergeVersions && !_libraryManager.IsScanRunning && options.MetadataRefreshMode != MetadataRefreshMode.ValidationOnly) {
             await _mergeVersionsManager.SplitAndMergeMoviesByEpisodeId(episodeId).ConfigureAwait(false);
             itemUpdated |= ItemUpdateType.MetadataEdit;
         }

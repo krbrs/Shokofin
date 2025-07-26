@@ -46,7 +46,7 @@ public class CustomEpisodeProvider(ILogger<CustomEpisodeProvider> _logger, ILibr
             return ItemUpdateType.None;
 
         var itemUpdated = ItemUpdateType.None;
-        if (_lookup.TryGetEpisodeIdsFor(episode, out var episodeIds)) {
+        if (_lookup.IsEnabledForItem(episode) && _lookup.TryGetEpisodeIdsFor(episode, out var episodeIds)) {
             using (Plugin.Instance.Tracker.Enter($"Providing custom info for Episode \"{episode.Name}\". (Path=\"{episode.Path}\",IsMissingEpisode={episode.IsMissingEpisode})")) {
                 foreach (var episodeId in episodeIds) {
                     if (RemoveDuplicates(_libraryManager, _logger, episodeId, episode, series.GetPresentationUniqueKey()))

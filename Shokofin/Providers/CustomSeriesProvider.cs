@@ -49,7 +49,7 @@ public class CustomSeriesProvider(ILogger<CustomSeriesProvider> _logger, ShokoAp
 
     public async Task<ItemUpdateType> FetchAsync(Series series, MetadataRefreshOptions options, CancellationToken cancellationToken) {
         // Abort if we're unable to get the shoko series id.
-        if (!series.TryGetSeasonId(out var seasonId))
+        if (!_lookup.IsEnabledForItem(series) || !series.TryGetSeasonId(out var seasonId))
             return ItemUpdateType.None;
 
         var trackerId = Plugin.Instance.Tracker.Add($"Providing custom info for Series \"{series.Name}\". (MainSeason=\"{seasonId}\")");

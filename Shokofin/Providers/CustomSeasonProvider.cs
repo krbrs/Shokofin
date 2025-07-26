@@ -58,7 +58,7 @@ public class CustomSeasonProvider(ILogger<CustomSeasonProvider> _logger, ShokoAp
 
         // Silently abort if we're unable to get the shoko series id.
         var series = season.Series;
-        if (!series.TryGetSeasonId(out var seasonId))
+        if (!_lookup.IsEnabledForItem(series) || !series.TryGetSeasonId(out var seasonId))
             return ItemUpdateType.None;
 
         var seasonNumber = season.IndexNumber!.Value;
