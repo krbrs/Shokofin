@@ -153,7 +153,10 @@ public static class ContentRating {
         metadataCountryCode ??= "US";
         foreach (var provider in GetOrderedProviders()) {
             var source = provider.ToString();
-            var title = seasonInfo.ContentRatings.FirstOrDefault(x => x.Source == source && x.Country == metadataCountryCode)?.Rating;
+            var title = provider switch {
+                ProviderName.AniDB => seasonInfo.ContentRatings.FirstOrDefault(x => x.Country == metadataCountryCode)?.Rating,
+                _ => seasonInfo.ContentRatings.FirstOrDefault(x => x.Source == source && x.Country == metadataCountryCode)?.Rating,
+            };
             if (!string.IsNullOrEmpty(title))
                 return title.Trim();
         }
