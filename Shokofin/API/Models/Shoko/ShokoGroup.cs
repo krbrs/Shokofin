@@ -19,6 +19,8 @@ public class ShokoGroup {
 
     public string Description { get; set; } = string.Empty;
 
+    public bool HasCustomDescription { get; set; }
+
     public int Size { get; set; }
 
     public GroupSizes Sizes { get; set; } = new();

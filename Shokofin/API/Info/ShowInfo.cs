@@ -304,7 +304,7 @@ public class ShowInfo : IExtendedItemInfo {
             ..defaultSeason.Titles.Where(t => t.Source is "AniDB"),
             ..(tmdbEntity?.Titles ?? []),
         ];
-        Overview = Text.SanitizeAnidbDescription(group.Description) == defaultSeason.Overviews.FirstOrDefault(t => t.Source is "AniDB")?.Value
+    Overview = !group.HasCustomDescription
             ? Text.SanitizeAnidbDescription(group.Description)
             : group.Description;
         Overviews = [
