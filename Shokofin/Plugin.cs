@@ -206,13 +206,13 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
             Configuration.DefaultLibraryOperationMode = Ordering.LibraryOperationMode.Strict;
 
             // Remove TvDB from the list of description providers.
-            var index = Configuration.Description.Default.List.IndexOf(Text.DescriptionProvider.TvDB);
+            var index = Configuration.Description.Default.List.IndexOf(TextUtility.DescriptionProvider.TvDB);
             if (index != -1) {
                 var list = Configuration.Description.Default.List.ToList();
                 list.RemoveAt(index);
                 Configuration.Description.Default.List = [.. list];
             }
-            index = Configuration.Description.Default.Order.IndexOf(Text.DescriptionProvider.TvDB);
+            index = Configuration.Description.Default.Order.IndexOf(TextUtility.DescriptionProvider.TvDB);
             if (index != -1) {
                 var list = Configuration.Description.Default.Order.ToList();
                 list.RemoveAt(index);
@@ -244,9 +244,9 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
 
     private void MigrateConfiguration(PluginConfiguration config) {
         var changed = false;
-        if (config.Description.Default.Order.Length != Enum.GetValues<Text.DescriptionProvider>().Length) {
+        if (config.Description.Default.Order.Length != Enum.GetValues<TextUtility.DescriptionProvider>().Length) {
             var current = config.Description.Default.Order;
-            config.Description.Default.Order = Enum.GetValues<Text.DescriptionProvider>()
+            config.Description.Default.Order = Enum.GetValues<TextUtility.DescriptionProvider>()
                 .OrderBy(x => Array.IndexOf(current, x) == -1 ? int.MaxValue : Array.IndexOf(current, x))
                 .ToArray();
             changed = true;

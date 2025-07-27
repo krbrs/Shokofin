@@ -51,7 +51,7 @@ public class TmdbEpisode : ITmdbEntity {
     /// <summary>
     /// All available overviews for the episode, if they should be included.
     /// </summary>
-    public IReadOnlyList<TextOverview> Overviews { get; set; } = [];
+    public IReadOnlyList<Text> Overviews { get; set; } = [];
 
     /// <summary>
     /// The episode number for the main ordering or alternate ordering in use.

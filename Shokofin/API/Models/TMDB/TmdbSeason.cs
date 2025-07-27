@@ -43,7 +43,7 @@ public class TmdbSeason : ITmdbEntity {
     /// <summary>
     /// All available overviews for the season, if they should be included.
     /// </summary>
-    public IReadOnlyList<TextOverview> Overviews { get; set; } = [];
+    public IReadOnlyList<Text> Overviews { get; set; } = [];
 
     /// <summary>
     /// The season number for the main ordering or alternate ordering in use.

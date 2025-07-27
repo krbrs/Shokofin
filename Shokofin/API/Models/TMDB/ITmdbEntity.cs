@@ -27,7 +27,7 @@ public interface ITmdbEntity {
     /// <summary>
     /// All available overviews for the entity, if they should be included.
     /// </summary>
-    IReadOnlyList<TextOverview> Overviews { get; }
+    IReadOnlyList<Text> Overviews { get; }
 
     /// <summary>
     /// When the local metadata was first created.

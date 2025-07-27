@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-using DescriptionProvider = Shokofin.Utils.Text.DescriptionProvider;
+using DescriptionProvider = Shokofin.Utils.TextUtility.DescriptionProvider;
 
 namespace Shokofin.Configuration;
 

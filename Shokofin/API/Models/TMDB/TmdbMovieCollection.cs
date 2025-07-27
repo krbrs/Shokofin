@@ -30,7 +30,7 @@ public class TmdbMovieCollection : ITmdbEntity {
     /// <summary>
     /// All available overviews for the movie collection, if they should be included.
     /// </summary>
-    public IReadOnlyList<TextOverview> Overviews { get; init; } = [];
+    public IReadOnlyList<Text> Overviews { get; init; } = [];
 
     public int MovieCount { get; init; }
 

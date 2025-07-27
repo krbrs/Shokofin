@@ -119,14 +119,14 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                         eI.Type is EpisodeType.Normal &&
                         eI.EpisodeNumber == 1 &&
                         eI.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } mainTitle &&
-                        Text.IgnoredSubTitles.Contains(mainTitle) &&
-                        Text.GetEpisodeTitles(eI, seasonInfo, metadataLanguage) is { } episodeTitles &&
+                        TextUtility.IgnoredSubTitles.Contains(mainTitle) &&
+                        TextUtility.GetEpisodeTitles(eI, seasonInfo, metadataLanguage) is { } episodeTitles &&
                         string.IsNullOrEmpty(episodeTitles.displayTitle)
                     )
                 )
-                    (dTitle, aTitle) = Text.GetMovieTitles(eI, seasonInfo, metadataLanguage);
+                    (dTitle, aTitle) = TextUtility.GetMovieTitles(eI, seasonInfo, metadataLanguage);
                 else
-                    (dTitle, aTitle) = Text.GetEpisodeTitles(eI, seasonInfo, metadataLanguage);
+                    (dTitle, aTitle) = TextUtility.GetEpisodeTitles(eI, seasonInfo, metadataLanguage);
 
                 if (string.IsNullOrEmpty(dTitle))
                     dTitle = eI.Type switch {
@@ -137,9 +137,9 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                 displayTitles.Add(dTitle);
                 alternateTitles.Add(aTitle);
             }
-            displayTitle = Text.JoinText(displayTitles);
-            alternateTitle = Text.JoinText(alternateTitles);
-            description = Text.GetEpisodeDescription(file.EpisodeList.Select(tuple => tuple.Episode), seasonInfo, metadataLanguage);
+            displayTitle = TextUtility.JoinText(displayTitles);
+            alternateTitle = TextUtility.JoinText(alternateTitles);
+            description = TextUtility.GetEpisodeDescription(file.EpisodeList.Select(tuple => tuple.Episode), seasonInfo, metadataLanguage);
         }
         else {
             string defaultEpisodeTitle = episodeInfo.Title;
@@ -151,14 +151,14 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                     episodeInfo.Type is EpisodeType.Normal &&
                     episodeInfo.EpisodeNumber == 1 &&
                     episodeInfo.Titles.FirstOrDefault(title => title.Source is "AniDB" && title.LanguageCode is "en")?.Value is { } mainTitle &&
-                    Text.IgnoredSubTitles.Contains(mainTitle) &&
-                    Text.GetEpisodeTitles(episodeInfo, seasonInfo, metadataLanguage) is { } episodeTitles &&
+                    TextUtility.IgnoredSubTitles.Contains(mainTitle) &&
+                    TextUtility.GetEpisodeTitles(episodeInfo, seasonInfo, metadataLanguage) is { } episodeTitles &&
                     string.IsNullOrEmpty(episodeTitles.displayTitle)
                 )
             )
-                (displayTitle, alternateTitle) = Text.GetMovieTitles(episodeInfo, seasonInfo, metadataLanguage);
+                (displayTitle, alternateTitle) = TextUtility.GetMovieTitles(episodeInfo, seasonInfo, metadataLanguage);
             else
-                (displayTitle, alternateTitle) = Text.GetEpisodeTitles(episodeInfo, seasonInfo, metadataLanguage);
+                (displayTitle, alternateTitle) = TextUtility.GetEpisodeTitles(episodeInfo, seasonInfo, metadataLanguage);
 
             if (string.IsNullOrEmpty(displayTitle))
                 displayTitle = episodeInfo.Type switch {
@@ -166,7 +166,7 @@ public class EpisodeProvider(IHttpClientFactory _httpClientFactory, ILogger<Epis
                     _ => $"Episode {episodeNumber}",
                 };
 
-            description = Text.GetEpisodeDescription(episodeInfo, seasonInfo, metadataLanguage);
+            description = TextUtility.GetEpisodeDescription(episodeInfo, seasonInfo, metadataLanguage);
         }
 
         if (isSpecial && config.MarkSpecialsWhenGrouped) {

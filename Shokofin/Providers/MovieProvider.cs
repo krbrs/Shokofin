@@ -31,11 +31,11 @@ public class MovieProvider(IHttpClientFactory _httpClientFactory, ILogger<MovieP
                 return result;
             }
 
-            var (displayTitle, alternateTitle) = Text.GetMovieTitles(episodeInfo, seasonInfo, info.MetadataLanguage);
+            var (displayTitle, alternateTitle) = TextUtility.GetMovieTitles(episodeInfo, seasonInfo, info.MetadataLanguage);
             if (string.IsNullOrEmpty(displayTitle))
                 displayTitle = episodeInfo.Id[0] == IdPrefix.TmdbMovie
                     ? episodeInfo.Title
-                    : Text.IgnoredSubTitles.Contains(episodeInfo.Title)
+                    : TextUtility.IgnoredSubTitles.Contains(episodeInfo.Title)
                         ? seasonInfo.Title
                         : $"{seasonInfo.Title}: {episodeInfo.Title}";
 
@@ -49,7 +49,7 @@ public class MovieProvider(IHttpClientFactory _httpClientFactory, ILogger<MovieP
                 Name = displayTitle,
                 OriginalTitle = alternateTitle,
                 PremiereDate = episodeInfo.AiredAt,
-                Overview = Text.GetMovieDescription(episodeInfo, seasonInfo, info.MetadataLanguage),
+                Overview = TextUtility.GetMovieDescription(episodeInfo, seasonInfo, info.MetadataLanguage),
                 ProductionYear = episodeInfo.AiredAt?.Year,
                 Tags = [.. episodeInfo.Tags],
                 Genres = [.. episodeInfo.Genres],

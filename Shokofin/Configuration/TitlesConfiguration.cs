@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-using TitleProvider = Shokofin.Utils.Text.TitleProvider;
+using TitleProvider = Shokofin.Utils.TextUtility.TitleProvider;
 
 namespace Shokofin.Configuration;
 

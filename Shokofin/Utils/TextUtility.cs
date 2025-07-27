@@ -10,7 +10,7 @@ using Shokofin.Extensions;
 
 namespace Shokofin.Utils;
 
-public static partial class Text {
+public static partial class TextUtility {
     private static readonly HashSet<char> PunctuationMarks = [
         // Common punctuation marks
         '.',   // period
@@ -177,20 +177,6 @@ public static partial class Text {
         TMDB_CountryOfOrigin = 7,
     }
 
-    /// <summary>
-    /// Determines which type of title to look-up.
-    /// </summary>
-    public enum TitleProviderType {
-        /// <summary>
-        /// The main title used for metadata entries.
-        /// </summary>
-        Main = 0,
-
-        /// <summary>
-        /// The secondary title used for metadata entries.
-        /// </summary>
-        Alternate = 1,
-    }
     public static string? JoinText(IEnumerable<string?> textList) {
         var filteredList = textList
             .Where(title => !string.IsNullOrWhiteSpace(title))

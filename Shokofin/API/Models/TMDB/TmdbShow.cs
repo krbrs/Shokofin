@@ -36,7 +36,7 @@ public class TmdbShow : ITmdbParentEntity {
     /// <summary>
     /// All available overviews for the series, if they should be included.
     /// </summary>
-    public IReadOnlyList<TextOverview> Overviews { get; set; } = [];
+    public IReadOnlyList<Text> Overviews { get; set; } = [];
 
     /// <summary>
     /// Original language the show was shot in.

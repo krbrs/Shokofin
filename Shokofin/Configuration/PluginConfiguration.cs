@@ -8,8 +8,8 @@ using MediaBrowser.Model.Plugins;
 using Shokofin.API.Models;
 
 using CollectionCreationType = Shokofin.Utils.Ordering.CollectionCreationType;
-using DescriptionProvider = Shokofin.Utils.Text.DescriptionProvider;
-using DescriptionConversionMode = Shokofin.Utils.Text.DescriptionConversionMode;
+using DescriptionProvider = Shokofin.Utils.TextUtility.DescriptionProvider;
+using DescriptionConversionMode = Shokofin.Utils.TextUtility.DescriptionConversionMode;
 using ImageType = MediaBrowser.Model.Entities.ImageType;
 using LibraryOperationMode = Shokofin.Utils.Ordering.LibraryOperationMode;
 using MergeVersionSortSelector = Shokofin.MergeVersions.MergeVersionSortSelector;
@@ -19,7 +19,7 @@ using SpecialOrderType = Shokofin.Utils.Ordering.SpecialOrderType;
 using TagIncludeFilter = Shokofin.Utils.TagFilter.TagIncludeFilter;
 using TagSource = Shokofin.Utils.TagFilter.TagSource;
 using TagWeight = Shokofin.Utils.TagFilter.TagWeight;
-using TitleProvider = Shokofin.Utils.Text.TitleProvider;
+using TitleProvider = Shokofin.Utils.TextUtility.TitleProvider;
 
 namespace Shokofin.Configuration;
 

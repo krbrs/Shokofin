@@ -56,7 +56,7 @@ public class SeasonInfo : IExtendedItemInfo {
 
     public string? Overview { get; init; }
 
-    public IReadOnlyList<TextOverview> Overviews { get; init; }
+    public IReadOnlyList<Text> Overviews { get; init; }
 
     public string? OriginalLanguageCode { get; init; }
 
@@ -331,8 +331,8 @@ public class SeasonInfo : IExtendedItemInfo {
             ..series.AniDB.Titles,
             ..(tmdbEntity?.Titles ?? []),
         ];
-        Overview = series.Description == series.AniDB.Description
-            ? Text.SanitizeAnidbDescription(series.Description)
+    Overview = series.Description == series.AniDB.Description
+            ? TextUtility.SanitizeAnidbDescription(series.Description)
             : series.Description;
         Overviews = [
             ..(!string.IsNullOrEmpty(series.AniDB.Description) ? [
@@ -341,9 +341,9 @@ public class SeasonInfo : IExtendedItemInfo {
                     IsPreferred = string.Equals(series.Description, series.AniDB.Description),
                     LanguageCode = "en",
                     Source = "AniDB",
-                    Value = Text.SanitizeAnidbDescription(series.AniDB.Description),
+                    Value = TextUtility.SanitizeAnidbDescription(series.AniDB.Description),
                 },
-            ] : Array.Empty<TextOverview>()),
+            ] : Array.Empty<Text>()),
             ..(tmdbEntity?.Overviews ?? []),
         ];
         OriginalLanguageCode = null;

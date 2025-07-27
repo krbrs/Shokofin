@@ -2,26 +2,26 @@ using System.Text.Json.Serialization;
 
 namespace Shokofin.API.Models;
 
-public class TextOverview {
+public class Text {
     /// <summary>
-    /// The title.
+    /// The text value.
     /// </summary>
     public string Value { get; set; } = string.Empty;
 
     /// <summary>
-    /// 3-digit language code (x-jat, etc. are exceptions)
+    /// alpha 3 language codes with custom extensions (e.g. "x-jat" for romaji, etc.).
     /// </summary>
     [JsonPropertyName("Language")]
     public string LanguageCode { get; set; } = "unk";
 
     /// <summary>
-    /// True if this is the default title for the entry.
+    /// True if this is the default text value among all values for the entity.
     /// </summary>
     [JsonPropertyName("Default")]
     public bool IsDefault { get; set; }
 
     /// <summary>
-    /// True if this is the preferred title for the entry.
+    /// True if this is the preferred text value among all values for the entity.
     /// </summary>
     [JsonPropertyName("Preferred")]
     public bool IsPreferred { get; set; }

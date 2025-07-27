@@ -51,14 +51,14 @@ public class BoxSetProvider(IHttpClientFactory _httpClientFactory, ILogger<BoxSe
             return result;
         }
 
-        var (displayTitle, alternateTitle) = Text.GetCollectionTitles(seasonInfo, info.MetadataLanguage);
+        var (displayTitle, alternateTitle) = TextUtility.GetCollectionTitles(seasonInfo, info.MetadataLanguage);
 
         _logger.LogInformation("Found collection {CollectionName} (Season={SeasonId},ExtraSeasons={ExtraIds})", displayTitle, seasonInfo.Id, seasonInfo.ExtraIds);
 
         result.Item = new BoxSet {
             Name = displayTitle,
             OriginalTitle = alternateTitle,
-            Overview = Text.GetCollectionDescription(seasonInfo, info.MetadataLanguage),
+            Overview = TextUtility.GetCollectionDescription(seasonInfo, info.MetadataLanguage),
             PremiereDate = seasonInfo.PremiereDate,
             EndDate = seasonInfo.EndDate,
             ProductionYear = seasonInfo.PremiereDate?.Year,
@@ -80,7 +80,7 @@ public class BoxSetProvider(IHttpClientFactory _httpClientFactory, ILogger<BoxSe
             return result;
         }
 
-        var (displayTitle, alternateTitle) = Text.GetCollectionTitles(collectionInfo, info.MetadataLanguage);
+        var (displayTitle, alternateTitle) = TextUtility.GetCollectionTitles(collectionInfo, info.MetadataLanguage);
         displayTitle ??= collectionInfo.Title;
 
         _logger.LogInformation("Found collection {CollectionName} (Collection={CollectionId})", displayTitle, collectionInfo.Id);
@@ -88,7 +88,7 @@ public class BoxSetProvider(IHttpClientFactory _httpClientFactory, ILogger<BoxSe
         result.Item = new BoxSet {
             Name = displayTitle,
             OriginalTitle = alternateTitle,
-            Overview = Text.GetCollectionDescription(collectionInfo, info.MetadataLanguage),
+            Overview = TextUtility.GetCollectionDescription(collectionInfo, info.MetadataLanguage),
         };
         result.Item.SetProviderId(ProviderNames.ShokoCollectionForGroup, collectionInfo.Id);
         result.HasMetadata = true;

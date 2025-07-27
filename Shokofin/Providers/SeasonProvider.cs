@@ -92,7 +92,7 @@ public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<Seaso
         => CreateMetadata(seasonInfo, seasonNumber, offset, series.GetPreferredMetadataLanguage(), series.GetPreferredMetadataCountryCode(), series, seasonId);
 
     private static Season CreateMetadata(Info.SeasonInfo seasonInfo, int seasonNumber, int offset, string metadataLanguage, string metadataCountryCode, Series? series, Guid seasonId) {
-        var (displayTitle, alternateTitle) = Text.GetSeasonTitles(seasonInfo, offset, metadataLanguage);
+        var (displayTitle, alternateTitle) = TextUtility.GetSeasonTitles(seasonInfo, offset, metadataLanguage);
         if (string.IsNullOrEmpty(displayTitle))
             displayTitle = $"Season {seasonNumber}";
 
@@ -107,7 +107,7 @@ public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<Seaso
                 ForcedSortName = sortTitle,
                 Id = seasonId,
                 IsVirtualItem = true,
-                Overview = Text.GetSeasonDescription(seasonInfo, metadataLanguage),
+                Overview = TextUtility.GetSeasonDescription(seasonInfo, metadataLanguage),
                 PremiereDate = seasonInfo.PremiereDate,
                 EndDate = seasonInfo.EndDate,
                 ProductionYear = seasonInfo.PremiereDate?.Year,
@@ -131,7 +131,7 @@ public class SeasonProvider(IHttpClientFactory _httpClientFactory, ILogger<Seaso
                 IndexNumber = seasonNumber,
                 SortName = sortTitle,
                 ForcedSortName = sortTitle,
-                Overview = Text.GetSeasonDescription(seasonInfo, metadataLanguage),
+                Overview = TextUtility.GetSeasonDescription(seasonInfo, metadataLanguage),
                 PremiereDate = seasonInfo.PremiereDate,
                 EndDate = seasonInfo.EndDate,
                 ProductionYear = seasonInfo.PremiereDate?.Year,

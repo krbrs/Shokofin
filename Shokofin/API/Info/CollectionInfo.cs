@@ -45,7 +45,7 @@ public class CollectionInfo(ShokoGroup group, string? mainSeasonId, List<ShowInf
     /// </summary>
     public string Overview { get; init; } = group.Description;
 
-    public IReadOnlyList<TextOverview> Overviews { get; init; } = [];
+    public IReadOnlyList<Text> Overviews { get; init; } = [];
 
     public string? OriginalLanguageCode => null;
 
@@ -81,16 +81,16 @@ public class CollectionInfo(ShokoGroup group, string? mainSeasonId, List<ShowInf
     {
         Title = series.Name;
         Titles = series.AniDB.Titles;
-        Overview = series.Description == series.AniDB.Description
-            ? Text.SanitizeAnidbDescription(series.Description)
+    Overview = series.Description == series.AniDB.Description
+            ? TextUtility.SanitizeAnidbDescription(series.Description)
             : series.Description;
-        Overviews = [
+    Overviews = [
             new() {
                 IsDefault = true,
                 IsPreferred = true,
                 LanguageCode = "en",
                 Source = "AniDB",
-                Value = Text.SanitizeAnidbDescription(series.AniDB.Description),
+                Value = TextUtility.SanitizeAnidbDescription(series.AniDB.Description),
             },
         ];
         CreatedAt = group.CreatedAt;

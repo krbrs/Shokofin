@@ -55,7 +55,7 @@ public class EpisodeInfo : IExtendedItemInfo {
 
     public string? Overview { get; init; }
 
-    public IReadOnlyList<TextOverview> Overviews { get; init; }
+    public IReadOnlyList<Text> Overviews { get; init; }
 
     public string? OriginalLanguageCode { get; init; }
 
@@ -103,7 +103,7 @@ public class EpisodeInfo : IExtendedItemInfo {
         var tmdbMovie = tmdbEntity as TmdbMovie;
         var tmdbEpisode = tmdbEntity as TmdbEpisode;
         var isMainEntry = episode.AniDB.Titles.FirstOrDefault(t => t.LanguageCode is "en")?.Value is { } mainAnidbTitle &&
-            Text.IgnoredSubTitles.Contains(mainAnidbTitle);
+            TextUtility.IgnoredSubTitles.Contains(mainAnidbTitle);
         if (!string.IsNullOrEmpty(anidbContentRating))
             contentRatings.Add(new() {
                 Rating = anidbContentRating,
@@ -130,8 +130,8 @@ public class EpisodeInfo : IExtendedItemInfo {
             ..episode.AniDB.Titles,
             ..(tmdbEntity?.Titles ?? []),
         ];
-        Overview = episode.Description == episode.AniDB.Description
-            ? Text.SanitizeAnidbDescription(episode.Description)
+    Overview = episode.Description == episode.AniDB.Description
+            ? TextUtility.SanitizeAnidbDescription(episode.Description)
             : episode.Description;
         Overviews = [
             ..(!string.IsNullOrEmpty(episode.AniDB.Description) ? [
@@ -140,9 +140,9 @@ public class EpisodeInfo : IExtendedItemInfo {
                     IsPreferred = string.Equals(episode.Description, episode.AniDB.Description),
                     LanguageCode = "en",
                     Source = "AniDB",
-                    Value = Text.SanitizeAnidbDescription(episode.AniDB.Description),
+                    Value = TextUtility.SanitizeAnidbDescription(episode.AniDB.Description),
                 },
-            ] : Array.Empty<TextOverview>()),
+            ] : Array.Empty<Text>()),
             ..(tmdbEntity?.Overviews ?? []),
         ];
         Studios = [];

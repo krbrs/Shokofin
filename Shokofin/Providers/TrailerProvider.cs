@@ -38,11 +38,11 @@ public class TrailerProvider(IHttpClientFactory _httpClientFactory, ILogger<Trai
                 return result;
             }
 
-            var (displayTitle, alternateTitle) = Text.GetEpisodeTitles(episodeInfo, seasonInfo, info.MetadataLanguage);
+            var (displayTitle, alternateTitle) = TextUtility.GetEpisodeTitles(episodeInfo, seasonInfo, info.MetadataLanguage);
             if (string.IsNullOrEmpty(displayTitle))
                 displayTitle = episodeInfo.Title;
 
-            var description = Text.GetEpisodeDescription(episodeInfo, seasonInfo, info.MetadataLanguage);
+            var description = TextUtility.GetEpisodeDescription(episodeInfo, seasonInfo, info.MetadataLanguage);
             result.Item = new() {
                 Name = displayTitle,
                 OriginalTitle = alternateTitle,

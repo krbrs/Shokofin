@@ -42,7 +42,7 @@ public class TmdbMovie : ITmdbParentEntity {
     /// <summary>
     /// All available overviews for the movie, if they should be included.
     /// </summary>
-    public IReadOnlyList<TextOverview> Overviews { get; set; } = [];
+    public IReadOnlyList<Text> Overviews { get; set; } = [];
 
     /// <summary>
     /// Original language the movie was shot in.

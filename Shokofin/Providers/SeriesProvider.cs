@@ -46,7 +46,7 @@ public class SeriesProvider(IHttpClientFactory _httpClientFactory, ILogger<Serie
                 }
             }
 
-            var (displayTitle, alternateTitle) = Text.GetShowTitles(showInfo, info.MetadataLanguage);
+            var (displayTitle, alternateTitle) = TextUtility.GetShowTitles(showInfo, info.MetadataLanguage);
             if (string.IsNullOrEmpty(displayTitle))
                 displayTitle = showInfo.Title;
 
@@ -55,7 +55,7 @@ public class SeriesProvider(IHttpClientFactory _httpClientFactory, ILogger<Serie
             result.Item = new Series {
                 Name = displayTitle,
                 OriginalTitle = alternateTitle,
-                Overview = Text.GetShowDescription(showInfo, info.MetadataLanguage),
+                Overview = TextUtility.GetShowDescription(showInfo, info.MetadataLanguage),
                 PremiereDate = premiereDate,
                 AirDays = showInfo.DaysOfWeek.ToArray(),
                 ProductionYear = premiereDate?.Year,

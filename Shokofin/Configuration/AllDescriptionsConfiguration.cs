@@ -1,6 +1,5 @@
 
-using DescriptionProvider = Shokofin.Utils.Text.DescriptionProvider;
-using DescriptionConversionMode = Shokofin.Utils.Text.DescriptionConversionMode;
+using DescriptionProvider = Shokofin.Utils.TextUtility.DescriptionProvider;
 
 namespace Shokofin.Configuration;
 

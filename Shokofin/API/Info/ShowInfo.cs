@@ -52,7 +52,7 @@ public class ShowInfo : IExtendedItemInfo {
 
     public string? Overview { get; init; }
 
-    public IReadOnlyList<TextOverview> Overviews { get; init; }
+    public IReadOnlyList<Text> Overviews { get; init; }
 
     public string? OriginalLanguageCode { get; init; }
 
@@ -305,7 +305,7 @@ public class ShowInfo : IExtendedItemInfo {
             ..(tmdbEntity?.Titles ?? []),
         ];
     Overview = !group.HasCustomDescription
-            ? Text.SanitizeAnidbDescription(group.Description)
+            ? TextUtility.SanitizeAnidbDescription(group.Description)
             : group.Description;
         Overviews = [
             ..defaultSeason.Overviews.Where(t => t.Source is "AniDB"),

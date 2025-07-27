@@ -31,7 +31,7 @@ public interface IBaseItemInfo {
     /// <summary>
     /// List of all available overviews for the base item.
     /// </summary>
-    IReadOnlyList<TextOverview> Overviews { get; }
+    IReadOnlyList<Text> Overviews { get; }
 
     /// <summary>
     /// Original language code for the base item if available.
