@@ -32,7 +32,7 @@ public class SeriesConfiguration {
     /// Determines how the merging should be handled for the series, if at all.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public SeriesMergingOverride MergeOverride { get; set; }
+    public SeasonMergingBehavior SeasonMergingBehavior { get; set; }
 
     /// <summary>
     /// Determines how episodes should be converted, if at all.
@@ -73,7 +73,7 @@ public class NullableSeriesConfiguration {
     /// Determines how the merging should be handled for the series, if at all.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public SeriesMergingOverride? MergeOverride { get; set; }
+    public SeasonMergingBehavior? SeasonMergingBehavior { get; set; }
 
     /// <summary>
     /// Determines how episodes should be converted, if at all.

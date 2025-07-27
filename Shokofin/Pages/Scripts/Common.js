@@ -256,7 +256,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  */
 
 /**
- * @typedef {"None" | "NoMerge" | "MergeForward" | "MergeBackward" | "MergeForward,MergeBackward" | "MergeWithMainStory"} SeriesMergingOverride
+ * @typedef {"None" | "NoMerge" | "MergeForward" | "MergeBackward" | "MergeWithMainStory" | "MergeGroupATarget" | "MergeGroupASource" | "MergeGroupBTarget" | "MergeGroupBSource" | "MergeGroupCTarget" | "MergeGroupCSource" | "MergeGroupDTarget" | "MergeGroupDSource"} SeasonMergingBehavior
  */
 
 /**
@@ -319,7 +319,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   StructureType: SeriesStructureType | "None";
 *    SeasonOrdering: SeasonOrderType | "None";
  *   SpecialsPlacement: SpecialOrderType | "None";
- *   MergeOverride: SeriesMergingOverride;
+ *   SeasonMergingBehavior: SeasonMergingBehavior;
  *   EpisodeConversion: SeriesEpisodeConversion;
  *   OrderByAirdate: boolean;
  * }} SeriesConfiguration
@@ -404,7 +404,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   SignalR_FileEvents: boolean;
  *   SignalR_EventSources: GenericProvider[];
  *   SeasonMerging_Enabled: boolean;
- *   SeasonMerging_DefaultBehavior: SeriesMergingOverride;
+ *   SeasonMerging_DefaultBehavior: SeasonMergingBehavior;
  *   SeasonMerging_SeriesTypes: SeriesType[];
  *   SeasonMerging_MergeWindowInDays: number;
  *   Misc_ShowInMenu: boolean;
@@ -1145,8 +1145,7 @@ export function renderReadonlyList(form, name, entries) {
  **/
 export function renderCheckboxList(form, name, enabled) {
     for (const item of Array.from(form.querySelectorAll(`#${name}[is=\"checkbox-list\"] .listItem input[data-option]`))) {
-        if (enabled.includes(item.dataset.option))
-            item.checked = true;
+        item.checked = enabled.includes(item.dataset.option);
     }
 }
 

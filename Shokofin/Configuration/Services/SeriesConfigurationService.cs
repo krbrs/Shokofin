@@ -137,6 +137,38 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             Name = "Shokofin/Merge/Main Story",
             Description = $"Merge the current side-story with the main-story in Jellyfin. {ManagedBy}",
         },
+        new() {
+            Name = "Shokofin/Merge/Group/A/Target",
+            Description = $"Merge the current series with one or more other series in merge group A in Jellyfin. All other series that should be merged into this series need to have the \"Shokofin/Merge/Group/A/Source\" tag set. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Merge/Group/A/Source",
+            Description = $"Merge the current series into the main series in merge group A in Jellyfin. The main series needs to have the \"Shokofin/Merge/Group/A/Target\" tag set. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Merge/Group/B/Target",
+            Description = $"Merge the current series with one or more other series in merge group B in Jellyfin. All other series that should be merged into this series need to have the \"Shokofin/Merge/Group/B/Source\" tag set. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Merge/Group/B/Source",
+            Description = $"Merge the current series into the main series in merge group B in Jellyfin. The main series needs to have the \"Shokofin/Merge/Group/B/Target\" tag set. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Merge/Group/C/Target",
+            Description = $"Merge the current series with one or more other series in merge group C in Jellyfin. All other series that should be merged into this series need to have the \"Shokofin/Merge/Group/C/Source\" tag set. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Merge/Group/C/Source",
+            Description = $"Merge the current series into the main series in merge group C in Jellyfin. The main series needs to have the \"Shokofin/Merge/Group/C/Target\" tag set. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Merge/Group/D/Target",
+            Description = $"Merge the current series with one or more other series in merge group D in Jellyfin. All other series that should be merged into this series need to have the \"Shokofin/Merge/Group/D/Source\" tag set. {ManagedBy}",
+        },
+        new() {
+            Name = "Shokofin/Merge/Group/D/Source",
+            Description = $"Merge the current series into the main series in merge group D in Jellyfin. The main series needs to have the \"Shokofin/Merge/Group/D/Target\" tag set. {ManagedBy}",
+        },
 
         new() {
             Name = "Shokofin/Episodes as Specials",
@@ -216,8 +248,8 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
             config.SeasonOrdering = seriesConfiguration.SeasonOrdering.Value;
         if (seriesConfiguration.SpecialsPlacement is not null)
             config.SpecialsPlacement = seriesConfiguration.SpecialsPlacement.Value;
-        if (seriesConfiguration.MergeOverride is not null)
-            config.MergeOverride = seriesConfiguration.MergeOverride.Value;
+        if (seriesConfiguration.SeasonMergingBehavior is not null)
+            config.SeasonMergingBehavior = seriesConfiguration.SeasonMergingBehavior.Value;
         if (seriesConfiguration.EpisodeConversion is not null)
             config.EpisodeConversion = seriesConfiguration.EpisodeConversion.Value;
         if (seriesConfiguration.OrderByAirdate is not null)
@@ -330,29 +362,60 @@ public class SeriesConfigurationService(ILogger<SeriesConfigurationService> logg
         var mergeTypes = knownTagDict.Where(x => x.Key.Contains("merge")).ToDictionary(x => x.Key, x => x.Value);
         foreach (var (_, id) in mergeTypes)
             toRemoveSet.Add(id);
-        switch (seriesConfiguration.MergeOverride) {
-            case SeriesMergingOverride.NoMerge:
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge/none"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge/none"]);
-                break;
-            case SeriesMergingOverride.MergeWithMainStory:
+        if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.NoMerge)) {
+            toRemoveSet.Remove(knownTagDict["/shokofin/merge/none"]);
+            toAddSet.Add(knownTagDict["/shokofin/merge/none"]);
+        }
+        else {
+            if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeForward)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/forward"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/forward"]);
+            }
+            if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeBackward)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/backward"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/backward"]);
+            }
+
+            if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeWithMainStory)) {
                 toRemoveSet.Remove(knownTagDict["/shokofin/merge/main story"]);
                 toAddSet.Add(knownTagDict["/shokofin/merge/main story"]);
-                break;
-            case SeriesMergingOverride.MergeForward | SeriesMergingOverride.MergeBackward:
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge/forward"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge/forward"]);
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge/backward"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge/backward"]);
-                break;
-            case SeriesMergingOverride.MergeForward:
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge/forward"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge/forward"]);
-                break;
-            case SeriesMergingOverride.MergeBackward:
-                toRemoveSet.Remove(knownTagDict["/shokofin/merge/backward"]);
-                toAddSet.Add(knownTagDict["/shokofin/merge/backward"]);
-                break;
+            }
+
+            if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupASource)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/group/a/source"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/group/a/source"]);
+            }
+            else if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupATarget)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/group/a/target"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/group/a/target"]);
+            }
+
+            if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupBSource)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/group/b/source"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/group/b/source"]);
+            }
+            else if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupBTarget)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/group/b/target"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/group/b/target"]);
+            }
+
+            if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupCSource)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/group/c/source"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/group/c/source"]);
+            }
+            else if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupCTarget)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/group/c/target"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/group/c/target"]);
+            }
+
+            if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupDSource)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/group/d/source"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/group/d/source"]);
+            }
+            else if (seriesConfiguration.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupDTarget)) {
+                toRemoveSet.Remove(knownTagDict["/shokofin/merge/group/d/target"]);
+                toAddSet.Add(knownTagDict["/shokofin/merge/group/d/target"]);
+            }
         }
 
         var episodeConversions = knownTagDict.Where(x => x.Key.Contains(" as ")).ToDictionary(x => x.Key, x => x.Value);

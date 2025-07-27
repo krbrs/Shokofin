@@ -151,7 +151,7 @@ public partial class ShokoApiManager : IDisposable {
                 StructureType = SeriesStructureType.None,
                 SeasonOrdering = Ordering.OrderType.None,
                 SpecialsPlacement = Ordering.SpecialOrderType.None,
-                MergeOverride = SeriesMergingOverride.None,
+                SeasonMergingBehavior = SeasonMergingBehavior.None,
                 EpisodeConversion = SeriesEpisodeConversion.None,
                 OrderByAirdate = false,
             };
@@ -193,16 +193,38 @@ public partial class ShokoApiManager : IDisposable {
             else if (tags.ContainsKey("/specials placement/tmdb"))
                 seriesSettings.SpecialsPlacement = Ordering.SpecialOrderType.InBetweenSeasonByOtherData;
 
-            if (tags.ContainsKey("/merge/none"))
-                seriesSettings.MergeOverride = SeriesMergingOverride.NoMerge;
-            else if (tags.ContainsKey("/merge/main story"))
-                seriesSettings.MergeOverride = SeriesMergingOverride.MergeWithMainStory;
-            else if (tags.ContainsKey("/merge/forward") && tags.ContainsKey("/merge/backward"))
-                seriesSettings.MergeOverride = SeriesMergingOverride.MergeForward | SeriesMergingOverride.MergeBackward;
-            else if (tags.ContainsKey("/merge/forward"))
-                seriesSettings.MergeOverride = SeriesMergingOverride.MergeForward;
-            else if (tags.ContainsKey("/merge/backward"))
-                seriesSettings.MergeOverride = SeriesMergingOverride.MergeBackward;
+            if (tags.ContainsKey("/merge/none")) {
+                seriesSettings.SeasonMergingBehavior = SeasonMergingBehavior.NoMerge;
+            }
+            else {
+                if (tags.ContainsKey("/merge/forward"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeForward;
+                if (tags.ContainsKey("/merge/backward"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeBackward;
+
+                if (tags.ContainsKey("/merge/main story"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeWithMainStory;
+
+                if (tags.ContainsKey("/merge/group/a/source"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeGroupASource;
+                else if (tags.ContainsKey("/merge/group/a/target"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeGroupATarget;
+
+                if (tags.ContainsKey("/merge/group/b/source"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeGroupBSource;
+                else if (tags.ContainsKey("/merge/group/b/target"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeGroupBTarget;
+
+                if (tags.ContainsKey("/merge/group/c/source"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeGroupCSource;
+                else if (tags.ContainsKey("/merge/group/c/target"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeGroupCTarget;
+
+                if (tags.ContainsKey("/merge/group/d/source"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeGroupDSource;
+                else if (tags.ContainsKey("/merge/group/d/target"))
+                    seriesSettings.SeasonMergingBehavior |= SeasonMergingBehavior.MergeGroupDTarget;
+            }
 
             if (tags.ContainsKey("/episodes as specials"))
                 seriesSettings.EpisodeConversion = SeriesEpisodeConversion.EpisodesAsSpecials;
@@ -234,8 +256,8 @@ public partial class ShokoApiManager : IDisposable {
             if (seriesSettings.SpecialsPlacement is Ordering.SpecialOrderType.None) {
                 seriesSettings.SpecialsPlacement = config.DefaultSpecialsPlacement;
             }
-            if (seriesSettings.MergeOverride is SeriesMergingOverride.None) {
-                seriesSettings.MergeOverride = config.SeasonMerging_DefaultBehavior;
+            if (seriesSettings.SeasonMergingBehavior is SeasonMergingBehavior.None) {
+                seriesSettings.SeasonMergingBehavior = config.SeasonMerging_DefaultBehavior;
             }
             if (config.MovieSpecialsAsExtraFeaturettes && seriesSettings.Type is SeriesType.Movie) {
                 seriesSettings.EpisodeConversion = SeriesEpisodeConversion.SpecialsAsExtraFeaturettes;
@@ -1293,13 +1315,13 @@ public partial class ShokoApiManager : IDisposable {
                 Logger.LogTrace("Creating new series-to-season mapping for series. (Series={SeriesId})", primaryId);
 
                 var seriesConfig = await GetSeriesConfiguration(series.Id).ConfigureAwait(false);
-                if (seriesConfig.MergeOverride is SeriesMergingOverride.NoMerge)
+                if (seriesConfig.SeasonMergingBehavior is SeasonMergingBehavior.NoMerge)
                     return (primaryId, extraIds);
 
                 if (seriesConfig.StructureType is not SeriesStructureType.Shoko_Groups)
                     return (primaryId, extraIds);
 
-                if (seriesConfig.MergeOverride is SeriesMergingOverride.None && !config.SeasonMerging_SeriesTypes.Contains(seriesConfig.Type))
+                if (seriesConfig.SeasonMergingBehavior is SeasonMergingBehavior.None && !config.SeasonMerging_SeriesTypes.Contains(seriesConfig.Type))
                     return (primaryId, extraIds);
 
                 if (series.AniDB.AirDate is null)
@@ -1330,22 +1352,30 @@ public partial class ShokoApiManager : IDisposable {
                             continue;
 
                         var prequelConfig = await GetSeriesConfiguration(prequelSeries.Id).ConfigureAwait(false);
-                        if (prequelConfig.MergeOverride is SeriesMergingOverride.NoMerge)
+                        if (prequelConfig.SeasonMergingBehavior is SeasonMergingBehavior.NoMerge)
                             continue;
 
                         if (prequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
                             continue;
 
-                        if (prequelConfig.MergeOverride is SeriesMergingOverride.None && !config.SeasonMerging_SeriesTypes.Contains(prequelConfig.Type))
+                        if (prequelConfig.SeasonMergingBehavior is SeasonMergingBehavior.None && !config.SeasonMerging_SeriesTypes.Contains(prequelConfig.Type))
                             continue;
 
                         if (prequelSeries.AniDB.AirDate is not { } prequelDate)
                             continue;
 
                         var mergeOverride = (
-                            prequelRelation.Type is RelationType.Prequel && (currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward) || prequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward))
+                            prequelRelation.Type is RelationType.Prequel && (currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeBackward) || prequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeForward))
                         ) || (
-                            prequelRelation.Type is RelationType.MainStory && currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeWithMainStory)
+                            prequelRelation.Type is RelationType.MainStory && currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeWithMainStory)
+                        ) || (
+                            currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupASource) && prequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupATarget)
+                        ) || (
+                            currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupBSource) && prequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupBTarget)
+                        ) || (
+                            currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupCSource) && prequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupCTarget)
+                        ) || (
+                            currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupDSource) && prequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupDTarget)
                         );
                         if (!mergeOverride) {
                             if (prequelRelation.Type is RelationType.Prequel && prequelDate > currentDate)
@@ -1429,13 +1459,13 @@ public partial class ShokoApiManager : IDisposable {
                                 continue;
 
                             var sequelConfig = await GetSeriesConfiguration(sequelSeries.Id).ConfigureAwait(false);
-                            if (sequelConfig.MergeOverride is SeriesMergingOverride.NoMerge)
+                            if (sequelConfig.SeasonMergingBehavior is SeasonMergingBehavior.NoMerge)
                                 continue;
 
                             if (sequelConfig.StructureType is not SeriesStructureType.Shoko_Groups)
                                 continue;
 
-                            if (sequelConfig.MergeOverride is SeriesMergingOverride.None && !config.SeasonMerging_SeriesTypes.Contains(sequelConfig.Type))
+                            if (sequelConfig.SeasonMergingBehavior is SeasonMergingBehavior.None && !config.SeasonMerging_SeriesTypes.Contains(sequelConfig.Type))
                                 continue;
 
                             if (sequelSeries.AniDB.AirDate is not { } sequelDate)
@@ -1453,9 +1483,17 @@ public partial class ShokoApiManager : IDisposable {
                             }
 
                             var mergeOverride = (
-                                sequelRelation.Type is RelationType.Sequel && (currentConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeForward) || sequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeBackward))
+                                sequelRelation.Type is RelationType.Sequel && (currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeForward) || sequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeBackward))
                             ) || (
-                                sequelRelation.Type is RelationType.SideStory && sequelConfig.MergeOverride.HasFlag(SeriesMergingOverride.MergeWithMainStory)
+                                sequelRelation.Type is RelationType.SideStory && sequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeWithMainStory)
+                            ) || (
+                                currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupATarget) && sequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupATarget)
+                            ) || (
+                                currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupBTarget) && sequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupBTarget)
+                            ) || (
+                                currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupCTarget) && sequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupCTarget)
+                            ) || (
+                                currentConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupDTarget) && sequelConfig.SeasonMergingBehavior.HasFlag(SeasonMergingBehavior.MergeGroupDTarget)
                             );
                             if (!mergeOverride) {
                                 if (sequelRelation.Type is RelationType.Sequel && sequelDate < currentDate)
@@ -1471,8 +1509,8 @@ public partial class ShokoApiManager : IDisposable {
                             var sequelMainTitle = sequelSeries.AniDB.Titles.First(title => title.Type == TitleType.Main).Value;
                             var adjustedSequelMainTitle = AdjustMainTitle(sequelMainTitle);
                             if (mergeOverride) {
-                                // If we're about to enter a side story, then push the main story on the stack at the next relation index.
-                                if (sequelRelation.Type is RelationType.SideStory) 
+                                // If we're about to enter a side tangent, so push the main story on the stack at the next relation index.
+                                if (sequelRelation.Type is not RelationType.Sequel)
                                     storyStack.Push((adjustedMainTitle, currentDate, currentConfig, currentRelations, relationOffset));
 
                                 // Re-focus on the sequel when overriding.

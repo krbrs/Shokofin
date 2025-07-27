@@ -718,7 +718,7 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// Determines the default merge behavior when not overridden on a per-shoko-series basis. Set to NoMerge to not do merges by default unless overridden.
     /// </summary>
     [JsonConverter(typeof(JsonStringEnumConverter))]
-    public SeriesMergingOverride SeasonMerging_DefaultBehavior { get; set; }
+    public SeasonMergingBehavior SeasonMerging_DefaultBehavior { get; set; }
 
     /// <summary>
     /// Series types to attempt to merge. Will respect custom series type overrides. 
@@ -894,7 +894,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         SignalR_RefreshEnabled = false;
         SignalR_FileEvents = true;
         SeasonMerging_Enabled = false;
-        SeasonMerging_DefaultBehavior = SeriesMergingOverride.None;
+        SeasonMerging_DefaultBehavior = SeasonMergingBehavior.None;
         SeasonMerging_SeriesTypes = [SeriesType.OVA, SeriesType.TV, SeriesType.TVSpecial, SeriesType.Web, SeriesType.OVA];
         SeasonMerging_MergeWindowInDays = 185;
         MetadataRefresh = new();

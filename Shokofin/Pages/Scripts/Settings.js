@@ -167,6 +167,38 @@ createControllerFactory({
                 applySeriesConfigToForm(form, this.value);
             });
 
+            form.querySelectorAll("#SeriesSeasonMergingBehavior input").forEach(input => input.addEventListener("change", onSeasonMergingBehaviorChange));
+
+            function onSeasonMergingBehaviorChange() {
+                const option = this.getAttribute("data-option");
+                const value = this.checked;
+                if (option === "NoMerge") {
+                    if (value) {
+                        form.querySelectorAll("#SeriesSeasonMergingBehavior input").forEach((input) => {
+                            if (input !== this) {
+                                input.checked = false;
+                            }
+                        });
+                    }
+                    return;
+                }
+
+                if (value) {
+                    const input = form.querySelector("#SeriesSeasonMergingBehavior input[data-option='NoMerge']");
+                    if (input.getAttribute("data-option") === "NoMerge" && input.checked) {
+                        input.checked = false;
+                    }
+                }
+
+                if (option.startsWith("MergeGroup")) {
+                    const reverse = option.slice(0, 11) + (option.slice(11) === "Target" ? "Source" : "Target");
+                    const reversedInput = form.querySelector(`#SeriesSeasonMergingBehavior input[data-option="${reverse}"]`);
+                    if (value) {
+                        reversedInput.checked = false;
+                    }
+                }
+            }
+
             form.querySelector("#MediaFolderSelector").addEventListener("change", function () {
                 applyLibraryConfigToForm(form, this.value);
             });
@@ -522,7 +554,7 @@ function applyFormToConfig(form, config) {
             }
 
             config.SeasonMerging_Enabled = form.querySelector("#SeasonMerging_Enabled").checked;
-            config.SeasonMerging_DefaultBehavior = form.querySelector("#SeasonMerging_DefaultBehavior").value;
+            config.SeasonMerging_DefaultBehavior = form.querySelector("#SeasonMerging_AutoMerge").checked ? "None" : "NoMerge";
             config.SeasonMerging_SeriesTypes = retrieveCheckboxList(form, "SeasonMerging_SeriesTypes");
             config.SeasonMerging_MergeWindowInDays = seasonMergeWindow;
             form.querySelector("#SeasonMerging_MergeWindowInDays").value = seasonMergeWindow;
@@ -695,7 +727,7 @@ async function applyConfigToForm(form, config) {
                 .join("");
 
             form.querySelector("#SeasonMerging_Enabled").checked = config.SeasonMerging_Enabled;
-            form.querySelector("#SeasonMerging_DefaultBehavior").value = config.SeasonMerging_DefaultBehavior;
+            form.querySelector("#SeasonMerging_AutoMerge").checked = config.SeasonMerging_DefaultBehavior === "None";
             renderCheckboxList(form, "SeasonMerging_SeriesTypes", config.SeasonMerging_SeriesTypes);
             form.querySelector("#SeasonMerging_MergeWindowInDays").value = config.SeasonMerging_MergeWindowInDays;
             break;
@@ -880,7 +912,7 @@ async function applySeriesConfigToForm(form, seriesId, config = null) {
     form.querySelector("#SeriesLibraryStructure").value = seriesConfig.StructureType;
     form.querySelector("#SeriesSeasonOrdering").value = seriesConfig.SeasonOrdering;
     form.querySelector("#SeriesSpecialsPlacement").value = seriesConfig.SpecialsPlacement;
-    form.querySelector("#SeriesMergeOverride").value = seriesConfig.MergeOverride;
+    renderCheckboxList(form, "SeriesSeasonMergingBehavior", seriesConfig.SeasonMergingBehavior.split(",").map(s => s.trim()).filter(s => s && s !== "None"));
     form.querySelector("#SeriesEpisodeConversion").value = seriesConfig.EpisodeConversion;
     form.querySelector("#SeriesOrderByAirdate").checked = seriesConfig.OrderByAirdate;
 
@@ -1144,7 +1176,7 @@ async function syncSettings(form, config) {
             seriesConfig.StructureType = form.querySelector("#SeriesLibraryStructure").value;
             seriesConfig.SeasonOrdering = form.querySelector("#SeriesSeasonOrdering").value;
             seriesConfig.SpecialsPlacement = form.querySelector("#SeriesSpecialsPlacement").value;
-            seriesConfig.MergeOverride = form.querySelector("#SeriesMergeOverride").value;
+            seriesConfig.SeasonMergingBehavior = retrieveCheckboxList(form, "SeriesSeasonMergingBehavior").join(",") || "None";
             seriesConfig.EpisodeConversion = form.querySelector("#SeriesEpisodeConversion").value;
             seriesConfig.OrderByAirdate = form.querySelector("#SeriesOrderByAirdate").checked;
 

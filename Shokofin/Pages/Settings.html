@@ -1743,15 +1743,12 @@ form:not(.expert-mode) .expert-only {
                                 </ul>
                             </div>
                         </div>
-                        <div class="selectContainer selectContainer-withDescription expert-only">
-                            <label class="selectLabel" for="SeasonMerging_DefaultBehavior">Default Season Merging Behavior</label>
-                            <select is="emby-select" id="SeasonMerging_DefaultBehavior" name="SeasonMerging_DefaultBehavior" class="emby-select-withcolor emby-select">
-                                <option value="None" selected>Use Automatic Merging (Default)</option>
-                                <option value="NoMerge">No Auto Merging</option>
-                            </select>
-                            <div class="fieldDescription">
-                                <div>Determines the default merge behavior when no override is set for a Shoko series.</div>
-                            </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="SeasonMerging_AutoMerge" />
+                                <span>Automatically Merge Seasons</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">If disabled then merging will only happen when an override is set for the series in the Series settings tab, otherwise it will also happen automatically based upon the series types to merge and the merge window listed below unless an override is set.</div>
                         </div>
                         <div id="SeasonMerging_SeriesTypes" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
                             <h3 class="checkboxListLabel">Series Types to Merge</h3>
@@ -1833,7 +1830,7 @@ form:not(.expert-mode) .expert-only {
                         </div>
                         <div class="inputContainer inputContainer-withDescription expert-only">
                             <input is="emby-input" type="number" id="SeasonMerging_MergeWindowInDays" label="Merge Window (days)" placeholder="0" type="number" pattern="[0-9]*" min="0" step="1" />
-                            <div class="fieldDescription">Number of days to check between the start of each season, inclusive. Set to 0 to allow merging regardless of release dates.</div>
+                            <div class="fieldDescription">Number of days to check between the start of each Shoko series during automatic merging, inclusive. Set to 0 to allow merging regardless of release dates.</div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>${Save}</span>
@@ -2220,20 +2217,119 @@ form:not(.expert-mode) .expert-only {
                                 </select>
                                 <div class="fieldDescription selectFieldDescription">Determines how specials are placed within seasons. <strong>Warning:</strong> Modifying this setting requires a recreation (read as; delete existing then create a new) of any libraries using this plugin — otherwise you <strong>will</strong> have mixed metadata.</div>
                             </div>
-                            <div class="selectContainer selectContainer-withDescription expert-only">
-                                <label class="selectLabel" for="SeriesMergeOverride">Season Merging Behavior</label>
-                                <select is="emby-select" id="SeriesMergeOverride" name="SeriesMergeOverride" class="emby-select-withcolor emby-select">
-                                    <option value="None" selected>Follow Global Settings (Default)</option>
-                                    <option value="NoMerge">Do Not Merge This Series With Any Other Series</option>
-                                    <option value="MergeForward">Attempt To Merge This Series With The Sequel Series</option>
-                                    <option value="MergeBackward">Attempt To Merge This Series With The Prequel Series</option>
-                                    <option value="MergeWithMainStory">Attempt To Merge This Series With The Main Story Series</option>
-                                </select>
-                                <div class="fieldDescription">
-                                    <div>
-                                        Determines how the merging should be handled for the series. Requires the global series merging feature to be enabled for this to take effect.
+                            <div id="SeriesSeasonMergingBehavior" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
+                                <h3 class="checkboxListLabel">Season Merging Behavior</h3>
+                                <div class="checkboxList paperList checkboxList-paperList">
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="NoMerge">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Do Not Merge This Series With Any Other Series</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeForward">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge With Sequel (Respects Air Date)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeBackward">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge With Prequel (Respects Air Date)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeWithMainStory">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge With Main Story</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeGroupATarget">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge Other Series Into This Series (Merge Group A)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeGroupASource">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge Into Other Series (Merge Group A)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeGroupBTarget">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge Other Series Into This Series (Merge Group B)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeGroupBSource">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge Into Other Series (Merge Group B)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeGroupCTarget">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge Other Series Into This Series (Merge Group C)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeGroupCSource">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge Into Other Series (Merge Group C)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeGroupDTarget">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge Other Series Into This Series (Merge Group D)</h3>
+                                        </div>
+                                    </div>
+                                    <div class="listItem">
+                                        <label class="listItemCheckboxContainer">
+                                            <input is="emby-checkbox" type="checkbox" data-option="MergeGroupDSource">
+                                            <span></span>
+                                        </label>
+                                        <div class="listItemBody">
+                                            <h3 class="listItemBodyText">Merge Into Other Series (Merge Group D)</h3>
+                                        </div>
                                     </div>
                                 </div>
+                                <div class="fieldDescription">Determines how the merging should be handled for the series. Requires the global season merging feature to be enabled for this to take effect.</div>
                             </div>
                             <div class="selectContainer selectContainer-withDescription">
                                 <label class="selectLabel" for="SeriesEpisodeConversion">Episode Conversion Mode</label>
