@@ -1744,9 +1744,9 @@ form:not(.expert-mode) .expert-only {
                             </div>
                         </div>
                         <div class="selectContainer selectContainer-withDescription expert-only">
-                            <label class="selectLabel" for="SeasonMerging_DefaultBehavior">Default Merge Behavior</label>
+                            <label class="selectLabel" for="SeasonMerging_DefaultBehavior">Default Season Merging Behavior</label>
                             <select is="emby-select" id="SeasonMerging_DefaultBehavior" name="SeasonMerging_DefaultBehavior" class="emby-select-withcolor emby-select">
-                                <option value="None" selected>Use Auto Merging (Default)</option>
+                                <option value="None" selected>Use Automatic Merging (Default)</option>
                                 <option value="NoMerge">No Auto Merging</option>
                             </select>
                             <div class="fieldDescription">
@@ -1754,7 +1754,7 @@ form:not(.expert-mode) .expert-only {
                             </div>
                         </div>
                         <div id="SeasonMerging_SeriesTypes" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
-                            <h3 class="checkboxListLabel">Series Types To Merge</h3>
+                            <h3 class="checkboxListLabel">Series Types to Merge</h3>
                             <div class="checkboxList paperList checkboxList-paperList">
                                 <div class="listItem">
                                     <label class="listItemCheckboxContainer">
@@ -1762,7 +1762,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TV Series | Standard TV Series</h3>
+                                        <h3 class="listItemBodyText">TV Series</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1771,7 +1771,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TV Special | Special TV Program</h3>
+                                        <h3 class="listItemBodyText">TV Special</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1780,7 +1780,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Web | Web First Release / Original Net Animation (ONA)</h3>
+                                        <h3 class="listItemBodyText">Web First Release / Original Net Animation (ONA)</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1789,7 +1789,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">OVA | Original Video Animation (OVA)</h3>
+                                        <h3 class="listItemBodyText">Original Video Animation (OVA)</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1798,7 +1798,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Movie | Standalone Movie / Movie Collection</h3>
+                                        <h3 class="listItemBodyText">Standalone Movie / Movie Collection</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1807,7 +1807,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Music Video | Standalone Music Video Release</h3>
+                                        <h3 class="listItemBodyText">Standalone Music Video Release</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1816,7 +1816,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Other | Misc. Other Type</h3>
+                                        <h3 class="listItemBodyText">Misc. Other Type</h3>
                                     </div>
                                 </div>
                                 <div class="listItem">
@@ -1825,7 +1825,7 @@ form:not(.expert-mode) .expert-only {
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Unknown | Type Not Determined Yet</h3>
+                                        <h3 class="listItemBodyText">Type Not Determined Yet</h3>
                                     </div>
                                 </div>
                             </div>
@@ -2162,10 +2162,10 @@ form:not(.expert-mode) .expert-only {
                                 <label class="selectLabel" for="SeriesType">Series Type</label>
                                 <select is="emby-select" id="SeriesType" name="SeriesType" class="emby-select-withcolor emby-select">
                                     <option value="None" selected>Use Original Type (Default)</option>
-                                    <option value="TV">Standard TV series</option>
-                                    <option value="TVSpecial">TV special</option>
-                                    <option value="Web">Web / Original Net Animation (ONA)</option>
-                                    <option value="Movie">Movie</option>
+                                    <option value="TV">TV series</option>
+                                    <option value="TVSpecial">TV Special</option>
+                                    <option value="Web">Web First Release / Original Net Animation (ONA)</option>
+                                    <option value="Movie">Standalone Movie / Movie Collection</option>
                                     <option value="OVA">Original Video Animation (OVA)</option>
                                     <option value="MusicVideo">Music Video (MV)</option>
                                 </select>
@@ -2221,7 +2221,7 @@ form:not(.expert-mode) .expert-only {
                                 <div class="fieldDescription selectFieldDescription">Determines how specials are placed within seasons. <strong>Warning:</strong> Modifying this setting requires a recreation (read as; delete existing then create a new) of any libraries using this plugin — otherwise you <strong>will</strong> have mixed metadata.</div>
                             </div>
                             <div class="selectContainer selectContainer-withDescription expert-only">
-                                <label class="selectLabel" for="SeriesMergeOverride">Season Merging Mode</label>
+                                <label class="selectLabel" for="SeriesMergeOverride">Season Merging Behavior</label>
                                 <select is="emby-select" id="SeriesMergeOverride" name="SeriesMergeOverride" class="emby-select-withcolor emby-select">
                                     <option value="None" selected>Follow Global Settings (Default)</option>
                                     <option value="NoMerge">Do Not Merge This Series With Any Other Series</option>
