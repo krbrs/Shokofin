@@ -26,6 +26,6 @@ public class Rating {
     /// </summary>
     public string? Type { get; set; }
 
-    public float ToFloat(uint scale = 1)
+    public float ToFloat(uint scale)
         => (float)((Value * scale) / MaxValue);
 }

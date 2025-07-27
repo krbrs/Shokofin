@@ -182,7 +182,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
                 imageDto.RatingType = RatingType.Score;
             }
             else if (image.CommunityRating is { } rating) {
-                imageDto.CommunityRating = rating.ToFloat();
+                imageDto.CommunityRating = rating.ToFloat(10);
                 imageDto.VoteCount = rating.Votes;
                 imageDto.RatingType = RatingType.Score;
             }
