@@ -115,7 +115,7 @@ createControllerFactory({
 
             form.querySelector("#SeriesSearch").addEventListener("input", function () {
                 const value = this.value.trim();
-                if (State.seriesQuery === value) {
+                if (State.seriesQuery === value && State.seriesTimeout) {
                     return;
                 }
 
@@ -125,9 +125,6 @@ createControllerFactory({
 
                 const timeout = State.seriesTimeout = setTimeout(async () => {
                     if (State.seriesTimeout !== timeout) {
-                        return;
-                    }
-                    if (State.seriesQuery === value) {
                         return;
                     }
 
@@ -141,12 +138,12 @@ createControllerFactory({
                     catch (error) {
                         console.log(error, "Got an error attempting to search for a series.");
                         form.querySelector("#SeriesSelector").value = "";
-                        form.querySelector("#SeriesSelector").innerHTML = `<option value="">Click here to select a series</option>`;
+                        form.querySelector("#SeriesSelector").innerHTML = `<option value="">Failed to load series!</option>`;
                         form.querySelector("#SeriesSelector").removeAttribute("disabled");
                         return;
                     }
 
-                    if (State.seriesTimeout !== timeout || State.seriesQuery !== value) {
+                    if (State.seriesTimeout !== timeout) {
                         console.log("Returned too late for series search: " + value);
                         return;
                     }
@@ -795,17 +792,21 @@ async function applyConfigToForm(form, config) {
         }
 
         case "series": {
-            Dashboard.showLoadingMsg();
-            State.seriesTimeout = null;
-            const seriesQuery = State.seriesQuery;
-            const series = (State.seriesList ||= await ShokoApiClient.getSeriesList(seriesQuery));
-            State.seriesQuery = seriesQuery;
-            form.querySelector("#SeriesSearch").value = seriesQuery;
+            const series = State.seriesList || [];
             form.querySelector("#SeriesSelector").innerHTML =
-                `<option value="">Click here to select a series</option>` +
+                `<option value="">${State.seriesList ? "Click here to select a series" : "Loading series list"}</option>` +
                 series.map((s) => `<option value="${s.Id}">${s.Title.length >= 50 ? `${s.Title.substring(0, 47)}...` : s.Title} (a${s.AnidbId})</option>`).join("");
-            form.querySelector("#SeriesSelector").value = State.seriesId;
-            form.querySelector("#SeriesSelector").removeAttribute("disabled");
+            form.querySelector("#SeriesSearch").value = State.seriesQuery;
+            if (State.seriesList && !State.seriesTimeout) {
+                form.querySelector("#SeriesSelector").disabled = false;
+                if (State.seriesId) {
+                    form.querySelector("#SeriesSelector").value = State.seriesId;
+                    form.querySelector("#SeriesSelector").dispatchEvent(new Event("change"));
+                }
+            }
+            else {
+                form.querySelector("#SeriesSearch").dispatchEvent(new Event("input"));
+            }
             break;
         }
 
@@ -1376,6 +1377,7 @@ async function toggleExpertMode(value) {
 //#endregion
 
 //#region Helpers
+
 /**
  * Filter out duplicate values and sanitize list.
  * @param {string} value - Stringified list of values to filter.
