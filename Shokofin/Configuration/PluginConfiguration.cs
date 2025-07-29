@@ -773,12 +773,12 @@ public class PluginConfiguration : BasePluginConfiguration {
             TagSource.OriginProduction | TagSource.OriginDevelopment | TagSource.SourceMaterial | TagSource.SettingPlace |
             TagSource.SettingTimePeriod | TagSource.SettingTimeSeason | TagSource.TargetAudience | TagSource.TechnicalAspects |
             TagSource.TechnicalAspectsAdaptions | TagSource.TechnicalAspectsAwards | TagSource.TechnicalAspectsMultiAnimeProjects |
-            TagSource.Themes | TagSource.ThemesDeath | TagSource.ThemesTales | TagSource.TmdbKeywords | TagSource.CustomTags | TagSource.AllYearlySeasons;
+            TagSource.Themes | TagSource.ThemesDeath | TagSource.ThemesTales | TagSource.CustomTags | TagSource.AllYearlySeasons;
         TagIncludeFilters = TagIncludeFilter.Parent | TagIncludeFilter.Child | TagIncludeFilter.Abstract | TagIncludeFilter.Weightless | TagIncludeFilter.Weighted;
         TagMinimumWeight = TagWeight.Weightless;
         TagMaximumDepth = 0;
         TagExcludeList = ["18 restricted"];
-        GenreSources = TagSource.SourceMaterial | TagSource.TargetAudience | TagSource.Elements | TagSource.TmdbGenres;
+        GenreSources = TagSource.SourceMaterial | TagSource.TargetAudience | TagSource.Elements;
         GenreIncludeFilters = TagIncludeFilter.Parent | TagIncludeFilter.Child | TagIncludeFilter.Abstract | TagIncludeFilter.Weightless | TagIncludeFilter.Weighted;
         GenreMinimumWeight = TagWeight.Four;
         GenreMaximumDepth = 1;

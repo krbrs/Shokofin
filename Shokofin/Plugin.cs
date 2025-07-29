@@ -256,8 +256,6 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
         if (config.RespectPreferredImage.HasValue) {
             config.Image.Default.UsePreferred = config.RespectPreferredImage.Value;
             config.RespectPreferredImage = null;
-            config.TagSources |= TagFilter.TagSource.TmdbKeywords;
-            config.GenreSources |= TagFilter.TagSource.TmdbGenres;
             changed = true;
         }
         if (config.TitleAllowAny is not null || config.TitleMainList is not null || config.TitleAlternateList is not null) {
