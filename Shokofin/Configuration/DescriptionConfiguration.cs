@@ -23,7 +23,7 @@ public class DescriptionConfiguration {
     /// <summary>
     /// Returns a list of the providers to check, and in what order.
     /// </summary>
-    public IEnumerable<DescriptionProvider> GetOrderedTitleProviders()
+    public IEnumerable<DescriptionProvider> GetOrderedDescriptionProviders()
         => Order.Where((t) => List.Contains(t));
 }
 

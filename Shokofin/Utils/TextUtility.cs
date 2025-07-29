@@ -105,7 +105,7 @@ public static partial class TextUtility {
 
         /// <summary>
         /// Deprecated, but kept until the next major release for backwards compatibility.
-        /// TODO: REMOVE THIS IN 6.0
+        /// TODO: Break this during the next major version of the plugin.
         /// </summary>
         TvDB = 3,
 
@@ -312,7 +312,7 @@ public static partial class TextUtility {
         );
 
     private static string GetDescription(IBaseItemInfo baseInfo, DescriptionConfiguration config, string? metadataLanguage) {
-        foreach (var provider in config.GetOrderedTitleProviders()) {
+        foreach (var provider in config.GetOrderedDescriptionProviders()) {
             var overview = provider switch {
                 DescriptionProvider.Shoko =>
                     baseInfo.Overview,
@@ -359,7 +359,6 @@ public static partial class TextUtility {
 
         return summary.Trim();
     }
-
 
     #endregion
 
