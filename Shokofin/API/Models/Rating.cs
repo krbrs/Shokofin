@@ -26,6 +26,23 @@ public class Rating {
     /// </summary>
     public string? Type { get; set; }
 
-    public float ToFloat(uint scale)
-        => (float)((Value * scale) / MaxValue);
+    /// <summary>
+    /// Json deserialization constructor.
+    /// </summary>
+    public Rating() { }
+
+    /// <summary>
+    /// Copy constructor.
+    /// </summary>
+    public Rating(Rating rating) {
+        Value = rating.Value;
+        MaxValue = rating.MaxValue;
+        Source = rating.Source;
+        Votes = rating.Votes;
+        Type = rating.Type;
+    }
+
+    public float ToFloat(int scale)
+        => scale == MaxValue ? (float)Value : (float)((Value * scale) / MaxValue);
+
 }

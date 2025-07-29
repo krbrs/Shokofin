@@ -499,11 +499,7 @@ function applyFormToConfig(form, config) {
             config.MarkSpecialsWhenGrouped = form.querySelector("#MarkSpecialsWhenGrouped").checked;
             ([config.Description.Default.List, config.Description.Default.Order] = retrieveSortableCheckboxList(form, "DescriptionSourceList"));
             config.DescriptionConversionMode = form.querySelector("#DescriptionConversionMode").value;
-            config.AddImageLanguageCodeForShows = retrieveCheckboxList(form, "AddImageLanguageCodeForShows");
-            config.AddImageLanguageCodeForMovies = retrieveCheckboxList(form, "AddImageLanguageCodeForMovies");
-            config.AddImageCommunityRatingForShows = retrieveCheckboxList(form, "AddImageCommunityRatingForShows");
-            config.AddImageCommunityRatingForMovies = retrieveCheckboxList(form, "AddImageCommunityRatingForMovies");
-            config.RespectPreferredImagePerStructureType = retrieveCheckboxList(form, "RespectPreferredImagePerStructureType");
+
             config.HideUnverifiedTags = form.querySelector("#HideUnverifiedTags").checked;
             config.TagSources = retrieveCheckboxList(form, "TagSources").join(", ");
             config.TagIncludeFilters = retrieveCheckboxList(form, "TagIncludeFilters").join(", ");
@@ -511,15 +507,25 @@ function applyFormToConfig(form, config) {
             config.TagMaximumDepth = parseInt(form.querySelector("#TagMaximumDepth").value, 10);
             config.TagExcludeList = tagExcludeList;
             form.querySelector("#TagExcludeList").value = tagExcludeList.join(", ");
+
             config.GenreSources = retrieveCheckboxList(form, "GenreSources").join(", ");
             config.GenreIncludeFilters = retrieveCheckboxList(form, "GenreIncludeFilters").join(", ");
             config.GenreMinimumWeight = form.querySelector("#GenreMinimumWeight").value;
             config.GenreMaximumDepth = parseInt(form.querySelector("#GenreMaximumDepth").value, 10);
             config.GenreExcludeList = genreExcludeList;
             form.querySelector("#GenreExcludeList").value = genreExcludeList.join(", ");
+
+            config.Image.Default.UsePreferred = form.querySelector("#Image_UsePreferred").checked;
+            config.Image.Default.UseCommunityRating = form.querySelector("#Image_UseCommunityRating").checked;
+            ([config.Image.Default.PosterList, config.Image.Default.PosterOrder] = retrieveSortableCheckboxList(form, "Image_PosterList"));
+            ([config.Image.Default.LogoList, config.Image.Default.LogoOrder] = retrieveSortableCheckboxList(form, "Image_LogoList"));
+            ([config.Image.Default.BackdropList, config.Image.Default.BackdropOrder] = retrieveSortableCheckboxList(form, "Image_BackdropList"));
+            config.Image.DebugMode = form.querySelector("#Image_DebugMode").checked;
+
             config.Metadata_StudioOnlyAnimationWorks = form.querySelector("#Metadata_StudioOnlyAnimationWorks").checked;
             ([config.ContentRatingList, config.ContentRatingOrder] = retrieveSortableCheckboxList(form, "ContentRatingList"));
             ([config.ProductionLocationList, config.ProductionLocationOrder] = retrieveSortableCheckboxList(form, "ProductionLocationList"));
+
             config.ThirdPartyIdProviderList = retrieveCheckboxList(form, "ThirdPartyIdProviderList");
             break;
         }
@@ -668,25 +674,31 @@ async function applyConfigToForm(form, config) {
             form.querySelector("#MarkSpecialsWhenGrouped").checked = config.MarkSpecialsWhenGrouped;
             renderSortableCheckboxList(form, "DescriptionSourceList", config.Description.Default.List, config.Description.Default.Order);
             form.querySelector("#DescriptionConversionMode").value = config.DescriptionConversionMode;
-            renderCheckboxList(form, "AddImageLanguageCodeForShows", config.AddImageLanguageCodeForShows);
-            renderCheckboxList(form, "AddImageLanguageCodeForMovies", config.AddImageLanguageCodeForMovies);
-            renderCheckboxList(form, "AddImageCommunityRatingForShows", config.AddImageCommunityRatingForShows);
-            renderCheckboxList(form, "AddImageCommunityRatingForMovies", config.AddImageCommunityRatingForMovies);
-            renderCheckboxList(form, "RespectPreferredImagePerStructureType", config.RespectPreferredImagePerStructureType.map(s => s.trim()).filter(s => s));
+
             form.querySelector("#HideUnverifiedTags").checked = config.HideUnverifiedTags;
             renderCheckboxList(form, "TagSources", config.TagSources.split(",").map(s => s.trim()).filter(s => s));
             renderCheckboxList(form, "TagIncludeFilters", config.TagIncludeFilters.split(",").map(s => s.trim()).filter(s => s));
             form.querySelector("#TagMinimumWeight").value = config.TagMinimumWeight;
             form.querySelector("#TagMaximumDepth").value = config.TagMaximumDepth.toString();
             form.querySelector("#TagExcludeList").value = config.TagExcludeList.join(", ");
+
             renderCheckboxList(form, "GenreSources", config.GenreSources.split(",").map(s => s.trim()).filter(s => s));
             renderCheckboxList(form, "GenreIncludeFilters", config.GenreIncludeFilters.split(",").map(s => s.trim()).filter(s => s));
             form.querySelector("#GenreMinimumWeight").value = config.GenreMinimumWeight;
             form.querySelector("#GenreMaximumDepth").value = config.GenreMaximumDepth.toString();
             form.querySelector("#GenreExcludeList").value = config.GenreExcludeList.join(", ");
+
+            form.querySelector("#Image_UsePreferred").checked = config.Image.Default.UsePreferred;
+            form.querySelector("#Image_UseCommunityRating").checked = config.Image.Default.UseCommunityRating;
+            renderSortableCheckboxList(form, "Image_PosterList", config.Image.Default.PosterList, config.Image.Default.PosterOrder);
+            renderSortableCheckboxList(form, "Image_LogoList", config.Image.Default.LogoList, config.Image.Default.LogoOrder);
+            renderSortableCheckboxList(form, "Image_BackdropList", config.Image.Default.BackdropList, config.Image.Default.BackdropOrder);
+            form.querySelector("#Image_DebugMode").checked = config.Image.DebugMode;
+
             form.querySelector("#Metadata_StudioOnlyAnimationWorks").checked = config.Metadata_StudioOnlyAnimationWorks;
             renderSortableCheckboxList(form, "ContentRatingList", config.ContentRatingList, config.ContentRatingOrder);
             renderSortableCheckboxList(form, "ProductionLocationList", config.ProductionLocationList, config.ProductionLocationOrder);
+
             renderCheckboxList(form, "ThirdPartyIdProviderList", config.ThirdPartyIdProviderList.map(s => s.trim()).filter(s => s));
             break;
         }

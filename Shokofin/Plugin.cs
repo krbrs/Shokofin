@@ -253,20 +253,8 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
         }
 
         // Upgrade deprecated configuration options.
-        if (config.AddImageLanguageCode.HasValue) {
-            config.AddImageLanguageCodeForShows = config.AddImageLanguageCode.Value
-                ? [ImageType.Primary, ImageType.Backdrop, ImageType.Banner, ImageType.Logo]
-                : [];
-            config.AddImageLanguageCodeForMovies = config.AddImageLanguageCode.Value
-                ? [ImageType.Primary, ImageType.Backdrop, ImageType.Banner, ImageType.Logo]
-                : [];
-            config.AddImageLanguageCode = null;
-            changed = true;
-        }
         if (config.RespectPreferredImage.HasValue) {
-            config.RespectPreferredImagePerStructureType = config.RespectPreferredImage.Value
-                ? [SeriesStructureType.AniDB_Anime, SeriesStructureType.Shoko_Groups]
-                : [];
+            config.Image.Default.UsePreferred = config.RespectPreferredImage.Value;
             config.RespectPreferredImage = null;
             config.TagSources |= TagFilter.TagSource.TmdbKeywords;
             config.GenreSources |= TagFilter.TagSource.TmdbGenres;

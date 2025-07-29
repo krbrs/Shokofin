@@ -280,60 +280,27 @@ public class PluginConfiguration : BasePluginConfiguration {
     public bool SynopsisCleanMultiEmptyLines { get; set; }
 
     /// <summary>
-    /// This isn't used anymore, but is kept for upgrading the config in a
-    /// backwards compatible manner.
-    /// TODO: REMOVE THIS IN 6.0
+    /// Only select studios responsible for the animation for entities. Only
+    /// applies to AniDB.
     /// </summary>
-    [JsonIgnore]
-    public bool? AddImageLanguageCode { get; set; }
+    public bool Metadata_StudioOnlyAnimationWorks { get; set; }
 
-    /// <summary>
-    /// Add language code to image metadata provided to shows in Jellyfin for
-    /// it to select the correct image to use for the library.
-    /// </summary>
-    public ImageType[] AddImageLanguageCodeForShows { get; set; }
+    #endregion
 
-    /// <summary>
-    /// Add language code to image metadata provided to movies in Jellyfin for
-    /// it to select the correct image to use for the library.
-    /// </summary>
-    public ImageType[] AddImageLanguageCodeForMovies { get; set; }
-
-    /// <summary>
-    /// Add community rating to image metadata provided to shows in Jellyfin for
-    /// it to select the correct image to use for the library.
-    /// </summary>
-    public ImageType[] AddImageCommunityRatingForShows { get; set; }
-
-    /// <summary>
-    /// Add community rating to image metadata provided to movies in Jellyfin for
-    /// it to select the correct image to use for the library.
-    /// </summary>
-    public ImageType[] AddImageCommunityRatingForMovies { get; set; }
+    #region Images
 
     /// <summary>
     /// This isn't used anymore, but is kept for upgrading the config in a
     /// backwards compatible manner.
-    /// TODO: REMOVE THIS IN 6.0
+    /// TODO: Break this during the next major version of the plugin.
     /// </summary>
     [JsonIgnore]
     public bool? RespectPreferredImage { get; set; }
 
     /// <summary>
-    /// Respect the preferred image flag sent from server when selecting the
-    /// correct image to use for the library. Setting this will also set the
-    /// language code to the preferred language code for the library if
-    /// <see cref="AddImageLanguageCodeForShows"/> and/or
-    /// <see cref="AddImageLanguageCodeForMovies"/> are enabled, thus ensuring
-    /// it is always selected for the library.
+    /// The new image configuration
     /// </summary>
-    public SeriesStructureType[] RespectPreferredImagePerStructureType { get; set; }
-
-    /// <summary>
-    /// Only select studios responsible for the animation for entities. Only
-    /// applies to AniDB.
-    /// </summary>
-    public bool Metadata_StudioOnlyAnimationWorks { get; set; }
+    public AllImagesConfiguration Image { get; set; }
 
     #endregion
 
@@ -696,7 +663,7 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// Indicates whether or not to replace images for entries if related
     /// metadata is updated in Shoko.
     /// </summary>
-    /// TODO: REMOVE THIS IN 6.0
+    /// TODO: Break this during the next major version of the plugin.
     public bool? SignalR_ReplaceImagesDuringRefresh { get; set; }
 
     /// <summary>
@@ -830,17 +797,9 @@ public class PluginConfiguration : BasePluginConfiguration {
         AddTMDBId = false;
         AddTvDBId = false;
 
-        AddImageLanguageCode = null;
-        AddImageLanguageCodeForShows = [];
-        AddImageLanguageCodeForMovies = [];
-        AddImageCommunityRatingForMovies = [];
-        AddImageCommunityRatingForShows = [];
-        RespectPreferredImage = null;
-        RespectPreferredImagePerStructureType = [
-            SeriesStructureType.AniDB_Anime,
-            SeriesStructureType.Shoko_Groups,
-        ];
         Metadata_StudioOnlyAnimationWorks = false;
+
+        Image = new();
 
         DefaultLibraryOperationMode = LibraryOperationMode.VFS;
         VFS_Threads = 4;

@@ -66,14 +66,18 @@ public class ImageHostUrl : IAsyncActionFilter {
             }
         }
 
-        await next().ConfigureAwait(false);
-
-        if (itemId != Guid.Empty && _currentItemId == itemId) {
-            lock (LockObj) {
-                if (itemId != Guid.Empty && _currentItemId == itemId) {
-                    _currentItemId = null;
+        try {
+            await next().ConfigureAwait(false);
+        }
+        finally {
+            if (itemId != Guid.Empty && _currentItemId == itemId) {
+                lock (LockObj) {
+                    if (itemId != Guid.Empty && _currentItemId == itemId) {
+                        _currentItemId = null;
+                    }
                 }
             }
         }
+
     }
 }

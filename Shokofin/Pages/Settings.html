@@ -1113,170 +1113,194 @@ form:not(.expert-mode) .expert-only {
                         <legend>
                             <h3>Image Settings</h3>
                         </legend>
-                        <div id="AddImageLanguageCodeForShows" is="checkbox-list" style="margin-bottom: 2em;">
-                            <h3 class="checkboxListLabel">Add Language Code for Shows</h3>
-                            <div class="checkboxList paperList checkboxList-paperList">
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Primary">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Posters</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Backdrop">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Backdrops</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Logo">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Logos</h3>
-                                    </div>
-                                </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="Image_UsePreferred" />
+                                <span>Respect Preferred Image in Automatic Image Search</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Respect the 'preferred' flag sent by the server in automatic image searches.
                             </div>
-                            <div class="fieldDescription">Add the language code to image metadata for show libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
                         </div>
-                        <div id="AddImageLanguageCodeForMovies" is="checkbox-list" style="margin-bottom: 2em;">
-                            <h3 class="checkboxListLabel">Add Language Code for Movies</h3>
-                            <div class="checkboxList paperList checkboxList-paperList">
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Primary">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Posters</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Backdrop">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Backdrops</h3>
-                                    </div>
-                                </div>
-                                <div class="listItem">
-                                    <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Logo">
-                                        <span></span>
-                                    </label>
-                                    <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Logos</h3>
-                                    </div>
-                                </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="Image_UseCommunityRating" />
+                                <span>Use Community Ratings in Automatic Image Search</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Use the community ratings to order the images in automatic image searches.
                             </div>
-                            <div class="fieldDescription">Add the language code to image metadata for movie libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
                         </div>
-                        <div id="AddImageCommunityRatingForShows" is="checkbox-list" style="margin-bottom: 2em;">
-                            <h3 class="checkboxListLabel">Add Community Rating for Shows</h3>
+                        <div id="Image_PosterList" is="sortable-checkbox-list" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Only Allow Posters By Language</h3>
                             <div class="checkboxList paperList checkboxList-paperList">
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Primary">
+                                        <input is="emby-checkbox" type="checkbox" data-option="None">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Posters</h3>
+                                        <h3 class="listItemBodyText">No language / Text-less images</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Down" class="btnSortableMoveDown btnSortable">
+                                        <span class="material-icons keyboard_arrow_down" aria-hidden="true"></span>
+                                    </button>
                                 </div>
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Backdrop">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Metadata">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Backdrops</h3>
+                                        <h3 class="listItemBodyText">Follow metadata language in library</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
                                 </div>
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Logo">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Original">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Logos</h3>
+                                        <h3 class="listItemBodyText">Use the language from the media's country of origin</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="English">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">English (only applies if the metadata language in the library is not English)</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="fieldDescription">Add the community rating to image metadata for show libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
+                            <div class="fieldDescription">Filter the images during an automatic image search for posters to allow only the specified languages, in the specified order. If no languages are selected then no filtering will occur in the automatic image search.</div>
                         </div>
-                        <div id="AddImageCommunityRatingForMovies" is="checkbox-list" style="margin-bottom: 2em;">
-                            <h3 class="checkboxListLabel">Add Community Rating for Movies</h3>
+                        <div id="Image_LogoList" is="sortable-checkbox-list" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Only Allow Logos By Language</h3>
                             <div class="checkboxList paperList checkboxList-paperList">
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Primary">
+                                        <input is="emby-checkbox" type="checkbox" data-option="None">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Posters</h3>
+                                        <h3 class="listItemBodyText">No language / Text-less images</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Down" class="btnSortableMoveDown btnSortable">
+                                        <span class="material-icons keyboard_arrow_down" aria-hidden="true"></span>
+                                    </button>
                                 </div>
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Backdrop">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Metadata">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Backdrops</h3>
+                                        <h3 class="listItemBodyText">Follow metadata language in library</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
                                 </div>
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Logo">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Original">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Logos</h3>
+                                        <h3 class="listItemBodyText">Use the language from the media's country of origin</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="English">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">English (only applies if the metadata language in the library is not English)</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="fieldDescription">Add the community rating to image metadata for movie libraries provided to Jellyfin, which it can use to prioritize images based on a library's configured metadata language. If a library has no language set, Jellyfin will prioritize English labeled images if this option is set, and will otherwise use the first available image.</div>
+                            <div class="fieldDescription">Filter the images during an automatic image search for logos to only allow the specified languages, in the specified order. If no languages are selected then no filtering will occur in the automatic image search.</div>
                         </div>
-                        <div id="RespectPreferredImagePerStructureType" is="checkbox-list" class="expert-only" style="margin-bottom: 2em;">
-                            <h3 class="checkboxListLabel">Respect Preferred Image</h3>
+                        <div id="Image_BackdropList" is="sortable-checkbox-list" style="margin-bottom: 2em;">
+                            <h3 class="checkboxListLabel">Only Allow Backdrops/Banners/Thumbnails By Language</h3>
                             <div class="checkboxList paperList checkboxList-paperList">
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="AniDB_Anime">
+                                        <input is="emby-checkbox" type="checkbox" data-option="None">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">AniDB Anime Structure</h3>
+                                        <h3 class="listItemBodyText">No language / Text-less images</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Down" class="btnSortableMoveDown btnSortable">
+                                        <span class="material-icons keyboard_arrow_down" aria-hidden="true"></span>
+                                    </button>
                                 </div>
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="Shoko_Groups">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Metadata">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">Shoko Group Structure</h3>
+                                        <h3 class="listItemBodyText">Follow metadata language in library</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
                                 </div>
-                                <div class="listItem">
+                                <div class="listItem sortableOption">
                                     <label class="listItemCheckboxContainer">
-                                        <input is="emby-checkbox" type="checkbox" data-option="TMDB_SeriesAndMovies">
+                                        <input is="emby-checkbox" type="checkbox" data-option="Original">
                                         <span></span>
                                     </label>
                                     <div class="listItemBody">
-                                        <h3 class="listItemBodyText">TheMovieDb Shows &amp; Movies Structure</h3>
+                                        <h3 class="listItemBodyText">Use the language from the media's country of origin</h3>
                                     </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
+                                </div>
+                                <div class="listItem sortableOption">
+                                    <label class="listItemCheckboxContainer">
+                                        <input is="emby-checkbox" type="checkbox" data-option="English">
+                                        <span></span>
+                                    </label>
+                                    <div class="listItemBody">
+                                        <h3 class="listItemBodyText">English (only applies if the metadata language in the library is not English)</h3>
+                                    </div>
+                                    <button type="button" is="paper-icon-button-light" title="Up" class="btnSortableMoveUp btnSortable">
+                                        <span class="material-icons keyboard_arrow_up" aria-hidden="true"></span>
+                                    </button>
                                 </div>
                             </div>
-                            <div class="fieldDescription">Respect the preferred image flag sent from server when selecting the correct image to use for the entity. Setting this will also set the language code to the preferred language code for the entity if "Add Language Code" is enabled, thus ensuring it is always selected for the given entity.</div>
+                            <div class="fieldDescription">Filter the images during an automatic image search for backdrops/banners/thumbnails to only allow the specified languages, in the specified order. If no languages are selected then no filtering will occur in the automatic image search.</div>
+                        </div>
+                        <div class="checkboxContainer checkboxContainer-withDescription expert-only debug-setting">
+                            <label class="emby-checkbox-label">
+                                <input is="emby-checkbox" type="checkbox" id="Image_DebugMode" />
+                                <span>Display Automatic Image View</span>
+                            </label>
+                            <div class="fieldDescription checkboxFieldDescription">
+                                Displays the images the way Jellyfin sees it during an automatic image search, instead of the usual display with proper language and ratings for each image.
+                            </div>
                         </div>
                         <button is="emby-button" type="submit" name="settings" class="raised button-submit block emby-button">
                             <span>${Save}</span>

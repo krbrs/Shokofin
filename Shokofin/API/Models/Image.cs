@@ -70,6 +70,27 @@ public class Image {
     public Rating? CommunityRating { get; set; }
 
     /// <summary>
+    /// Json deserialization constructor.
+    /// </summary>
+    public Image() { }
+
+    /// <summary>
+    /// Copy constructor.
+    /// </summary>
+    public Image(Image image) : this() {
+        Source = image.Source;
+        Type = image.Type;
+        ID = image.ID;
+        IsPreferred = image.IsPreferred;
+        IsDisabled = image.IsDisabled;
+        LanguageCode = image.LanguageCode;
+        Width = image.Width;
+        Height = image.Height;
+        LocalPath = image.LocalPath;
+        CommunityRating = image.CommunityRating is { } rating ? new(rating) : null;
+    }
+
+    /// <summary>
     /// Get an URL to both download the image on the backend and preview it for
     /// the clients.
     /// </summary>
@@ -93,20 +114,14 @@ public enum ImageSource {
     AniDB = 1,
 
     /// <summary>
-    /// Deprecated, but kept until the next major release for backwards compatibility.
-    /// TODO: REMOVE THIS IN 6.0
+    ///
     /// </summary>
-    TvDB = 2,
+    TMDB = 2,
 
     /// <summary>
     ///
     /// </summary>
-    TMDB = 3,
-
-    /// <summary>
-    ///
-    /// </summary>
-    Shoko = 100
+    Shoko = 100,
 }
 
 /// <summary>

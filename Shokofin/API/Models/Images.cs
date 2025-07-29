@@ -7,12 +7,6 @@ public class Images {
 
     public List<Image> Backdrops { get; set; } = [];
 
-    // Backwards compatibility with stable 4.2.2.0 server.
-    public List<Image> Fanarts {
-        get => Backdrops;
-        set => Backdrops = value;
-    }
-
     public List<Image> Banners { get; set; } = [];
 
     public List<Image> Logos { get; set; } = [];

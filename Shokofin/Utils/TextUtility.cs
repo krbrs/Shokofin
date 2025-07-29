@@ -402,7 +402,7 @@ public static partial class TextUtility {
                 TitleProvider.AniDB_LibraryLanguage =>
                     GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, configuration.AllowAny, metadataLanguage),
                 TitleProvider.AniDB_CountryOfOrigin =>
-                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, configuration.AllowAny, GuessOriginLanguage(GetMainLanguage(seasonInfo.Titles.Where(t => t.Source is "AniDB").ToList()))),
+                    GetTitlesForLanguage(episodeInfo.Titles.Where(t => t.Source is "AniDB").ToList(), false, configuration.AllowAny, GuessOriginLanguage(seasonInfo)),
                 TitleProvider.TMDB_Default =>
                     episodeInfo.Titles.FirstOrDefault(title => title.Source is "TMDB" && title.LanguageCode is "en")?.Value,
                 TitleProvider.TMDB_LibraryLanguage =>
@@ -505,7 +505,7 @@ public static partial class TextUtility {
                 TitleProvider.AniDB_LibraryLanguage =>
                     GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList(), true, configuration.AllowAny, metadataLanguage),
                 TitleProvider.AniDB_CountryOfOrigin =>
-                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList(), true, configuration.AllowAny, GuessOriginLanguage(GetMainLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList()))),
+                    GetTitlesForLanguage(baseInfo.Titles.Where(t => t.Source is "AniDB").ToList(), true, configuration.AllowAny, GuessOriginLanguage(baseInfo)),
                 TitleProvider.TMDB_Default =>
                     baseInfo.Titles.Where(t => t.Source is "TMDB").FirstOrDefault(title => title.IsDefault)?.Value,
                 TitleProvider.TMDB_LibraryLanguage =>
@@ -644,14 +644,16 @@ public static partial class TextUtility {
     /// </summary>
     /// <param name="langCode">The main title language code.</param>
     /// <returns>The list of origin language codes to try and use.</returns>
-    private static string[] GuessOriginLanguage(string langCode)
-        => langCode switch {
-            "x-other" => ["ja"],
-            "x-jat" => ["ja"],
-            "x-zht" => ["zn-hans", "zn-hant", "zn-c-mcm", "zn"],
+    internal static string[] GuessOriginLanguage(IBaseItemInfo baseItemInfo) {
+        var langCode = GetMainLanguage(baseItemInfo.Titles.Where(t => t.Source is "AniDB"));
+        return langCode switch {
+            "x-other" => ["ja", "jap"],
+            "x-jat" => ["ja", "jap"],
+            "x-zht" => ["zn-hans", "zn-hant", "zn-c-mcm", "zn", "zht"],
             _ => [langCode],
         };
-    
+    }
+
     private static string NumericToRoman(int number) =>
         number switch {
             1 => "I",

@@ -244,7 +244,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  */
 
 /**
- * @typedef {"Primary" | "Backdrop" | "Banner" | "Logo"} ImageType
+ * @typedef {"None" | "Metadata" | "Original" | "English"} ImageLanguageType
  */
 
 /**
@@ -340,6 +340,26 @@ export const LibraryMenu = globalThis.LibraryMenu;
 
 /**
  * @typedef {{
+ *   UsePreferred: boolean;
+ *   UseCommunityRating: boolean;
+ *   PosterList: ImageLanguageType[];
+ *   PosterOrder: ImageLanguageType[];
+ *   LogoList: ImageLanguageType[];
+ *   LogoOrder: ImageLanguageType[];
+ *   BackdropList: ImageLanguageType[];
+ *   BackdropOrder: ImageLanguageType[];
+ * }} ImageConfiguration
+ */
+
+/**
+ * @typedef {{
+ *   DebugMode: boolean;
+ *   Default: ImageConfiguration;
+ * }} AllImagesConfiguration
+ */
+
+/**
+ * @typedef {{
  *   CanCreateSymbolicLinks: boolean;
  *   Url: string;
  *   PublicUrl: string;
@@ -369,9 +389,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   ContentRatingOrder: GenericProvider[];
  *   ProductionLocationList: GenericProvider[];
  *   ProductionLocationOrder: GenericProvider[];
- *   AddImageLanguageCodeForShows: ImageType[];
- *   AddImageLanguageCodeForMovies: ImageType[];
- *   RespectPreferredImage: boolean;
+ *   Image: AllImagesConfiguration;
  *   UserList: UserConfig[];
  *   AutoMergeVersions: boolean;
  *   MergeVersionSortSelectorList: MergeVersionSortSelector[];
