@@ -550,7 +550,7 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// <summary>
     /// Legacy property used to upgrade to the new library operation mode if necessary.
     /// </summary>
-    /// TODO: REMOVE IN 6.0
+    /// TODO: Break this during the next major version of the plugin.
     [XmlElement("VirtualFileSystem")]
     public bool? VFS_Legacy_Enabled { get; set; }
 

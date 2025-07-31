@@ -29,7 +29,7 @@ public class Ordering {
         /// <summary>
         /// Obsolete. Use <see cref="Strict"/> instead.
         /// </summary>
-        /// TODO: REMOVE IN 6.0
+        /// TODO: Break this during the next major version of the plugin.
         Auto = Strict,
 
         /// <summary>
@@ -111,7 +111,7 @@ public class Ordering {
         /// <summary>
         /// Obsolete. Use <see cref="Excluded" /> instead.
         /// </summary>
-        /// TODO: REMOVE IN 6.0
+        /// TODO: Break this during the next major version of the plugin.
         Default = Excluded,
 
         /// <summary>
