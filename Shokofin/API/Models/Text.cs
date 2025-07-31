@@ -6,7 +6,14 @@ public class Text {
     /// <summary>
     /// The text value.
     /// </summary>
+    [JsonPropertyName("Value")]
     public string Value { get; set; } = string.Empty;
+
+    /// <summary>
+    /// Setter for titles.
+    /// </summary>
+    [JsonPropertyName("Name")]
+    public string LegacyValue { set => Value = value; }
 
     /// <summary>
     /// alpha 3 language codes with custom extensions (e.g. "x-jat" for romaji, etc.).
@@ -29,5 +36,6 @@ public class Text {
     /// <summary>
     /// AniDB, TMDB, AniList, etc.
     /// </summary>
+    [JsonPropertyName("Source")]
     public string Source { get; set; } = "Unknown";
 }
