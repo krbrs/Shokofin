@@ -137,21 +137,23 @@ public class PluginConfiguration : BasePluginConfiguration {
     #region Metadata
 
     /// <summary>
+    /// The advanced title configuration if you need more control of how to
+    /// handle titles on a per type basis.
+    /// </summary>
+    public AllTitlesConfiguration Title { get; set; }
+
+    /// <summary>
     /// The main title configuration.
     /// </summary>
-    public TitleConfiguration MainTitle { get; set; }
+    /// TODO: Break this during the next major version of the plugin.
+    public TitleConfiguration? MainTitle { get; set; }
 
     /// <summary>
     /// The alternate title configurations.
     /// </summary>
+    /// TODO: Break this during the next major version of the plugin.
     [MaxLength(5, ErrorMessage = "Maximum of 5 alternate titles allowed.")]
-    public TitleConfiguration[] AlternateTitles { get; set; }
-
-    /// <summary>
-    /// The advanced title configuration if you need more control of how to
-    /// handle titles on a per type basis.
-    /// </summary>
-    public AdvancedTitlesConfiguration AdvancedTitlesConfiguration { get; set; }
+    public TitleConfiguration[]? AlternateTitles { get; set; }
 
     /// <summary>
     /// Determines how we'll be selecting our main title for entries.
@@ -753,13 +755,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         ApiKey = string.Empty;
         ServerVersion = null;
 
-        MainTitle = new() {
-            List = [
-                TitleProvider.Shoko_Default,
-            ],
-        };
-        AlternateTitles = [new()];
-        AdvancedTitlesConfiguration = new();
+        Title = new();
         MarkSpecialsWhenGrouped = true;
         SynopsisEnableMarkdown = true;
         SynopsisCleanLinks = true;

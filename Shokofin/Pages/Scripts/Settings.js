@@ -480,14 +480,14 @@ function updateSignalrStatus(form, status) {
 function applyFormToConfig(form, config) {
     switch (State.currentTab) {
         case "metadata": {
-            ([config.MainTitle.List, config.MainTitle.Order] = retrieveSortableCheckboxList(form, "TitleMainList"));
-            config.MainTitle.AllowAny = form.querySelector("#TitleMainAllowAny").checked;
+            ([config.Title.Default.MainTitle.List, config.Title.Default.MainTitle.Order] = retrieveSortableCheckboxList(form, "TitleMainList"));
+            config.Title.Default.MainTitle.AllowAny = form.querySelector("#TitleMainAllowAny").checked;
 
             const alternateTitles = form.querySelectorAll("#TitleAlternateListContainer > fieldset");
-            config.AlternateTitles = [];
+            config.Title.Default.AlternateTitles = [];
             for (let i = 1; i <= alternateTitles.length; i++) {
                 const [list, order] = retrieveSortableCheckboxList(form, `TitleAlternateList_${i}`);
-                config.AlternateTitles.push({
+                config.Title.Default.AlternateTitles.push({
                     List: list,
                     Order: order,
                     AllowAny: form.querySelector(`#TitleAlternateAllowAny_${i}`).checked,
@@ -661,10 +661,10 @@ async function applyConfigToForm(form, config) {
         }
 
         case "metadata": {
-            renderSortableCheckboxList(form, "TitleMainList", config.MainTitle.List, config.MainTitle.Order);
-            form.querySelector("#TitleMainAllowAny").checked = config.MainTitle.AllowAny;
+            renderSortableCheckboxList(form, "TitleMainList", config.Title.Default.MainTitle.List, config.Title.Default.MainTitle.Order);
+            form.querySelector("#TitleMainAllowAny").checked = config.Title.Default.MainTitle.AllowAny;
 
-            const configAlternateTitles = [...config.AlternateTitles];
+            const configAlternateTitles = [...config.Title.Default.AlternateTitles];
             if (configAlternateTitles.length === 0) {
                 configAlternateTitles.push({ List: [], Order: [], AllowAny: false });
             }

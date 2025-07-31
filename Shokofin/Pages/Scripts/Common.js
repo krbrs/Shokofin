@@ -310,7 +310,21 @@ export const LibraryMenu = globalThis.LibraryMenu;
  * @typedef {{
  *   List: TitleProvider[];
  *   Order: TitleProvider[];
+ *   AllowAny: boolean;
  * }} TitleConfiguration
+ */
+
+/**
+ * @typedef {{
+ *   MainTitle: TitleConfiguration;
+ *   AlternateTitles: [TitleConfiguration, ...TitleConfiguration[]];
+ * }} TitlesConfiguration
+ */
+
+/**
+ * @typedef {{
+ *   Default: TitlesConfiguration;
+ *}} AllTitlesConfiguration
  */
 
 /**
@@ -368,8 +382,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   Username: string;
  *   ApiKey: string;
  *   ThirdPartyIdProviderList: Except<DescriptionProvider, "Shoko">[];
- *   MainTitle: TitleConfiguration;
- *   AlternateTitles: TitleConfiguration[];
+ *   Title: AllTitlesConfiguration;
  *   MarkSpecialsWhenGrouped: boolean;
  *   DescriptionConversionMode: DescriptionConversionMode;
  *   Description: AllDescriptionsConfiguration;

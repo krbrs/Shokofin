@@ -251,7 +251,7 @@ public class Ordering {
                 return ExtraType.Trailer;
             case EpisodeType.Other:
             case EpisodeType.Special: {
-                var title = TextUtility.GetTitlesForLanguage(episode.Titles, false, false, "en");
+                var title = TextUtility.GetTitleForLanguage(episode.Titles, false, false, "en");
                 if (string.IsNullOrEmpty(title))
                     return null;
                 // Interview

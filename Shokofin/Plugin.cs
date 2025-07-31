@@ -260,24 +260,33 @@ public class Plugin : BasePlugin<PluginConfiguration>, IHasWebPages {
         }
         if (config.TitleAllowAny is not null || config.TitleMainList is not null || config.TitleAlternateList is not null) {
             if (config.TitleMainList is not null) {
-                config.MainTitle.List = config.TitleMainList;
+                config.Title.Default.MainTitle.List = config.TitleMainList;
                 if (config.TitleMainOrder is not null)
-                    config.MainTitle.Order = config.TitleMainOrder;
+                    config.Title.Default.MainTitle.Order = config.TitleMainOrder;
                 if (config.TitleAllowAny is not null)
-                    config.MainTitle.AllowAny = config.TitleAllowAny.Value;
+                    config.Title.Default.MainTitle.AllowAny = config.TitleAllowAny.Value;
             }
             if (config.TitleAlternateList is not null) {
-                config.AlternateTitles[0].List = config.TitleAlternateList;
+                config.Title.Default.AlternateTitles[0].List = config.TitleAlternateList;
                 if (config.TitleAlternateOrder is not null)
-                    config.AlternateTitles[0].Order = config.TitleAlternateOrder;
+                    config.Title.Default.AlternateTitles[0].Order = config.TitleAlternateOrder;
                 if (config.TitleAllowAny is not null)
-                    config.AlternateTitles[0].AllowAny = config.TitleAllowAny.Value;
+                    config.Title.Default.AlternateTitles[0].AllowAny = config.TitleAllowAny.Value;
             }
             config.TitleMainList = null;
             config.TitleMainOrder = null;
             config.TitleAlternateList = null;
             config.TitleAlternateOrder = null;
             config.TitleAllowAny = null;
+            changed = true;
+        }
+        else if (config.MainTitle is not null || config.AlternateTitles is not null) {
+            if (config.MainTitle is not null)
+                config.Title.Default.MainTitle = config.MainTitle;
+            if (config.AlternateTitles is not null)
+                config.Title.Default.AlternateTitles = config.AlternateTitles;
+            config.MainTitle = null;
+            config.AlternateTitles = null;
             changed = true;
         }
         if (config.DescriptionSourceList is not null || config.DescriptionSourceOrder is not null) {
