@@ -508,7 +508,7 @@ export const ShokoApiClient = {
                 "Accept": "application/json",
             },
             type: "POST",
-            url: ApiClient.getUrl("Plugin/Shokofin/Host/GetApiKey"),
+            url: ApiClient.getUrl("Shokofin/Host/GetApiKey"),
         });
     },
 
@@ -524,8 +524,8 @@ export const ShokoApiClient = {
             dataType: "json",
             type: "GET",
             url: query.trim()
-                ? ApiClient.getUrl(`Plugin/Shokofin/Utility/Series?query=${query}`)
-                : ApiClient.getUrl("Plugin/Shokofin/Utility/Series"),
+                ? ApiClient.getUrl(`Shokofin/Utility/Series?query=${query}`)
+                : ApiClient.getUrl("Shokofin/Utility/Series"),
         });
     },
 
@@ -540,7 +540,7 @@ export const ShokoApiClient = {
         return ApiClient.fetch({
             dataType: "json",
             type: "GET",
-            url: ApiClient.getUrl(`Plugin/Shokofin/Utility/Series/${seriesId}/Configuration`),
+            url: ApiClient.getUrl(`Shokofin/Utility/Series/${seriesId}/Configuration`),
         });
     },
 
@@ -561,7 +561,7 @@ export const ShokoApiClient = {
                 "Accept": "application/json",
             },
             type: "POST",
-            url: ApiClient.getUrl(`Plugin/Shokofin/Utility/Series/${seriesId}/Configuration`),
+            url: ApiClient.getUrl(`Shokofin/Utility/Series/${seriesId}/Configuration`),
         });
     },
 
@@ -575,7 +575,7 @@ export const ShokoApiClient = {
         return ApiClient.fetch({
             dataType: "json",
             type: "GET",
-            url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Status"),
+            url: ApiClient.getUrl("Shokofin/SignalR/Status"),
         });
     },
 
@@ -588,7 +588,7 @@ export const ShokoApiClient = {
     async signalrConnect() {
         await ApiClient.fetch({
             type: "POST",
-            url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Connect"),
+            url: ApiClient.getUrl("Shokofin/SignalR/Connect"),
         });
         return ShokoApiClient.getSignalrStatus();
     },
@@ -602,7 +602,7 @@ export const ShokoApiClient = {
     async signalrDisconnect() {
         await ApiClient.fetch({
             type: "POST",
-            url: ApiClient.getUrl("Plugin/Shokofin/SignalR/Disconnect"),
+            url: ApiClient.getUrl("Shokofin/SignalR/Disconnect"),
         });
         return ShokoApiClient.getSignalrStatus();
     },

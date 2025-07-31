@@ -16,14 +16,14 @@ namespace Shokofin.Web;
 /// Shoko API Host Web Controller.
 /// </summary>
 /// <remarks>
-/// Initializes a new instance of the <see cref="ShokoApiController"/> class.
+/// Initializes a new instance of the <see cref="ShokofinHostController"/> class.
 /// </remarks>
 /// <param name="httpClientFactory">Instance of the <see cref="IHttpClientFactory"/> interface.</param>
 [ApiController]
-[Route("Plugin/Shokofin/Host")]
+[Route("Shokofin/Host")]
 [Produces(MediaTypeNames.Application.Json)]
-public class ShokoApiController(ILogger<ShokoApiController> logger, ShokoApiClient apiClient) : ControllerBase {
-    private readonly ILogger<ShokoApiController> Logger = logger;
+public class ShokofinHostController(ILogger<ShokofinHostController> logger, ShokoApiClient apiClient) : ControllerBase {
+    private readonly ILogger<ShokofinHostController> Logger = logger;
 
     private readonly ShokoApiClient APIClient = apiClient;
 

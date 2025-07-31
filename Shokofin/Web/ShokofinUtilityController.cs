@@ -20,18 +20,18 @@ namespace Shokofin.Web;
 /// Shoko Utility Web Controller.
 /// </summary>
 /// <remarks>
-/// Initializes a new instance of the <see cref="UtilityApiController"/> class.
+/// Initializes a new instance of the <see cref="ShokofinUtilityController"/> class.
 /// </remarks>
 [ApiController]
-[Route("Plugin/Shokofin/Utility")]
+[Route("Shokofin/Utility")]
 [Produces(MediaTypeNames.Application.Json)]
-public partial class UtilityApiController(
-    ILogger<UtilityApiController> logger,
+public partial class ShokofinUtilityController(
+    ILogger<ShokofinUtilityController> logger,
     ShokoApiClient apiClient,
     SeriesConfigurationService seriesConfigurationService,
     VirtualFileSystemService virtualFileSystemService
 ) : ControllerBase {
-    private readonly ILogger<UtilityApiController> Logger = logger;
+    private readonly ILogger<ShokofinUtilityController> Logger = logger;
 
     private readonly SeriesConfigurationService SeriesConfigurationService = seriesConfigurationService;
 

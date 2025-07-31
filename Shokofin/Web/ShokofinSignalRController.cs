@@ -14,13 +14,13 @@ namespace Shokofin.Web;
 /// Shoko SignalR Control Web Controller.
 /// </summary>
 /// <remarks>
-/// Initializes a new instance of the <see cref="SignalRApiController"/> class.
+/// Initializes a new instance of the <see cref="ShokofinSignalRController"/> class.
 /// </remarks>
 [ApiController]
-[Route("Plugin/Shokofin/SignalR")]
+[Route("Shokofin/SignalR")]
 [Produces(MediaTypeNames.Application.Json)]
-public class SignalRApiController(ILogger<SignalRApiController> logger, SignalRConnectionManager connectionManager) : ControllerBase {
-    private readonly ILogger<SignalRApiController> Logger = logger;
+public class ShokofinSignalRController(ILogger<ShokofinSignalRController> logger, SignalRConnectionManager connectionManager) : ControllerBase {
+    private readonly ILogger<ShokofinSignalRController> Logger = logger;
 
     private readonly SignalRConnectionManager ConnectionManager = connectionManager;
 
