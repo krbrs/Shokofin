@@ -240,9 +240,9 @@ public static class ImageUtility {
             orderedImages.Count == 0 &&
             orderedTypes.Count > 0 &&
             imageType is ImageType.Primary &&
-            images.Any(image => image is { Source: API.Models.ImageSource.AniDB, Type: API.Models.ImageType.Poster, IsAvailable: true })
+            images.Any(image => image is { Source: API.Models.ImageSource.AniDB, Type: API.Models.ShokoImageType.Poster, IsAvailable: true })
         )
-            orderedImages = [(images.First(image => image is { Source: API.Models.ImageSource.AniDB, Type: API.Models.ImageType.Poster, IsAvailable: true }), ImageLanguageType.None)];
+            orderedImages = [(images.First(image => image is { Source: API.Models.ImageSource.AniDB, Type: API.Models.ShokoImageType.Poster, IsAvailable: true }), ImageLanguageType.None)];
 
         var index = orderedImages.Count - 1;
         foreach (var (image, _) in orderedImages) {

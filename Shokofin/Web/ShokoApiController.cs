@@ -77,7 +77,7 @@ public class ShokoApiController(ILogger<ShokoApiController> logger, ShokoApiClie
     [ProducesResponseType(404)]
     [HttpGet("Image/{ImageSource}/{ImageType}/{ImageId}")]
     [HttpHead("Image/{ImageSource}/{ImageType}/{ImageId}")]
-    public async Task<ActionResult> GetImageAsync([FromRoute] ImageSource imageSource, [FromRoute] ImageType imageType, [FromRoute, Range(1, int.MaxValue)] int imageId
+    public async Task<ActionResult> GetImageAsync([FromRoute] ImageSource imageSource, [FromRoute] ShokoImageType imageType, [FromRoute, Range(1, int.MaxValue)] int imageId
     ) {
         var response = await APIClient.GetImageAsync(imageSource, imageType, imageId).ConfigureAwait(false);
         if (response.StatusCode is System.Net.HttpStatusCode.NotFound)

@@ -12,7 +12,7 @@ public class Image {
     /// <summary>
     /// Poster, Banner, etc.
     /// </summary>
-    public ImageType Type { get; set; } = ImageType.Poster;
+    public ShokoImageType Type { get; set; } = ShokoImageType.Poster;
 
     /// <summary>
     /// The image's id.
@@ -22,8 +22,8 @@ public class Image {
 
     /// <summary>
     /// True if the image is marked as the preferred for the given
-    /// <see cref="ImageType"/>. Only one preferred is possible for a given
-    /// <see cref="ImageType"/>.
+    /// <see cref="ShokoImageType"/>. Only one preferred is possible for a given
+    /// <see cref="ShokoImageType"/>.
     /// </summary>
     [JsonPropertyName("Preferred")]
     public bool IsPreferred { get; set; } = false;
@@ -128,7 +128,7 @@ public enum ImageSource {
 /// Image type.
 /// </summary>
 [JsonConverter(typeof(JsonStringEnumConverter))]
-public enum ImageType {
+public enum ShokoImageType {
     /// <summary>
     ///
     /// </summary>
