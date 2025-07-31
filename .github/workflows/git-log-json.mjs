@@ -120,9 +120,9 @@ const commitsList = commitOrder.reverse()
         commit,
         parents,
         tree,
-        subject: /^\s*\w+: /i.test(subject) ? subject.split(":").slice(1).join(":").trim() : subject.trim(),
-        type: /^\s*\w+: /i.test(subject) ?
-                subject.split(":")[0].toLowerCase()
+        subject: /^\s*\w+\s*: ?/i.test(subject) ? subject.split(":").slice(1).join(":").trim() : subject.trim(),
+        type: /^\s*\w+\s*: ?/i.test(subject) ?
+                subject.split(":")[0].toLowerCase().trim()
             : subject.startsWith("Partially revert ") ?
                 "revert"
             : parents.length > 1 ?
