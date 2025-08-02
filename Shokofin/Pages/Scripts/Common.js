@@ -316,6 +316,7 @@ export const LibraryMenu = globalThis.LibraryMenu;
 
 /**
  * @typedef {{
+ *   RemoveDuplicates: boolean;
  *   MainTitle: TitleConfiguration;
  *   AlternateTitles: [TitleConfiguration, ...TitleConfiguration[]];
  * }} TitlesConfiguration

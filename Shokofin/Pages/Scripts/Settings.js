@@ -480,6 +480,8 @@ function updateSignalrStatus(form, status) {
 function applyFormToConfig(form, config) {
     switch (State.currentTab) {
         case "metadata": {
+            config.MarkSpecialsWhenGrouped = form.querySelector("#MarkSpecialsWhenGrouped").checked;
+            config.Title.Default.RemoveDuplicates = form.querySelector("#RemoveDuplicateTitles").checked;
             ([config.Title.Default.MainTitle.List, config.Title.Default.MainTitle.Order] = retrieveSortableCheckboxList(form, "TitleMainList"));
             config.Title.Default.MainTitle.AllowAny = form.querySelector("#TitleMainAllowAny").checked;
 
@@ -496,7 +498,6 @@ function applyFormToConfig(form, config) {
 
             const tagExcludeList = filterTags(form.querySelector("#TagExcludeList").value);
             const genreExcludeList = filterTags(form.querySelector("#GenreExcludeList").value);
-            config.MarkSpecialsWhenGrouped = form.querySelector("#MarkSpecialsWhenGrouped").checked;
             ([config.Description.Default.List, config.Description.Default.Order] = retrieveSortableCheckboxList(form, "DescriptionSourceList"));
             config.DescriptionConversionMode = form.querySelector("#DescriptionConversionMode").value;
 
@@ -661,6 +662,8 @@ async function applyConfigToForm(form, config) {
         }
 
         case "metadata": {
+            form.querySelector("#MarkSpecialsWhenGrouped").checked = config.MarkSpecialsWhenGrouped;
+            form.querySelector("#RemoveDuplicateTitles").checked = config.Title.Default.RemoveDuplicates;
             renderSortableCheckboxList(form, "TitleMainList", config.Title.Default.MainTitle.List, config.Title.Default.MainTitle.Order);
             form.querySelector("#TitleMainAllowAny").checked = config.Title.Default.MainTitle.AllowAny;
 
@@ -671,7 +674,6 @@ async function applyConfigToForm(form, config) {
 
             renderAlternateTitles(form, configAlternateTitles);
 
-            form.querySelector("#MarkSpecialsWhenGrouped").checked = config.MarkSpecialsWhenGrouped;
             renderSortableCheckboxList(form, "DescriptionSourceList", config.Description.Default.List, config.Description.Default.Order);
             form.querySelector("#DescriptionConversionMode").value = config.DescriptionConversionMode;
 

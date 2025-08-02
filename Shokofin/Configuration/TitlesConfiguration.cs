@@ -9,6 +9,11 @@ namespace Shokofin.Configuration;
 /// </summary>
 public class TitlesConfiguration {
     /// <summary>
+    /// Remove duplicates from the alternate title list during display.
+    /// </summary>
+    public bool RemoveDuplicates { get; set; }
+
+    /// <summary>
     /// The main title configuration.
     /// </summary>
     public TitleConfiguration MainTitle { get; set; } = new() {
