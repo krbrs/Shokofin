@@ -121,7 +121,7 @@ public class ImageProvider(IHttpClientFactory _httpClientFactory, ILogger<ImageP
         var index = url.IndexOf("Shokofin/Host");
         if (index is -1)
             return new HttpResponseMessage(System.Net.HttpStatusCode.BadRequest);
-        url = $"{Plugin.Instance.Configuration.Url}/api/v3{url[(index + 20)..]}";
+        url = $"{Plugin.Instance.Configuration.Url}/api/v3{url[(index + 13)..]}";
         return await _httpClientFactory.CreateClient().GetAsync(url, cancellationToken).ConfigureAwait(false);
     }
 }
