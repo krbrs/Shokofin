@@ -25,10 +25,10 @@ public class SplitMoviesTask(MergeVersionsManager _mergeVersionsManager, Library
     public string Key => "ShokoSplitMovies";
 
     /// <inheritdoc />
-    public bool IsHidden => !Plugin.Instance.Configuration.ExpertMode;
+    public bool IsHidden => !Plugin.Instance.Configuration.AdvancedMode;
 
     /// <inheritdoc />
-    public bool IsEnabled => Plugin.Instance.Configuration.ExpertMode;
+    public bool IsEnabled => Plugin.Instance.Configuration.AdvancedMode;
 
     /// <inheritdoc />
     public bool IsLogged => true;

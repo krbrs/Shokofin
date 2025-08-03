@@ -69,9 +69,11 @@ const Sections = [
 ];
 
 const Messages = {
-    ExpertModeCountdown: "Press <count> more times to <toggle> advanced mode.",
+    ViewModeCountdown: "Press <count> more times to <toggle> view mode.",
     ExpertModeEnabled: "Advanced mode enabled.",
     ExpertModeDisabled: "Advanced mode disabled.",
+    DebugModeEnabled: "Debug mode enabled.",
+    DebugModeDisabled: "Debug mode disabled.",
     ConnectToShoko: "Please establish a connection to a running instance of Shoko Server before you continue.",
     ConnectedToShoko: "Connection established.",
     DisconnectedToShoko: "Connection has been reset.",
@@ -97,16 +99,30 @@ createControllerFactory({
                 form.querySelector("#TitleAlternateListContainer").innerHTML = "";
             }
 
-            form.querySelector("#ServerVersion").addEventListener("click", async function () {
-                if (++State.expertPresses === MaxDebugPresses) {
-                    State.expertPresses = 0;
-                    State.expertMode = !State.expertMode;
-                    const config = await toggleExpertMode(State.expertMode);
+            form.querySelector("#ServerVersion").addEventListener("click", async function onVersionClick() {
+                if (++State.clickCounter === MaxDebugPresses) {
+                    State.clickCounter = 0;
+                    State.advancedMode = !State.advancedMode;
+                    State.debugMode = false;
+                    const config = await toggleExpertMode(State.advancedMode, State.debugMode);
                     await updateView(view, form, config);
                     return;
                 }
-                if (State.expertPresses >= 3)
-                    Dashboard.alert(Messages.ExpertModeCountdown.replace("<count>", MaxDebugPresses - State.expertPresses).replace("<toggle>", State.expertMode ? "disable" : "enable"));
+                if (State.clickCounter >= 3)
+                    Dashboard.alert(Messages.ViewModeCountdown.replace("<count>", MaxDebugPresses - State.clickCounter).replace("<toggle>", State.advancedMode ? "disable" : "enable"));
+            });
+
+            form.querySelector(".sectionTitleContainer > a").addEventListener("click", async function(event) {
+                if ((State.clickCounter + 1) === MaxDebugPresses) {
+                    event.preventDefault();
+                    event.stopImmediatePropagation();
+                    State.clickCounter = 0;
+                    State.advancedMode = !State.advancedMode;
+                    State.debugMode = State.advancedMode;
+                    const config = await toggleExpertMode(State.advancedMode, State.debugMode);
+                    await updateView(view, form, config);
+                    return;
+                }
             });
 
             form.querySelector("#UserSelector").addEventListener("change", function () {
@@ -314,15 +330,22 @@ createControllerFactory({
  */
 async function updateView(view, form, config) {
     State.config = config;
-    State.expertPresses = 0;
-    State.expertMode = config.ExpertMode;
+    State.clickCounter = 0;
+    State.advancedMode = config.AdvancedMode;
+    State.debugMode = config.DebugMode;
     State.connected = Boolean(config.ApiKey);
 
-    if (State.expertMode) {
-        form.classList.add("expert-mode");
+    if (State.advancedMode) {
+        form.classList.add("advanced-mode");
     }
     else {
-        form.classList.remove("expert-mode");
+        form.classList.remove("advanced-mode");
+    }
+    if (State.debugMode) {
+        form.classList.add("debug-mode");
+    }
+    else {
+        form.classList.remove("debug-mode");
     }
 
     if (!config.CanCreateSymbolicLinks) {
@@ -734,7 +757,7 @@ async function applyConfigToForm(form, config) {
 
             form.querySelector("#DefaultLibraryOperationMode").value = config.DefaultLibraryOperationMode;
             form.querySelector("#MediaFolderSelector").innerHTML = `<option value="">Click here to select a library</option>` + libraries
-                .map((library) => `<option value="${library.LibraryId}">${library.LibraryName}${config.ExpertMode ? ` (${library.LibraryId})` : ""}</option>`)
+                .map((library) => `<option value="${library.LibraryId}">${library.LibraryName}${State.advancedMode ? ` (${library.LibraryId})` : ""}</option>`)
                 .join("");
 
             form.querySelector("#SeasonMerging_Enabled").checked = config.SeasonMerging_Enabled;
@@ -791,7 +814,7 @@ async function applyConfigToForm(form, config) {
             form.querySelector("#SignalRDefaultRefreshEvents").checked = config.SignalR_RefreshEnabled;
 
             form.querySelector("#SignalRMediaFolderSelector").innerHTML = `<option value="">Click here to select a library</option>` + libraries
-                .map((library) => `<option value="${library.LibraryId}">${library.LibraryName}${config.ExpertMode ? ` (${library.LibraryId})` : ""}</option>`)
+                .map((library) => `<option value="${library.LibraryId}">${library.LibraryName}${State.advancedMode ? ` (${library.LibraryId})` : ""}</option>`)
                 .join("");
             break;
         }
@@ -1373,17 +1396,27 @@ function renderAlternateTitles(form, configAlternateTitles) {
 /**
  * Toggle expert mode.
  *
- * @param {boolean} value - True to enable expert mode, false to disable it.
+ * @param {boolean} expertMode - True to enable expert mode, false to disable it.
+ * @param {boolean} debugMode - True to enable debug mode, false to disable it.
  * @returns {Promise<PluginConfiguration>} The updated plugin configuration.
  */
-async function toggleExpertMode(value) {
+async function toggleExpertMode(expertMode = false, debugMode = false) {
     const config = State.config || await ShokoApiClient.getConfiguration();
+    const debugChanged = config.DebugMode !== debugMode;
+    const expertChanged = config.AdvancedMode !== expertMode;
+    if (!expertChanged && !debugChanged) return config;
 
-    config.ExpertMode = value;
+    config.AdvancedMode = expertMode;
+    config.DebugMode = debugMode;
 
     await ShokoApiClient.updateConfiguration(config);
 
-    Dashboard.alert(value ? Messages.ExpertModeEnabled : Messages.ExpertModeDisabled);
+    if (debugChanged) {
+        Dashboard.alert(debugMode ? Messages.DebugModeEnabled : Messages.DebugModeDisabled);
+    }
+    else if (expertChanged) {
+        Dashboard.alert(expertMode ? Messages.ExpertModeEnabled : Messages.ExpertModeDisabled);
+    }
 
     return config;
 }

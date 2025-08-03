@@ -30,13 +30,13 @@ public class VersionCheckTask(ILogger<VersionCheckTask> _logger, ILibraryManager
     public string Key => "ShokoVersionCheck";
 
     /// <inheritdoc />
-    public bool IsHidden => !Plugin.Instance.Configuration.ExpertMode;
+    public bool IsHidden => !Plugin.Instance.Configuration.AdvancedMode;
 
     /// <inheritdoc />
     public bool IsEnabled => true;
 
     /// <inheritdoc />
-    public bool IsLogged => Plugin.Instance.Configuration.ExpertMode;
+    public bool IsLogged => Plugin.Instance.Configuration.AdvancedMode;
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         => [

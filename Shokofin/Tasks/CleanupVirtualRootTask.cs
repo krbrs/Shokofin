@@ -39,13 +39,13 @@ public class CleanupVirtualRootTask(
     public string Key => "ShokoCleanupVirtualRoot";
 
     /// <inheritdoc />
-    public bool IsHidden => !Plugin.Instance.Configuration.ExpertMode;
+    public bool IsHidden => !Plugin.Instance.Configuration.AdvancedMode;
 
     /// <inheritdoc />
     public bool IsEnabled => true;
 
     /// <inheritdoc />
-    public bool IsLogged => Plugin.Instance.Configuration.ExpertMode;
+    public bool IsLogged => Plugin.Instance.Configuration.AdvancedMode;
 
     public IEnumerable<TaskTriggerInfo> GetDefaultTriggers()
         => [

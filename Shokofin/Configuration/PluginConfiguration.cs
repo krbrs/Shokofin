@@ -743,7 +743,13 @@ public class PluginConfiguration : BasePluginConfiguration {
     /// Enable expert mode.
     /// </summary>
     [XmlElement("EXPERT_MODE")]
-    public bool ExpertMode { get; set; }
+    public bool AdvancedMode { get; set; }
+
+    /// <summary>
+    /// Enable debug mode.
+    /// </summary>
+    [XmlElement("DEBUG_MODE")]
+    public bool DebugMode { get; set; }
 
     #endregion
 
@@ -855,6 +861,7 @@ public class PluginConfiguration : BasePluginConfiguration {
         MetadataRefresh = new();
         UsageTracker_StalledTimeInSeconds = 60;
         Misc_ShowInMenu = false;
-        ExpertMode = false;
+        AdvancedMode = false;
+        DebugMode = false;
     }
 }

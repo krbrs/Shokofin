@@ -441,7 +441,8 @@ export const LibraryMenu = globalThis.LibraryMenu;
  *   SeasonMerging_MergeWindowInDays: number;
  *   Misc_ShowInMenu: boolean;
  *   UsageTracker_StalledTimeInSeconds: number;
- *   ExpertMode: boolean;
+ *   AdvancedMode: boolean;
+ *   DebugMode: boolean;
  * }} PluginConfiguration
  */
 
@@ -616,18 +617,19 @@ globalThis.ShokoApiClient = ShokoApiClient;
 
 /**
  * @type {{
-*   config: PluginConfiguration | null;
-*   seriesId: string;
-*   seriesQuery: string;
-*   seriesList: SimpleSeries[] | null;
-*   seriesTimeout: number | null;
-*   currentTab: TabType;
-*   expertPresses: number;
-*   expertMode: boolean;
-*   connected: boolean;
-*   timeout: number | null;
-* }}
-*/
+ *   config: PluginConfiguration | null;
+ *   seriesId: string;
+ *   seriesQuery: string;
+ *   seriesList: SimpleSeries[] | null;
+ *   seriesTimeout: number | null;
+ *   currentTab: TabType;
+ *   clickCounter: number;
+ *   advancedMode: boolean;
+ *   debugMode: boolean;
+ *   connected: boolean;
+ *   timeout: number | null;
+ * }}
+ */
 export const State = window["SHOKO_STATE_OBJECT"] || (window["SHOKO_STATE_OBJECT"] = {
    config: null,
    seriesId: "",
@@ -635,8 +637,9 @@ export const State = window["SHOKO_STATE_OBJECT"] || (window["SHOKO_STATE_OBJECT
    seriesList: null,
    seriesTimeout: null,
    currentTab: "connection",
-   expertPresses: 0,
-   expertMode: false,
+   clickCounter: 0,
+   advancedMode: false,
+   debugMode: false,
    connected: false,
    timeout: null,
 });
@@ -656,7 +659,7 @@ export const State = window["SHOKO_STATE_OBJECT"] || (window["SHOKO_STATE_OBJECT
  * @property {string} helpHref The tab help href.
  * @property {string} name The tab name.
  * @property {boolean?} connected Optional. Whether the tab is only rendered when or when not connected.
- * @property {boolean?} expertMode Optional. Whether the tab is only rendered when in or not in expert mode.
+ * @property {boolean?} advancedMode Optional. Whether the tab is only rendered when in or not in expert mode.
  */
 
 const DefaultHelpLink = "https://docs.shokoanime.com/jellyfin/configuring-shokofin/";
@@ -719,14 +722,15 @@ const Tabs = [
         helpHref: "https://docs.shokoanime.com/jellyfin/configuring-shokofin/#misc",
         name: "Misc",
         connected: true,
-        expertMode: true,
+        advancedMode: true,
     },
-    {
-        id: "utilities",
-        href: getConfigurationPageUrl("Shoko.Settings", "utilities"),
-        helpHref: "https://docs.shokoanime.com/jellyfin/utilities",
-        name: "Utilities",
-    },
+    // {
+    //     id: "utilities",
+    //     href: getConfigurationPageUrl("Shoko.Settings", "utilities"),
+    //     helpHref: "https://docs.shokoanime.com/jellyfin/utilities",
+    //     name: "Utilities",
+    //     advancedMode: true,
+    // },
 ];
 
 /**
@@ -740,7 +744,7 @@ export function updateTabs(view, tabName) {
         State.currentTab = tabName;
     }
 
-    const tabs = Tabs.filter(tab => tab.id === State.currentTab || (tab.connected === undefined || tab.connected === State.connected) && (tab.expertMode === undefined || tab.expertMode === State.expertMode));
+    const tabs = Tabs.filter(tab => tab.id === State.currentTab || (tab.connected === undefined || tab.connected === State.connected) && (tab.advancedMode === undefined || tab.advancedMode === State.advancedMode));
     let index = tabs.findIndex((tab => tab.id === State.currentTab));
     if (index === -1) {
         index = 0;
@@ -938,8 +942,9 @@ export function setupEvents(view, events, initialTab = "connection", hide = fals
                 if (!State.config) {
                     Dashboard.showLoadingMsg();
                     State.config = await ShokoApiClient.getConfiguration();
-                    State.expertPresses = 0;
-                    State.expertMode = State.config.ExpertMode;
+                    State.clickCounter = 0;
+                    State.advancedMode = State.config.AdvancedMode;
+                    State.debugMode = State.config.DebugMode;
                     State.connected = Boolean(State.config.ApiKey);
                 }
 
@@ -982,8 +987,9 @@ export function setupEvents(view, events, initialTab = "connection", hide = fals
             State.timeout = setTimeout(() => {
                 State.config = null;
                 State.currentTab = initialTab;
-                State.expertPresses = 0;
-                State.expertMode = false;
+                State.clickCounter = 0;
+                State.advancedMode = false;
+                State.debugMode = false;
                 State.connected = false;
                 State.timeout = null;
             }, 100);
