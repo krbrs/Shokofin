@@ -188,12 +188,13 @@ public static class ImageUtility {
 
     private const int Over9K = 9001;
 
-    private static IEnumerable<RemoteImageInfo> ProcessEpisodeImages(API.Models.Images images, string? metadataLanguage, string[] originLanguages, bool displayMode, ImageConfiguration config) {
+    private static IEnumerable<RemoteImageInfo> ProcessEpisodeImages(API.Models.EpisodeImages images, string? metadataLanguage, string[] originLanguages, bool displayMode, ImageConfiguration config) {
         // Set to english if not set to match Jellyfin's internal logic.
         if (string.IsNullOrWhiteSpace(metadataLanguage))
             metadataLanguage = "en";
 
-        foreach (var image in ProcessImages(images.Backdrops, ImageType.Primary, metadataLanguage, originLanguages, displayMode, config, config.GetOrderedBackdropTypes()))
+        var thumbnails = images.Thumbnails.Count > 0 ? images.Thumbnails : images.Backdrops;
+        foreach (var image in ProcessImages(thumbnails, ImageType.Primary, metadataLanguage, originLanguages, displayMode, config, config.GetOrderedBackdropTypes()))
             yield return image;
     }
 
